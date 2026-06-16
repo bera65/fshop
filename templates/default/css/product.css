@@ -1,0 +1,228 @@
+.product-short-desc {
+	font-size: 0.95rem;
+	line-height: 1.55;
+	margin-top: 0.5rem;
+}
+
+.product-label-badge {
+	display: inline-block;
+	margin-top: 0.35rem;
+	padding: 0.2rem 0.65rem;
+	border-radius: 999px;
+	background: var(--brand-accent, #d6001c);
+	color: #fff;
+	font-size: 0.78rem;
+	font-weight: 600;
+}
+
+.catalog-badge-label {
+	background: var(--brand-accent, #d6001c);
+	color: #fff;
+}
+
+.product-video {
+	border-radius: 8px;
+	overflow: hidden;
+	background: #000;
+}
+
+.product-video iframe {
+	border: 0;
+}
+
+.product-long-desc {
+	padding: 1.5rem 0 2rem;
+	border-top: 1px solid var(--border-color, #e2e8f0);
+	margin-top: 1rem;
+}
+
+.product-desc-title {
+	color: var(--brand-blue, #0f4c63);
+	font-weight: 600;
+	margin-bottom: 1rem;
+}
+
+.product-desc-body {
+	color: #444;
+	line-height: 1.7;
+	font-size: 0.95rem;
+}
+
+.product-desc-body img {
+	max-width: 100%;
+	height: auto;
+	border-radius: 8px;
+}
+
+.product-desc-body table {
+	width: 100%;
+	margin: 1rem 0;
+}
+
+.product-image-wrapper {
+	position: relative;
+	background: #fff;
+	border: 1px solid var(--border-color, #e2e8f0);
+	border-radius: var(--radius-md, 14px);
+	padding: 1rem;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	box-shadow: var(--shadow-xs, 0 1px 2px rgba(15, 44, 60, 0.05));
+}
+
+.badge-usage {
+	position: absolute;
+	top: 20px;
+	left: 50%;
+	transform: translateX(-50%);
+	background: var(--color3);
+	color: white;
+	padding: 5px 15px;
+	border-radius: 6px;
+	font-weight: 800;
+	font-size: 14px;
+	z-index: 5;
+	text-align: center;
+	line-height: 1.2;
+	box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.vertical-blue-bar {
+	position: absolute;
+	right: 15px;
+	top: 25%;
+	height: 60%;
+	width: 38px;
+	background: var(--brand-blue);
+	border-radius: 4px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: space-between;
+	color: white;
+	padding: 15px 0;
+	writing-mode: vertical-rl;
+	text-orientation: mixed;
+	font-weight: 700;
+	font-size: 16px;
+	letter-spacing: 1px;
+}
+
+.thumb-img {
+	width: 75px;
+	height: 75px;
+	object-fit: contain;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	padding: 5px;
+	cursor: pointer;
+	transition: 0.2s;
+}
+.thumb-img.active { border-color: #000; border-width: 2px; }
+
+/* Ürün Detayları */
+.brand-name { color: var(--text-gray); font-size: 14px; text-decoration: none; }
+.brand-name:hover { color: var(--color3); }
+.product-thumbs { margin-top: 12px; }
+.product-title { 
+	font-size: clamp(1.35rem, 2vw, 1.75rem); 
+	font-weight: 700; 
+	color: var(--brand-primary-dark, #0a3545); 
+	margin-bottom: 10px;
+	letter-spacing: -0.03em;
+}
+
+.stars { color: #fbbf24; font-size: 14px; }
+.stars svg {vertical-align: center}
+
+.meta-info {
+	padding: 15px 0;
+	color: #444
+}
+
+/* Fiyat ve Kampanya */
+.discount-badge {
+	background: var(--color1);
+	color: white;
+	padding: 20px 15px;
+	border-radius: 8px;
+	font-weight: 700;
+	font-size: 20px;
+}
+.old-price { text-decoration: line-through; color: #94a3b8; font-size: 16px; }
+.current-price { font-size: 1.5rem;line-height: 1.2; color: #c33514}
+
+.earning-banner {
+	background: #d9f0f5;
+    color: #021931;
+	padding: 12px;
+	border-radius: 8px;
+	font-size: 14px;
+}
+
+/* Butonlar */
+.qty-picker {
+	display: flex;
+	border: 1px solid #e2e8f0;
+	border-radius: 8px;
+	overflow: hidden;
+}
+.qty-btn {
+	background: #fff;
+	border: none;
+	padding: 0 15px;
+	font-size: 20px;
+	color: #64748b;
+}
+.qty-input {
+	width: 45px;
+	border: none;
+	text-align: center;
+	font-weight: 700;
+}
+
+.cart-button {
+	padding: 12px 8px;
+	flex-grow: 1;
+}
+.like-button {
+	padding: 12px 8px;
+	min-width: 60px;
+}
+
+/* Sağ Panel */
+.campaign-card {
+	border: 1px solid #dedede;
+	border-radius: 12px;
+	overflow: hidden;
+}
+.campaign-header {
+	background: var(--color3);
+	color: white;
+	padding: 10px 15px;
+	font-size: 14px;
+	font-weight: 600;
+}
+.info-card {
+	border: 1px solid #dedede;
+	border-radius: 12px;
+	padding: 5px 15px;
+}
+.info-item {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 15px 0;
+	font-size: 13px;
+	border-bottom: 1px solid #f8fafc;
+}
+.info-item:last-child { border-bottom: none; }
+.info-icon { color: #64748b; font-size: 18px; width: 25px; text-align: center; }
+.commetRate {font-size:1rem}
+.productTable {width:100%}
+.productTable tr {border-bottom: 1px solid #eee}
+.productTable td.baslik {width:40%}
+.productTable td {padding-top:3px;padding-bottom:3px}
+.productTable td a {color:#000}
+#video > div {width:100%;max-width:571px}

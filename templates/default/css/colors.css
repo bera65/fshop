@@ -1,0 +1,27 @@
+/**
+ * Tema renkleri — Admin > Temalar ekranından düzenlenir.
+ */
+:root {
+	--brand-primary: #252525;
+	--brand-primary-dark: #fff;
+	--brand-accent: #fe0030;
+	--brand-accent-light: #fdeaec;
+	--surface: #ffffff;
+	--surface-soft: #f6f6f6;
+	--border-color: #ebebeb;
+	--text-primary: #1a1a1a;
+	--text-secondary: #767676;
+	--color-dark: #000;
+	--color1: #1a1a1a;
+	--color1-hover: #000000;
+	--color2: #f6f6f6;
+	--color3: #1a1a1a;
+	--color3-hover: #000000;
+	--footer-bg: #252525;
+	--footer-heading: #ffffff;
+	--footer-text: #a3a3a3;
+	--footer-accent: #ffffff;
+	--surface-muted: var(--surface);
+	--color-text: var(--text-primary);
+	--text-gray: var(--text-secondary);
+}

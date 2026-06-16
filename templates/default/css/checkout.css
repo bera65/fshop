@@ -1,0 +1,64 @@
+.checkout-form .payment-option label {
+	cursor: pointer;
+	margin-bottom: 0;
+}
+
+.checkout-form .payment-option input {
+	margin-top: 4px;
+}
+
+.address-option {
+	cursor: pointer;
+	transition: border-color .2s, background .2s;
+}
+
+.address-option:has(input:checked) {
+	border-color: var(--brand-primary, #0f4c63) !important;
+	background: var(--surface-soft, #e8f0f4);
+}
+
+.address-option input {
+	cursor: pointer;
+}
+
+#checkoutAddressFields.is-readonly .checkout-field {
+	background: #f8f9fa;
+}
+
+.account-tabs .nav-link {
+	color: var(--color-dark);
+	font-weight: 500;
+}
+
+.account-tabs .nav-link.active {
+	color: var(--color3);
+}
+
+.address-card .badge {
+	font-size: 11px;
+}
+
+.checkout-summary {
+	position: sticky;
+	top: 20px;
+}
+
+.checkout-success .success-icon {
+	width: 72px;
+	height: 72px;
+	line-height: 72px;
+	border-radius: 50%;
+	background: var(--brand-primary, #0f4c63);
+	color: #fff;
+	font-size: 36px;
+	font-weight: 700;
+	margin: 0 auto;
+}
+
+.checkout-success-box {
+	max-width: 640px;
+}
+
+.order-card .badge {
+	font-weight: 500;
+}
