@@ -1,0 +1,19 @@
+.social-share {
+    margin-top: 15px;
+}
+.share-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 6px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: .2s;
+}
+.share-btn img {width:100%;height:auto}
+.share-btn:hover {
+    transform: translateY(-2px);
+    color: #fff;
+}
