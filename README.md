@@ -2,6 +2,8 @@
 
 Açık kaynak PHP e-ticaret altyapısı (Smarty, Bootstrap, PDO/MySQL).
 
+DEMO : https://fyazilim.com/fshop/
+
 ## Gereksinimler
 
 - PHP 7.4+ (GD, PDO MySQL, mbstring)
