@@ -3,9 +3,10 @@
 Açık kaynak PHP e-ticaret altyapısı (Smarty, Bootstrap, PDO/MySQL).
 
 # Demo
-https://fyazilim.com/fshop/admin/
-KA: admin@fyazilim.com
-ŞF: admin123
+- Site : https://fyazilim.com/fshop/
+- Admin : https://fyazilim.com/fshop/admin/
+- KA: admin@fyazilim.com
+- ŞF: admin123
 
 ## Gereksinimler
 
