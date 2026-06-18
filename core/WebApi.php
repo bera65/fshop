@@ -23,26 +23,26 @@ class WebApi
 				self::handleBrands($method);
 				break;
 			default:
-				self::respond(404, ['success' => false, 'message' => 'Kaynak bulunamadı']);
+				self::respond(404, ['success' => false, 'message' => 'Source not found']);
 		}
 	}
 
 	private static function authenticate(): void
 	{
 		if (Settings::get('WEBAPI_ENABLED') !== '1') {
-			self::respond(403, ['success' => false, 'message' => 'Web API kapalı']);
+			self::respond(403, ['success' => false, 'message' => 'Web API is down']);
 		}
 
 		$storedKey = (string) Settings::get('WEBAPI_KEY');
 
 		if ($storedKey === '') {
-			self::respond(503, ['success' => false, 'message' => 'API anahtarı yapılandırılmamış. Admin → Ayarlar bölümünden oluşturun.']);
+			self::respond(503, ['success' => false, 'message' => 'The API key is not configured. Create one in Admin → Settings.']);
 		}
 
 		$provided = self::extractApiKey();
 
 		if ($provided === '' || !hash_equals($storedKey, $provided)) {
-			self::respond(403, ['success' => false, 'message' => 'Geçersiz API anahtarı']);
+			self::respond(403, ['success' => false, 'message' => 'Invalid API key']);
 		}
 	}
 
@@ -124,7 +124,7 @@ class WebApi
 			self::updateOrder($id);
 		}
 
-		self::respond(405, ['success' => false, 'message' => 'Desteklenmeyen sipariş işlemi']);
+		self::respond(405, ['success' => false, 'message' => 'Unsupported order processing']);
 	}
 
 	private static function handleProducts(string $method, int $id, string $sub = ''): void
@@ -157,7 +157,7 @@ class WebApi
 			self::deleteProduct($id);
 		}
 
-		self::respond(405, ['success' => false, 'message' => 'Desteklenmeyen ürün işlemi']);
+		self::respond(405, ['success' => false, 'message' => 'Unsupported product operation']);
 	}
 
 	private static function listOrders(): void
@@ -210,7 +210,7 @@ class WebApi
 	private static function handleCategories(string $method): void
 	{
 		if ($method !== 'GET') {
-			self::respond(405, ['success' => false, 'message' => 'Desteklenmeyen kategori işlemi']);
+			self::respond(405, ['success' => false, 'message' => 'Unsupported category operation']);
 		}
 
 		self::listCategories();
@@ -219,7 +219,7 @@ class WebApi
 	private static function handleBrands(string $method): void
 	{
 		if ($method !== 'GET') {
-			self::respond(405, ['success' => false, 'message' => 'Desteklenmeyen marka işlemi']);
+			self::respond(405, ['success' => false, 'message' => 'Unsupported trademark operation']);
 		}
 
 		self::listBrands();
@@ -284,7 +284,7 @@ class WebApi
 		$order = Order::getByIdAdmin($id);
 
 		if (!$order) {
-			self::respond(404, ['success' => false, 'message' => 'Sipariş bulunamadı']);
+			self::respond(404, ['success' => false, 'message' => 'Order not found']);
 		}
 
 		$prepared = Order::attachApiDetails([$order]);
@@ -316,7 +316,7 @@ class WebApi
 		if ($payload === []) {
 			self::respond(422, [
 				'success' => false,
-				'message' => 'status, cargoCompany veya trackingNumber alanlarından en az biri gerekli',
+				'message' => 'At least one of the following fields is required: status, cargoCompany, or trackingNumber.',
 			]);
 		}
 
@@ -366,7 +366,7 @@ class WebApi
 		$product = Product::getByIdAdmin($id);
 
 		if (!$product) {
-			self::respond(404, ['success' => false, 'message' => 'Ürün bulunamadı']);
+			self::respond(404, ['success' => false, 'message' => 'Product not found']);
 		}
 
 		self::respond(200, [
@@ -396,7 +396,7 @@ class WebApi
 	private static function updateProduct(int $id): void
 	{
 		if (!Product::getByIdAdmin($id)) {
-			self::respond(404, ['success' => false, 'message' => 'Ürün bulunamadı']);
+			self::respond(404, ['success' => false, 'message' => 'Product not found']);
 		}
 
 		$input = self::mapProductInput(self::getInput());
@@ -429,7 +429,7 @@ class WebApi
 	private static function uploadProductImage(int $id): void
 	{
 		if (!Product::getByIdAdmin($id)) {
-			self::respond(404, ['success' => false, 'message' => 'Ürün bulunamadı']);
+			self::respond(404, ['success' => false, 'message' => 'Product not found']);
 		}
 
 		if (!empty($_FILES['image']['tmp_name'])) {
@@ -446,7 +446,7 @@ class WebApi
 				if ($base64 === '') {
 					self::respond(422, [
 						'success' => false,
-						'message' => 'image dosyası, image_url veya image_base64 alanı gerekli',
+						'message' => 'The image file, image_url, or image base64 field is required.',
 					]);
 				}
 
@@ -457,7 +457,7 @@ class WebApi
 				$binary = base64_decode($base64, true);
 
 				if ($binary === false || $binary === '') {
-					self::respond(422, ['success' => false, 'message' => 'Geçersiz base64 görsel verisi']);
+					self::respond(422, ['success' => false, 'message' => 'Invalid base64 visual data.']);
 				}
 
 				$result = Product::importImageBinary($id, $binary);
