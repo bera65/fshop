@@ -1,4 +1,4 @@
-# FShop
+# FriSay
 
 Açık kaynak PHP e-ticaret altyapısı (Smarty, Bootstrap, PDO/MySQL).
 
@@ -23,7 +23,7 @@ Açık kaynak PHP e-ticaret altyapısı (Smarty, Bootstrap, PDO/MySQL).
 2. Boş bir MySQL veritabanı oluşturun (ör. `fshop`).
 3. Tarayıcıda kurulum sihirbazını açın:
    - Kök dizin: `https://siteadresiniz.com/install/`
-   - Alt klasör: `https://siteadresiniz.com/fshop/install/`
+   - Alt klasör: `https://siteadresiniz.com/frisay/install/`
 4. Adımları izleyin:
    - Sistem gereksinimleri
    - Veritabanı bilgileri
@@ -133,8 +133,8 @@ Alternatif alan adları: `product_name`, `id_category`, `id_brand`, `product_lin
 
 ## Yerel geliştirme (WAMP)
 
-1. Projeyi `www/fshop/` altına koyun.
-2. `http://localhost/fshop/install/` adresinden kurun.
+1. Projeyi `www/frisay/` altına koyun.
+2. `http://localhost/frisay/install/` adresinden kurun.
 3. `.htaccess` içindeki `RewriteBase /fshop/` kurulumda otomatik ayarlanır.
 
 ## Canlıya alma kontrol listesi
