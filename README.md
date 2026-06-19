@@ -10,7 +10,6 @@ Açık kaynak PHP e-ticaret altyapısı (Smarty, Bootstrap, PDO/MySQL).
 - KA: admin@fyazilim.com
 - ŞF: admin123
 
->>>>>>> d7a4f86df62b57dd798983f9771a0d8d6c9dea1a
 ## Gereksinimler
 
 - PHP 7.4+ (GD, PDO MySQL, mbstring)
