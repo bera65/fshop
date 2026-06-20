@@ -1,6 +1,7 @@
 # FriSay
 
 Açık kaynak PHP e-ticaret altyapısı (Smarty, Bootstrap, PDO/MySQL).
+Frisay is a modern open-source e-commerce platform built with PHP, Smarty and MySQL, designed as a lightweight alternative to PrestaShop and OpenCart.
 
 <<<<<<< HEAD
 =======
@@ -160,6 +161,17 @@ Modüller `modules/` klasöründen yüklenir.
 | [modules/MODULE_DEVELOPER_GUIDE.md](modules/MODULE_DEVELOPER_GUIDE.md) | Tam modül geliştirici rehberi |
 | [AGENTS.md](AGENTS.md) | AI / Cursor agent giriş noktası |
 | [AI_CONTEXT.md](AI_CONTEXT.md) | Proje mimarisi özeti (yapay zeka bağlamı) |
+
+## Roadmap
+
+- [x] Product Management
+- [x] Order Management
+- [x] REST API
+- [x] Theme System
+- [ ] Marketplace
+- [ ] Mobile App
+- [ ] Docker Support
+- [ ] Multi Store
 
 ## Lisans
 
