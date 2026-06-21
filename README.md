@@ -5,7 +5,7 @@ Frisay is a modern open-source e-commerce platform built with PHP, Smarty and My
 
 # Developer Page
 - https://frisay.com/developer/
-=======
+
 # Demo
 - Site : https://fyazilim.com/fshop/
 - Admin : https://fyazilim.com/fshop/admin/
