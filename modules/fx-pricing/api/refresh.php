@@ -4,12 +4,18 @@ if (!defined('IN_SCRIPT')) {
 	exit;
 }
 
-require_once dirname(__DIR__, 2) . '/lib/FxPricingService.php';
+if (!class_exists('Admin')) {
+	require_once dirname(__DIR__, 3) . '/core/Admin.php';
+}
+
+require_once dirname(__DIR__) . '/lib/FxPricingService.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
+Admin::requireCronTokenOrAdminAuth();
+
 if (!FxPricingService::isEnabled()) {
-	echo json_encode(['success' => false, 'message' => 'Modül kapalı']);
+	echo json_encode(['success' => false, 'message' => 'Modül kapalı'], JSON_UNESCAPED_UNICODE);
 	exit;
 }
 

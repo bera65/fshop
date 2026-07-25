@@ -321,7 +321,7 @@ class Cms
 			$entry = is_array($langData[$lang] ?? null) ? $langData[$lang] : [];
 			$title = trim((string) ($entry['title'] ?? ''));
 			$summary = trim(strip_tags((string) ($entry['summary'] ?? '')));
-			$content = (string) ($entry['content'] ?? '');
+			$content = Security::sanitizeHtml((string) ($entry['content'] ?? ''));
 			$metaTitle = trim(strip_tags((string) ($entry['meta_title'] ?? '')));
 			$metaDescription = trim(strip_tags((string) ($entry['meta_description'] ?? '')));
 			$slug = self::normalizeSlug((string) ($entry['slug'] ?? ''));

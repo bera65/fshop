@@ -3,7 +3,19 @@
 
 <div class="product-editor">
 	{if $flash}
-	<div class="alert alert-{$flashType|default:'success'}">{$flash|escape}</div>
+		<div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index:9999;">
+			<div class="toast frisay-toast {$flashType|default:'success'} show" role="alert">
+				<div class="toast-icon">
+					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-icon lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+				</div>
+				<div class="toast-body p-0">
+					<div class="toast-message">
+						{$flash|escape}
+					</div>
+				</div>
+				<button class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+			</div>
+		</div>
 	{/if}
 
 	<form method="post" id="productForm">
@@ -21,12 +33,12 @@
 					{/if}
 				</span>
 			</div>
-			<div class="pe-topbar-actions adminSaveButton">
+			<div class="save">
 				<a href="{$adminUrl}languages" class="btn btn-sm btn-outline-secondary">{'Languages'|adminT}</a>
 				{if !$isNew && $pLink}
-				<a href="{$pLink}" class="btn btn-sm btn-outline-warning" target="_blank" rel="noopener">{'View product'|adminT}</a>
+				<a href="{$pLink}" class="btn btn-sm btn-outline-dark" target="_blank" rel="noopener">{'View product'|adminT}</a>
 				{/if}
-				<button type="submit" class="btn btn-dark btn-sm">
+				<button type="submit" class="btn btn-success btn-sm">
 					<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
 					{'Save'|adminT}
 				</button>
@@ -95,19 +107,25 @@
 					<div class="row g-3">
 						<div class="col-md-6">
 							<label class="form-label">{'Category'|adminT}</label>
-							<select name="id_category" class="form-select" required>
-								{foreach $categoryOptions as $cat}
-								<option value="{$cat.id_category}"{if $product.id_category == $cat.id_category} selected{/if}>{$cat.category_name|escape}</option>
-								{/foreach}
-							</select>
+							<div class="input-group">
+								<select name="id_category" id="productCategorySelect" class="form-select" required>
+									{foreach $categoryOptions as $cat}
+									<option value="{$cat.id_category}"{if $product.id_category == $cat.id_category} selected{/if}>{$cat.category_name|escape}</option>
+									{/foreach}
+								</select>
+								<button type="button" class="btn btn-outline-secondary" id="quickAddCategoryBtn" title="Kategori ekle" aria-label="Kategori ekle">+</button>
+							</div>
 						</div>
 						<div class="col-md-6">
 							<label class="form-label">{'Brand'|adminT}</label>
-							<select name="id_brand" class="form-select" required>
-								{foreach $brandOptions as $b}
-								<option value="{$b.id_brand}"{if $product.id_brand == $b.id_brand} selected{/if}>{$b.brand_name|escape}</option>
-								{/foreach}
-							</select>
+							<div class="input-group">
+								<select name="id_brand" id="productBrandSelect" class="form-select" required>
+									{foreach $brandOptions as $b}
+									<option value="{$b.id_brand}"{if $product.id_brand == $b.id_brand} selected{/if}>{$b.brand_name|escape}</option>
+									{/foreach}
+								</select>
+								<button type="button" class="btn btn-outline-secondary" id="quickAddBrandBtn" title="Marka ekle" aria-label="Marka ekle">+</button>
+							</div>
 						</div>
 						<div class="col-md-3">
 							<label class="form-label">{'Product type'|adminT}</label>
@@ -369,11 +387,11 @@
 								<input type="text" id="productOldPrice" name="old_price" class="form-control" value="{$product.old_price|escape}">
 							</div>
 							<div class="col-6">
-								<label class="form-label">KDV</label>
+								<label class="form-label">{'Tax (VAT)'|adminT}</label>
 								<select name="vat" class="form-select">
-									<option value="1"{if $product.vat == 1} selected{/if}>%1</option>
-									<option value="10"{if $product.vat == 10} selected{/if}>%10</option>
-									<option value="20"{if $product.vat == 20} selected{/if}>%20</option>
+									{foreach $taxOptions as $tax}
+									<option value="{$tax.rate|escape}"{if $product.vat == $tax.rate} selected{/if}>{$tax.name|escape}{if $tax.legacy|default:false} — {'legacy rate'|adminT}{/if}</option>
+									{/foreach}
 								</select>
 							</div>
 						</div>
@@ -480,9 +498,70 @@
 </div>
 {/if}
 
+<div class="modal fade" id="quickAddCategoryModal" tabindex="-1" aria-labelledby="quickAddCategoryModalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="quickAddCategoryModalLabel">Kategori ekle</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{'Close'|adminT}"></button>
+			</div>
+			<div class="modal-body">
+				<div class="mb-3">
+					<label class="form-label" for="quickCategoryName">{'Category name'|adminT}</label>
+					<input type="text" class="form-control" id="quickCategoryName" maxlength="64" required>
+				</div>
+				<div class="mb-0">
+					<label class="form-label" for="quickCategoryParent">{'Parent category'|adminT}</label>
+					<select class="form-select" id="quickCategoryParent">
+						<option value="0">{'None (root)'|adminT}</option>
+						{foreach $categoryOptions as $cat}
+						<option value="{$cat.id_category}">{$cat.category_name|escape}</option>
+						{/foreach}
+					</select>
+				</div>
+				<div class="alert alert-danger py-2 mt-3 mb-0 d-none" id="quickCategoryError"></div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{'Cancel'|adminT}</button>
+				<button type="button" class="btn btn-dark btn-sm" id="quickCategorySaveBtn">{'Save'|adminT}</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="modal fade" id="quickAddBrandModal" tabindex="-1" aria-labelledby="quickAddBrandModalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="quickAddBrandModalLabel">Marka ekle</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{'Close'|adminT}"></button>
+			</div>
+			<div class="modal-body">
+				<div class="mb-0">
+					<label class="form-label" for="quickBrandName">Marka adı</label>
+					<input type="text" class="form-control" id="quickBrandName" maxlength="48" required>
+				</div>
+				<div class="alert alert-danger py-2 mt-3 mb-0 d-none" id="quickBrandError"></div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{'Cancel'|adminT}</button>
+				<button type="button" class="btn btn-dark btn-sm" id="quickBrandSaveBtn">{'Save'|adminT}</button>
+			</div>
+		</div>
+	</div>
+</div>
+
 <script src="{$domain}templates/admin/js/product-variations.js?v={$smarty.now}"></script>
 <script src="{$domain}templates/admin/js/product-options.js?v={$smarty.now}"></script>
 <script src="{$domain}templates/admin/js/product-images.js?v={$smarty.now}"></script>
+<script>
+window.productCatalogQuickConfig = {
+	adminUrl: '{$adminUrl|escape:'javascript'}product{if !$isNew}?id={$idProduct}{/if}',
+	token: '{$adminToken|escape:'javascript'}',
+	parentRootLabel: "{'None (root)'|adminT|escape:'javascript'}"
+};
+</script>
+<script src="{$domain}templates/admin/js/product-catalog-quick.js?v={$smarty.now}"></script>
 <script>
 (function () {
 	var typeEl = document.getElementById('productType');

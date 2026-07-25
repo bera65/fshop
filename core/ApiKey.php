@@ -71,14 +71,14 @@ class ApiKey
 	public static function permissionCatalog(): array
 	{
 		return [
-			self::PERM_ORDERS_READ => 'Siparişleri oku / çek',
-			self::PERM_ORDERS_WRITE => 'Siparişleri güncelle',
-			self::PERM_PRODUCTS_READ => 'Ürünleri oku',
-			self::PERM_PRODUCTS_CREATE => 'Ürün ekle',
-			self::PERM_PRODUCTS_UPDATE => 'Ürün düzenle',
-			self::PERM_PRODUCTS_DELETE => 'Ürün sil',
-			self::PERM_CATEGORIES_READ => 'Kategorileri oku',
-			self::PERM_BRANDS_READ => 'Markaları oku',
+			self::PERM_ORDERS_READ => self::t('Read orders / retrieve'),
+			self::PERM_ORDERS_WRITE => self::t('Update orders'),
+			self::PERM_PRODUCTS_READ => self::t('Read products'),
+			self::PERM_PRODUCTS_CREATE => self::t('Create products'),
+			self::PERM_PRODUCTS_UPDATE => self::t('Update products'),
+			self::PERM_PRODUCTS_DELETE => self::t('Delete products'),
+			self::PERM_CATEGORIES_READ => self::t('Read categories'),
+			self::PERM_BRANDS_READ => self::t('Read brands'),
 		];
 	}
 
@@ -104,13 +104,13 @@ class ApiKey
 		$name = trim($name);
 
 		if ($name === '') {
-			return ['ok' => false, 'message' => 'Partner / isim gerekli'];
+			return ['ok' => false, 'message' => self::t('Partner / name required')];
 		}
 
 		$permissions = self::sanitizePermissions($permissions);
 
 		if ($permissions === []) {
-			return ['ok' => false, 'message' => 'En az bir yetki seçin'];
+			return ['ok' => false, 'message' => self::t('Select at least one permission.')];
 		}
 
 		$key = self::generateKey();
@@ -133,7 +133,7 @@ class ApiKey
 
 		return [
 			'ok' => true,
-			'message' => 'API anahtarı oluşturuldu',
+			'message' => self::t('API key created'),
 			'id' => $id,
 			'api_key' => $key,
 		];
@@ -148,19 +148,19 @@ class ApiKey
 		self::ensureSchema();
 
 		if ($id <= 0 || !self::getById($id)) {
-			return ['ok' => false, 'message' => 'Kayıt bulunamadı'];
+			return ['ok' => false, 'message' => self::t('Not found')];
 		}
 
 		$name = trim($name);
 
 		if ($name === '') {
-			return ['ok' => false, 'message' => 'Partner / isim gerekli'];
+			return ['ok' => false, 'message' => self::t('Partner / name required')];
 		}
 
 		$permissions = self::sanitizePermissions($permissions);
 
 		if ($permissions === []) {
-			return ['ok' => false, 'message' => 'En az bir yetki seçin'];
+			return ['ok' => false, 'message' => self::t('Select at least one permission.')];
 		}
 
 		DB::update('api_keys', [
@@ -170,7 +170,7 @@ class ApiKey
 			'date_upd' => date('Y-m-d H:i:s'),
 		], 'id_api_key = :where_id', ['where_id' => $id]);
 
-		return ['ok' => true, 'message' => 'API anahtarı güncellendi'];
+		return ['ok' => true, 'message' => self::t('API key updated')];
 	}
 
 	/** @return array{ok:bool,message:string,api_key?:string} */
@@ -179,7 +179,7 @@ class ApiKey
 		self::ensureSchema();
 
 		if ($id <= 0 || !self::getById($id)) {
-			return ['ok' => false, 'message' => 'Kayıt bulunamadı'];
+			return ['ok' => false, 'message' => self::t('Not found')];
 		}
 
 		$key = self::generateKey();
@@ -189,7 +189,7 @@ class ApiKey
 			'date_upd' => date('Y-m-d H:i:s'),
 		], 'id_api_key = :where_id', ['where_id' => $id]);
 
-		return ['ok' => true, 'message' => 'Anahtar yenilendi', 'api_key' => $key];
+		return ['ok' => true, 'message' => self::t('The key has been renewed'), 'api_key' => $key];
 	}
 
 	/** @return array{ok:bool,message:string} */
@@ -198,12 +198,12 @@ class ApiKey
 		self::ensureSchema();
 
 		if ($id <= 0) {
-			return ['ok' => false, 'message' => 'Geçersiz kayıt'];
+			return ['ok' => false, 'message' => self::t('Invalid record')];
 		}
 
 		DB::execute('DELETE FROM api_keys WHERE id_api_key = ?', [$id]);
 
-		return ['ok' => true, 'message' => 'API anahtarı silindi'];
+		return ['ok' => true, 'message' => self::t('API key deleted')];
 	}
 
 	/** @return array<string, mixed>|null */
@@ -262,17 +262,17 @@ class ApiKey
 		self::ensureSchema();
 
 		if (Settings::get('WEBAPI_ENABLED') !== '1') {
-			return ['ok' => false, 'message' => 'Web API kapalı'];
+			return ['ok' => false, 'message' => self::t('Web API closed')];
 		}
 
 		$row = self::findByKey($provided);
 
 		if (!$row) {
-			return ['ok' => false, 'message' => 'Geçersiz API anahtarı'];
+			return ['ok' => false, 'message' => self::t('Invalid API Key')];
 		}
 
 		if (empty($row['active'])) {
-			return ['ok' => false, 'message' => 'Bu API anahtarı pasif'];
+			return ['ok' => false, 'message' => self::t('This key is disabled')];
 		}
 
 		DB::update('api_keys', [
@@ -297,7 +297,7 @@ class ApiKey
 			header('Content-Type: application/json; charset=utf-8');
 			echo json_encode([
 				'success' => false,
-				'message' => 'Bu işlem için yetkiniz yok: ' . $permission,
+				'message' => self::t('You do not have permission for this operation: ') . $permission,
 			], JSON_UNESCAPED_UNICODE);
 			exit;
 		}
@@ -347,5 +347,9 @@ class ApiKey
 		}
 
 		return $row;
+	}
+	private static function t(string $message): string
+	{
+		return function_exists('translate') ? translate($message) : $message;
 	}
 }

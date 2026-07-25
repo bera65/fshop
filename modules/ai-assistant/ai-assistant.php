@@ -11,18 +11,16 @@ class AiAssistantModule extends ModuleBase
 {
 	public string $name = 'ai-assistant';
 	public string $title = 'Yapay Zeka Asistanı';
-	public string $version = '1.0.0';
-	public string $description = 'Ürün metinlerini AI ile iyileştirir; dashboard satış analizini üretir';
+	public string $version = '1.2.0';
+	public string $description = 'Admin header: dashboard/sipariş özeti, SEO, CMS, blog ve ürün metni AI desteği';
 	public string $author = 'FShop';
 
 	public array $displayHooks = [
-		'admin_product_button' => 'Ürün düzenleme — AI ile metin iyileştir',
-		'admin_dashboard_main_right' => 'Dashboard — AI mağaza analizi',
+		'admin_header' => 'Admin orta alan üstü — sayfa bağlamlı AI bar',
 	];
 
 	public array $defaultDisplayHooks = [
-		'admin_product_button',
-		'admin_dashboard_main_right',
+		'admin_header',
 	];
 
 	public array $adminStylesheets = ['admin.css'];
@@ -30,7 +28,11 @@ class AiAssistantModule extends ModuleBase
 
 	public array $apiActions = [
 		'improve-product' => 'api/improve-product.php',
-		'analyze-dashboard' => 'api/analyze-dashboard.php',
+		'page-summary' => 'api/page-summary.php',
+		'write-seo' => 'api/write-seo.php',
+		'write-cms' => 'api/write-cms.php',
+		'write-blog' => 'api/write-blog.php',
+		'translate-ui' => 'api/translate-ui.php',
 		'test' => 'api/test.php',
 	];
 
@@ -42,6 +44,22 @@ class AiAssistantModule extends ModuleBase
 		'AI_ASSISTANT_MAX_TOKENS' => '1600',
 		'AI_ASSISTANT_TONE' => 'professional',
 		'AI_ASSISTANT_LANG' => 'tr',
+	];
+
+	/** AI bar yalnızca bu admin sayfalarında görünür. */
+	private const ALLOWED_PAGES = [
+		'dashboard',
+		'orders',
+		'order',
+		'cancellations',
+		'cancel',
+		'returns',
+		'return',
+		'module-blog',
+		'cms-edit',
+		'seo',
+		'product',
+		'translations',
 	];
 
 	public function install(): bool
@@ -60,13 +78,44 @@ class AiAssistantModule extends ModuleBase
 		return true;
 	}
 
+	public function getAdminPageTitle(): string
+	{
+		return $this->title;
+	}
+
 	public function boot(): void
 	{
+		$this->ensureDisplayHooks();
+	}
+
+	private function ensureDisplayHooks(): void
+	{
+		if (!Module::isEnabled($this->name)) {
+			return;
+		}
+
+		$assigned = Module::getAssignedDisplayHooks($this->name);
+
+		// Ürün butonu hook'unu kaldır; yalnızca admin_header kalsın
+		$filtered = array_values(array_filter(
+			$assigned,
+			static function ($hook) {
+				return $hook !== 'admin_product_button';
+			}
+		));
+
+		if (!in_array('admin_header', $filtered, true)) {
+			$filtered[] = 'admin_header';
+		}
+
+		if ($filtered !== $assigned) {
+			Module::setDisplayHooks($this->name, $filtered);
+		}
 	}
 
 	public function adminPage(): void
 	{
-		global $smarty, $adminToken, $domain;
+		global $smarty, $adminToken;
 
 		$flash = '';
 		$flashType = 'success';
@@ -130,6 +179,8 @@ class AiAssistantModule extends ModuleBase
 		}
 
 		$smarty->assign([
+			'moduleTitle' => $this->title,
+			'modulePageUrl' => Admin::url($this->getAdminSlug()),
 			'flash' => $flash,
 			'flashType' => $flashType,
 			'testResult' => $testResult,
@@ -143,8 +194,6 @@ class AiAssistantModule extends ModuleBase
 			'hasApiKey' => trim((string) Settings::get('AI_ASSISTANT_API_KEY')) !== '',
 			'providers' => self::providerPresets(),
 			'tokenGuides' => self::tokenGuides(),
-			'apiImproveUrl' => rtrim((string) $domain, '/') . '/api/module.php?m=ai-assistant&action=improve-product',
-			'apiAnalyzeUrl' => rtrim((string) $domain, '/') . '/api/module.php?m=ai-assistant&action=analyze-dashboard',
 		]);
 	}
 
@@ -152,37 +201,110 @@ class AiAssistantModule extends ModuleBase
 	{
 		global $domain, $adminToken;
 
-		if (!in_array($hook, $this->getSupportedDisplayHooks(), true)) {
+		if ($hook !== 'admin_header' || !in_array($hook, $this->getSupportedDisplayHooks(), true)) {
 			return null;
 		}
 
-		$base = [
+		$pageName = (string) ($context['page_name'] ?? '');
+
+		if ($pageName === '' || !in_array($pageName, self::ALLOWED_PAGES, true)) {
+			return null;
+		}
+
+		// Blog: yalnızca yazılar sekmesi (kategori sekmesinde gösterme)
+		if ($pageName === 'module-blog') {
+			$blogTab = (string) Tools::getValue('tab', 'posts');
+			if ($blogTab !== 'posts') {
+				return null;
+			}
+		}
+
+		$mode = $this->resolveHeaderMode($pageName);
+		$domainBase = rtrim((string) $domain, '/');
+
+		return $this->renderAdminTemplate('admin_header', [
 			'configured' => AiAssistantClient::isConfigured(),
 			'settingsUrl' => Admin::url('module-ai-assistant'),
-			'moduleAssetCss' => $this->getAssetUrl('css/admin.css'),
 			'adminToken' => (string) $adminToken,
-			'domain' => rtrim((string) $domain, '/') . '/',
+			'domain' => $domainBase . '/',
+			'pageName' => $pageName,
+			'pageTitle' => (string) ($context['page_title'] ?? ''),
+			'mode' => $mode['mode'],
+			'modeHint' => $mode['hint'],
+			'primaryLabel' => $mode['label'],
+			'blogEditing' => !empty($mode['blog_editing']),
+			'tone' => Settings::get('AI_ASSISTANT_TONE') ?: 'professional',
+			'apiSummaryUrl' => $domainBase . '/api/module.php?m=ai-assistant&action=page-summary',
+			'apiSeoUrl' => $domainBase . '/api/module.php?m=ai-assistant&action=write-seo',
+			'apiCmsUrl' => $domainBase . '/api/module.php?m=ai-assistant&action=write-cms',
+			'apiBlogUrl' => $domainBase . '/api/module.php?m=ai-assistant&action=write-blog',
+			'apiProductUrl' => $domainBase . '/api/module.php?m=ai-assistant&action=improve-product',
+			'apiTranslateUrl' => $domainBase . '/api/module.php?m=ai-assistant&action=translate-ui',
+			'targetLang' => (string) Tools::getValue('lang', ''),
+		]) ?: null;
+	}
+
+	/** @return array{mode:string,hint:string,label:string,blog_editing?:bool} */
+	private function resolveHeaderMode(string $pageName): array
+	{
+		if ($pageName === 'translations') {
+			return [
+				'mode' => 'translate',
+				'hint' => 'Önce İngilizce kaynağı netleştirin; sonra boş çevirileri AI ile doldurun',
+				'label' => 'Boşları AI ile çevir',
+			];
+		}
+
+		if ($pageName === 'seo') {
+			return [
+				'mode' => 'seo',
+				'hint' => 'Meta başlık ve açıklamaları AI ile doldurun',
+				'label' => 'SEO metinlerini AI ile yaz',
+			];
+		}
+
+		if ($pageName === 'cms-edit') {
+			return [
+				'mode' => 'cms',
+				'hint' => 'Aktif dil sekmesindeki CMS içeriğini AI ile yazın',
+				'label' => 'CMS içeriğini AI ile yaz',
+			];
+		}
+
+		if ($pageName === 'product') {
+			return [
+				'mode' => 'product',
+				'hint' => 'Ürün başlığı, açıklama ve SEO alanlarını iyileştirin',
+				'label' => 'Ürün metinlerini iyileştir',
+			];
+		}
+
+		if ($pageName === 'module-blog') {
+			$editing = (int) Tools::getValue('edit', 0) > 0;
+
+			return [
+				'mode' => 'blog',
+				'hint' => $editing
+					? 'Mevcut yazıyı AI ile düzenleyin veya fikre göre yeniden yazın'
+					: 'Konu/fikir girin; AI blog yazısı üretsin',
+				'label' => $editing ? 'Blog yazısını AI ile düzenle' : 'Blog yazısı yaz',
+				'blog_editing' => $editing,
+			];
+		}
+
+		if ($pageName === 'dashboard') {
+			return [
+				'mode' => 'dashboard',
+				'hint' => 'Gösterge paneli verilerine göre analiz',
+				'label' => 'Paneli analiz et',
+			];
+		}
+
+		return [
+			'mode' => 'summary',
+			'hint' => 'Bu sayfadaki önemli noktaları özetleyin',
+			'label' => 'Bu sayfayı özetle',
 		];
-
-		if ($hook === 'admin_product_button') {
-			$idProduct = (int) ($context['id_product'] ?? 0);
-			$isNew = !empty($context['is_new']);
-
-			return $this->renderAdminTemplate('admin_product_button', array_merge($base, [
-				'id_product' => $idProduct,
-				'is_new' => $isNew,
-				'apiUrl' => rtrim((string) $domain, '/') . '/api/module.php?m=ai-assistant&action=improve-product',
-				'tone' => Settings::get('AI_ASSISTANT_TONE') ?: 'professional',
-			])) ?: null;
-		}
-
-		if ($hook === 'admin_dashboard_main_right') {
-			return $this->renderAdminTemplate('admin_dashboard_main_right', array_merge($base, [
-				'apiUrl' => rtrim((string) $domain, '/') . '/api/module.php?m=ai-assistant&action=analyze-dashboard',
-			])) ?: null;
-		}
-
-		return null;
 	}
 
 	/** @return array<string, array{label:string,base_url:string,model:string,docs:string}> */
@@ -196,7 +318,7 @@ class AiAssistantModule extends ModuleBase
 				'docs' => 'https://platform.openai.com/api-keys',
 			],
 			'groq' => [
-				'label' => 'Groq (ücretsiz deneme için uygun)',
+				'label' => 'Groq',
 				'base_url' => 'https://api.groq.com/openai/v1',
 				'model' => 'llama-3.3-70b-versatile',
 				'docs' => 'https://console.groq.com/keys',
@@ -221,24 +343,19 @@ class AiAssistantModule extends ModuleBase
 	{
 		return [
 			[
-				'title' => 'Groq API Key (önerilen test)',
+				'title' => 'Groq API Key',
 				'url' => 'https://console.groq.com/keys',
-				'note' => 'Ücretsiz kota ile hızlı test. Provider: Groq, model: llama-3.3-70b-versatile',
+				'note' => 'Ücretsiz kota ile test. Provider: Groq',
 			],
 			[
 				'title' => 'OpenAI API Key',
 				'url' => 'https://platform.openai.com/api-keys',
-				'note' => 'Ücretli. gpt-4o-mini ekonomik. Kayıt: https://platform.openai.com/signup',
+				'note' => 'gpt-4o-mini ekonomik seçenek',
 			],
 			[
 				'title' => 'OpenRouter API Key',
 				'url' => 'https://openrouter.ai/keys',
-				'note' => 'Birden fazla modele erişim. Ücretsiz modeller: https://openrouter.ai/models?q=free',
-			],
-			[
-				'title' => 'Google AI Studio (Gemini)',
-				'url' => 'https://aistudio.google.com/apikey',
-				'note' => 'OpenAI uyumlu uç nokta kullanıyorsanız custom base URL ile bağlanabilirsiniz',
+				'note' => 'Birden fazla modele erişim',
 			],
 		];
 	}

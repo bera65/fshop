@@ -1,0 +1,46 @@
+{
+	"label": "Shopmore",
+	"description": "Modern mobil-öncelikli e-ticaret teması — mor vurgu, yuvarlak kartlar, alt navigasyon.",
+	"preview": "theme-preview.png",
+	"color_groups": {
+		"marka": "Marka & Renkler"
+	},
+	"options": {
+		"header": {
+			"label": "Header stili",
+			"type": "select",
+			"default": "header1",
+			"source": "header_variants"
+		},
+		"font": {
+			"label": "Yazı tipi",
+			"type": "select",
+			"default": "poppins",
+			"source": "fonts"
+		},
+		"container_width": {
+			"label": "Site genişliği",
+			"type": "select",
+			"default": "1320",
+			"source": "container_widths"
+		}
+	},
+	"colors": {
+		"sm-primary": {
+			"label": "Ana mor",
+			"default": "#6366f1",
+			"group": "marka"
+		},
+		"sm-accent": {
+			"label": "Turuncu vurgu",
+			"default": "#f97316",
+			"group": "marka"
+		},
+		"sm-bg": {
+			"label": "Sayfa arka planı",
+			"default": "#f4f6fb",
+			"group": "marka"
+		}
+	},
+	"color_extra_css": "body.sm-body {\n\tbackground-color: var(--sm-bg, #f4f6fb);\n\tfont-family: 'Poppins', system-ui, sans-serif;\n}"
+}

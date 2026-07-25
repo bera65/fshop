@@ -1,0 +1,8 @@
+.fshop-recaptcha-widget {
+	min-height: 78px;
+}
+
+.fshop-recaptcha--busy {
+	opacity: 0.7;
+	pointer-events: none;
+}

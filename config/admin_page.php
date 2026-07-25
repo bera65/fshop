@@ -20,10 +20,16 @@ class AdminPage
 
 	public static function addModule(ModuleBase $module): void
 	{
-		global $smarty;
+		self::addModulePage($module, $module->getAdminSlug(), $module->getAdminPageTitle(), 'admin');
+	}
 
-		$pageName = $module->getAdminSlug();
-		$pageTitle = $module->getAdminPageTitle();
+	public static function addModulePage(
+		ModuleBase $module,
+		string $pageName,
+		string $pageTitle = '',
+		string $template = 'admin'
+	): void {
+		global $smarty;
 
 		self::assignPageMeta($pageName, $pageTitle);
 
@@ -36,8 +42,10 @@ class AdminPage
 
 		$smarty->display(_ADMIN_THEME_DIR_ . 'layout/header.tpl');
 
-		if ($module->hasAdminTemplate()) {
-			$smarty->display('file:' . $module->getAdminTemplatePath('admin'));
+		$templatePath = $module->getAdminTemplatePath($template);
+
+		if (is_file($templatePath)) {
+			$smarty->display('file:' . $templatePath);
 		} else {
 			$smarty->display(_ADMIN_THEME_DIR_ . 'module-config-empty.tpl');
 		}
@@ -49,10 +57,21 @@ class AdminPage
 	{
 		global $smarty;
 
+		$existingHooks = $smarty->getTemplateVars('adminHooks');
+		if (!is_array($existingHooks)) {
+			$existingHooks = [];
+		}
+
+		$layoutHooks = Module::renderAdminHooks(['admin_header', 'admin_footer'], [
+			'page_name' => $pageName,
+			'page_title' => $pageTitle,
+		]);
+
 		$smarty->assign([
 			'pageName' => $pageName,
 			'pageTitle' => $pageTitle !== '' && function_exists('adminT') ? adminT($pageTitle) : $pageTitle,
 			'moduleNavActive' => $pageName === 'modules' || $pageName === 'module',
+			'adminHooks' => array_merge($layoutHooks, $existingHooks),
 		]);
 	}
 }

@@ -18,7 +18,7 @@
 	<span class="small text-muted shopier-action-msg"></span>
 </div>
 {/if}
-
+<script>window.shopierAdminToken = {$adminToken|@json_encode nofilter};</script>
 {literal}
 <script>
 (function () {
@@ -27,7 +27,10 @@
 			method: 'POST',
 			headers: {'Content-Type': 'application/x-www-form-urlencoded'},
 			credentials: 'same-origin',
-			body: new URLSearchParams({id_product: idProduct}).toString()
+			body: new URLSearchParams({
+				id_product: idProduct,
+				token: window.shopierAdminToken || window.adminToken || ''
+			}).toString()
 		}).then(function (r) { return r.json(); })
 		.then(function (res) {
 			if (msgEl) {

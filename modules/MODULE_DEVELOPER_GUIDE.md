@@ -291,6 +291,37 @@ $this->hasFrontTemplate('footer')        // front şablonu var mı?
 | `order_payment` | `{$hooks.order_payment}` | Checkout | `cart` |
 | `order_confirmation` | `{$hooks.order_confirmation}` | Sipariş onay | `order` |
 
+### Admin display hook'lar (`{$adminHooks.*}`)
+
+Şablon: `assets/templates/admin/{hook}.tpl` — `renderAdminDisplayHook()` / varsayılan `ModuleBase` davranışı.
+
+| Hook | Şablonda | Konum |
+|------|----------|--------|
+| `admin_header` | `{$adminHooks.admin_header}` | Tüm admin sayfaları — orta alan üstü |
+| `admin_footer` | `{$adminHooks.admin_footer}` | Tüm admin sayfaları — footer |
+| `admin_product_button` | `{$adminHooks.admin_product_button}` | Ürün düzenleme |
+| `admin_order_detail` | `{$adminHooks.admin_order_detail}` | Sipariş detay |
+| `admin_dashboard_*` | `{$adminHooks.admin_dashboard_*}` | Gösterge paneli |
+
+```php
+public array $displayHooks = [
+	'admin_header' => 'Admin orta alan üstü',
+	'admin_footer' => 'Admin footer',
+];
+public array $defaultDisplayHooks = ['admin_header', 'admin_footer'];
+
+public function renderAdminDisplayHook(string $hook, array $context = []): ?string
+{
+	if ($hook === 'admin_header') {
+		return $this->renderAdminTemplate('admin_header', $context) ?: null;
+	}
+	if ($hook === 'admin_footer') {
+		return $this->renderAdminTemplate('admin_footer', $context) ?: null;
+	}
+	return null;
+}
+```
+
 ### Erteleme (deferred) hook'lar
 
 `product`, `product_tab`, `product_tab_content`, `product_inf`, `order_payment`, `order_confirmation` hook'ları sayfa yüklenirken **boş** gelir. İlgili controller `Module::refreshHook()` çağırır:

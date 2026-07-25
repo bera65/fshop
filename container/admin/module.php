@@ -7,6 +7,7 @@ if (!defined('IN_ADMIN')) {
 $name = trim((string) Tools::getValue('name'));
 $detail = $name !== '' ? Module::getDetail($name) : null;
 $flash = '';
+$flashType = 'info';
 
 if (!$detail) {
 	http_response_code(404);
@@ -34,6 +35,7 @@ if (Tools::isSubmit('moduleAction')) {
 
 	if (!hash_equals($adminToken, $postToken)) {
 		$flash = adminT('Invalid request');
+		$flashType = 'danger';
 	} else {
 		$action = trim((string) Tools::getValue('action'));
 
@@ -70,6 +72,7 @@ if (Tools::isSubmit('moduleAction')) {
 		}
 
 		$flash = $result['message'];
+		$flashType = !empty($result['success']) ? 'success' : 'danger';
 		$detail = Module::getDetail($name);
 	}
 }
@@ -79,6 +82,7 @@ $smarty->assign([
 	'hookCatalog' => Module::getHookCatalog(),
 	'displayHookCatalog' => Module::getDisplayHookCatalog(),
 	'flash' => $flash,
+	'flashType' => $flashType,
 ]);
 
 AdminPage::add('module', $detail['title']);

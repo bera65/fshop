@@ -71,6 +71,116 @@ class Category
 		return array_map(static fn(array $row): array => Lang::applyCategory($row), $rows);
 	}
 
+	/**
+	 * Ürün formu için hiyerarşik kategori seçenekleri (alt kategoriler dahil).
+	 *
+	 * @return array<int, array{id_category: int, category_name: string, depth: int}>
+	 */
+	public static function getProductSelectOptions(): array
+	{
+		$rows = DB::execute(
+			'SELECT * FROM categories WHERE active = 1 ORDER BY category_name ASC'
+		) ?: [];
+
+		$rows = array_map(static fn(array $row): array => Lang::applyCategory($row), $rows);
+
+		/** @var array<int, list<array<string, mixed>>> $childrenByParent */
+		$childrenByParent = [];
+
+		foreach ($rows as $row) {
+			$parentId = (int) ($row['id_parent'] ?? 0);
+			$childrenByParent[$parentId][] = $row;
+		}
+
+		foreach ($childrenByParent as &$group) {
+			usort($group, static fn(array $a, array $b): int => strcasecmp(
+				(string) ($a['category_name'] ?? ''),
+				(string) ($b['category_name'] ?? '')
+			));
+		}
+		unset($group);
+
+		$options = [];
+
+		$walk = static function (int $parentId, int $depth) use (&$walk, &$options, $childrenByParent): void {
+			foreach ($childrenByParent[$parentId] ?? [] as $row) {
+				$id = (int) ($row['id_category'] ?? 0);
+
+				if ($id <= 0) {
+					continue;
+				}
+
+				$name = (string) ($row['category_name'] ?? '');
+				$prefix = $depth > 0 ? str_repeat('— ', $depth) : '';
+
+				$options[] = [
+					'id_category' => $id,
+					'category_name' => $prefix . $name,
+					'depth' => $depth,
+				];
+
+				$walk($id, $depth + 1);
+			}
+		};
+
+		$walk(0, 0);
+
+		return $options;
+	}
+
+	/**
+	 * Kategori sayfası breadcrumb öğeleri (üst kategoriler dahil).
+	 *
+	 * @return array<int, array{name: string, url: string}>
+	 */
+	public static function getBreadcrumbItems(int $idCategory): array
+	{
+		global $domain;
+
+		if ($idCategory <= 0) {
+			return [];
+		}
+
+		$chain = [];
+		$currentId = $idCategory;
+		$guard = 0;
+
+		while ($currentId > 0 && $guard < 32) {
+			$guard++;
+			$row = DB::getRowSafe('categories', 'id_category = ? AND active = 1', [$currentId]);
+
+			if (!$row) {
+				break;
+			}
+
+			$chain[] = Lang::applyCategory($row);
+			$currentId = (int) ($row['id_parent'] ?? 0);
+		}
+
+		if ($chain === []) {
+			return [];
+		}
+
+		$chain = array_reverse($chain);
+		$items = [];
+		$lastIndex = count($chain) - 1;
+
+		foreach ($chain as $index => $row) {
+			if ((int) ($row['id_parent'] ?? 0) === 0 && $index !== $lastIndex) {
+				continue;
+			}
+
+			$isLast = $index === $lastIndex;
+
+			$items[] = [
+				'name' => (string) ($row['category_name'] ?? ''),
+				'url' => $isLast ? '' : $domain . ($row['category_link'] ?? ''),
+			];
+		}
+
+		return $items;
+	}
+
 	/** Menü + alt kategoriler (mega menu için) */
 	public static function getMenuListWithChildren(): array
 	{

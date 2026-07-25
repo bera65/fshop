@@ -1,3 +1,0 @@
-INSERT IGNORE INTO `settings` (`title`, `value`) VALUES
-('CONTACT_PHONE', '0544 841 21 71'),
-('CONTACT_PHONE_TEL', '+905448412171');

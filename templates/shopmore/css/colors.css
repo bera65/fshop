@@ -1,0 +1,24 @@
+/**
+ * Tema renkleri — Admin > Temalar ekranından düzenlenir.
+ */
+:root {
+	--sm-primary: #6366f1;
+	--sm-primary-dark: #4f46e5;
+	--sm-primary-soft: #eef2ff;
+	--sm-accent: #f97316;
+	--sm-accent-dark: #ea580c;
+	--sm-bg: #f4f6fb;
+	--sm-surface: #ffffff;
+	--sm-text: #0f172a;
+	--sm-muted: #64748b;
+	--sm-border: #e5e7eb;
+	--sm-radius: 12px;
+	--sm-radius-lg: 16px;
+	--sm-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+	--sm-shadow-nav: 0 -4px 24px rgba(15, 23, 42, 0.08);
+}
+
+body.sm-body {
+	background-color: var(--sm-bg, #f4f6fb);
+	font-family: 'Poppins', system-ui, sans-serif;
+}

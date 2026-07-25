@@ -27,7 +27,7 @@ class SameCategoryProductsModule extends ModuleBase
 		}
 
 		if (Settings::get('SAME_CATEGORY_LIMIT') === '') {
-			Settings::set('SAME_CATEGORY_LIMIT', '4');
+			Settings::set('SAME_CATEGORY_LIMIT', '5');
 		}
 
 		if (Settings::get('SAME_CATEGORY_SORT') === '') {
@@ -132,6 +132,34 @@ class SameCategoryProductsModule extends ModuleBase
 
 		if (empty($products)) {
 			return null;
+		}
+
+		$theme = Settings::get('THEME') ?: 'default';
+
+		if ($theme === 'shopmore') {
+			global $smarty, $domain;
+
+			$sectionTpl = dirname(__DIR__, 2) . '/templates/shopmore/partials/sm-category-products-section.tpl';
+
+			if (!is_file($sectionTpl)) {
+				return null;
+			}
+
+			$tpl = $smarty->createTemplate(
+				'file:' . $sectionTpl,
+				[
+					'title' => Settings::get('SAME_CATEGORY_TITLE') ?: 'Aynı kategorideki ürünler',
+					'url' => $domain . ($product['category_link'] ?? ''),
+					'products' => $products,
+					'listId' => 'sameCategoryProducts',
+				],
+				'module_front_' . $this->name,
+				$smarty
+			);
+
+			$html = $tpl->fetch();
+
+			return $html !== '' ? $html : null;
 		}
 
 		$html = $this->renderFrontTemplate('product', [

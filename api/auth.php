@@ -21,6 +21,18 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', (string) $token)) {
 
 $action = Tools::getValue('action');
 
+$captchaForm = $action === 'register' ? 'register' : ($action === 'login' ? 'login' : '');
+
+if ($captchaForm !== '') {
+	$captchaError = fshop_validate_captcha($captchaForm);
+
+	if ($captchaError !== '') {
+		http_response_code(403);
+		echo json_encode(['success' => false, 'message' => $captchaError]);
+		exit;
+	}
+}
+
 switch ($action) {
 	case 'login':
 		$remember = Tools::getValue('remember') !== '0';

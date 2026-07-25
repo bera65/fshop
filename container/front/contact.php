@@ -24,6 +24,11 @@
 		if (!hash_equals($token, $postToken)) {
 			$contactError = translate('Invalid request, please refresh and try again');
 		} else {
+			$captchaError = fshop_validate_captcha('contact');
+
+			if ($captchaError !== '') {
+				$contactError = $captchaError;
+			} else {
 			$formData = [
 				'full_name' => (string) Tools::getValue('full_name'),
 				'email' => (string) Tools::getValue('email'),
@@ -46,6 +51,7 @@
 				];
 			} else {
 				$contactError = $result['message'];
+			}
 			}
 		}
 	}

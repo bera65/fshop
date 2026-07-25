@@ -38,16 +38,16 @@ abstract class ModuleBase
 	 */
 	public array $hooksMeta = [];
 
-	/** @var string[] Mağaza CSS — assets/css/ altındaki dosya adları (boşsa klasördeki tüm .css) */
+	/** @var string[] Mağaza CSS — assets/css/ altındaki dosya adları (boşsa yüklenmez) */
 	public array $frontStylesheets = [];
 
-	/** @var string[] Mağaza JS — assets/js/ altındaki dosya adları (boşsa klasördeki tüm .js) */
+	/** @var string[] Mağaza JS — assets/js/ altındaki dosya adları (boşsa yüklenmez) */
 	public array $frontScripts = [];
 
-	/** @var string[] Admin yapılandırma CSS — assets/css/ altındaki dosya adları */
+	/** @var string[] Admin yapılandırma CSS — assets/css/ altındaki dosya adları (boşsa yüklenmez) */
 	public array $adminStylesheets = [];
 
-	/** @var string[] Admin yapılandırma JS — assets/js/ altındaki dosya adları */
+	/** @var string[] Admin yapılandırma JS — assets/js/ altındaki dosya adları (boşsa yüklenmez) */
 	public array $adminScripts = [];
 
 	/** Ödeme modülü mü? true ise checkout'ta yöntem olarak kaydedilir */
@@ -80,9 +80,20 @@ abstract class ModuleBase
 
 	public function getAssetUrl(string $file): string
 	{
-		global $domain;
+		$file = ltrim($file, '/');
+		$folder = '';
 
-		return rtrim($domain, '/') . '/modules/' . $this->name . '/assets/' . ltrim($file, '/');
+		if (class_exists('Settings', false)) {
+			$folder = trim((string) Settings::get('FOLDER'), '/');
+		}
+
+		$prefix = $folder !== '' ? '/' . $folder : '';
+		$url = $prefix . '/modules/' . $this->name . '/assets/' . $file;
+		$path = $this->getPath() . '/assets/' . $file;
+
+		return class_exists('Performance', false)
+			? Performance::versionedUrl($url, is_file($path) ? $path : null)
+			: $url;
 	}
 
 	/** @return string[] */
@@ -121,33 +132,23 @@ abstract class ModuleBase
 	/** @param string[] $files */
 	private function resolveAssetUrls(string $type, array $files): array
 	{
-		$ext = $type === 'css' ? 'css' : 'js';
-		$urls = [];
-
-		if ($files !== []) {
-			foreach ($files as $file) {
-				$file = ltrim((string) $file, '/');
-
-				if ($file === '' || substr($file, -strlen('.' . $ext)) !== '.' . $ext) {
-					continue;
-				}
-
-				if (is_file($this->getPath() . '/assets/' . $type . '/' . $file)) {
-					$urls[] = $this->getAssetUrl($type . '/' . $file);
-				}
-			}
-
-			return $urls;
-		}
-
-		$dir = $this->getPath() . '/assets/' . $type;
-
-		if (!is_dir($dir)) {
+		if ($files === []) {
 			return [];
 		}
 
-		foreach (glob($dir . '/*.' . $ext) ?: [] as $path) {
-			$urls[] = $this->getAssetUrl($type . '/' . basename($path));
+		$ext = $type === 'css' ? 'css' : 'js';
+		$urls = [];
+
+		foreach ($files as $file) {
+			$file = ltrim((string) $file, '/');
+
+			if ($file === '' || $file[0] === '.' || substr($file, -strlen('.' . $ext)) !== '.' . $ext) {
+				continue;
+			}
+
+			if (is_file($this->getPath() . '/assets/' . $type . '/' . $file)) {
+				$urls[] = $this->getAssetUrl($type . '/' . $file);
+			}
 		}
 
 		return $urls;
@@ -162,7 +163,7 @@ abstract class ModuleBase
 	 * Register a link in the admin sidebar (admin.menu hook).
 	 *
 	 * @param string $label English label key for adminT()
-	 * @param string $group general|catalog|system
+	 * @param string $group general|catalog|system|sales|marketplace
 	 */
 	protected function registerAdminMenuLink(
 		string $label,
@@ -189,7 +190,15 @@ abstract class ModuleBase
 					$itemUrl = Admin::url($slug);
 				} else {
 					global $domain;
-					$itemUrl = rtrim((string) ($domain ?? ''), '/') . '/admin/' . ltrim($slug, '/');
+					$uri = 'admin';
+
+					if (class_exists('App', false)) {
+						$raw = trim((string) App::env('ADMIN_URI', 'admin'), "/ \t\n\r\0\x0B");
+						$sanitized = preg_replace('/[^a-zA-Z0-9_-]/', '', $raw);
+						$uri = ($sanitized !== null && $sanitized !== '') ? $sanitized : 'admin';
+					}
+
+					$itemUrl = rtrim((string) ($domain ?? ''), '/') . '/' . $uri . '/' . ltrim($slug, '/');
 				}
 			}
 

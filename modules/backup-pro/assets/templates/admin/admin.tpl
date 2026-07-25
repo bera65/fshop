@@ -2,6 +2,7 @@
     window.backupProDomain = "{$domain}";
     window.backupProAdminUrl = "{$adminUrl}";
     window.backupProApiBase = "{$domain}api/module.php?m=backup-pro&action=";
+    window.backupProAdminToken = {$adminToken|@json_encode nofilter};
 </script>
 
 <link rel="stylesheet" href="{$domain}modules/backup-pro/assets/css/admin.css?v={$smarty.now}">

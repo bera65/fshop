@@ -75,6 +75,8 @@ class ShopierModule extends ModuleBase
 
 	public function renderAdminDisplayHook(string $hook, array $context = []): ?string
 	{
+		global $adminToken;
+
 		if ($hook !== 'admin_product_button') {
 			return null;
 		}
@@ -96,6 +98,7 @@ class ShopierModule extends ModuleBase
 			'syncUrl' => $domain . '/api/module.php?m=shopier&action=sync',
 			'deleteUrl' => $domain . '/api/module.php?m=shopier&action=delete',
 			'settingsUrl' => $domain . '/admin/module-shopier',
+			'adminToken' => (string) $adminToken,
 		]);
 
 		return $html !== '' ? $html : null;

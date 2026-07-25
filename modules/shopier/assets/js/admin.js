@@ -1,6 +1,9 @@
 (function () {
 	function postAction(url, idProduct, msgEl, onSuccess) {
-		var body = new URLSearchParams({ id_product: idProduct });
+		var body = new URLSearchParams({
+			id_product: idProduct,
+			token: window.shopierAdminToken || window.adminToken || ''
+		});
 		return fetch(url, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -82,6 +85,10 @@
 		btn.addEventListener('click', function () {
 			var apiUrl = window.shopierCategoriesApiUrl;
 			if (!apiUrl) return;
+			var token = window.shopierAdminToken || window.adminToken || '';
+			if (token) {
+				apiUrl += (apiUrl.indexOf('?') >= 0 ? '&' : '?') + 'token=' + encodeURIComponent(token);
+			}
 			btn.disabled = true;
 			var list = btn.getAttribute('data-list')
 				? document.querySelector('.shopier-category-list[data-list="1"]')

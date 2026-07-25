@@ -1,5 +1,17 @@
 {if $flash}
-<div class="alert alert-{$flashType|default:'info'} py-2">{$flash|escape}</div>
+	<div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index:9999;">
+		<div class="toast frisay-toast {$flashType|default:'success'} show" role="alert">
+			<div class="toast-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-icon lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+			</div>
+			<div class="toast-body p-0">
+				<div class="toast-message">
+					{$flash|escape}
+				</div>
+			</div>
+			<button class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+		</div>
+	</div>
 {/if}
 
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">

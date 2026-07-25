@@ -3,6 +3,6 @@
 	<div class="prime-section__head">
 		<h4 class="prime-section__title mb-3">{$title|escape}</h4>
 	</div>
-	{include file=$productListTpl products=$products}
+	{include file=$productListTpl products=$products id='sameCategoryProducts'}
 </section>
 {/if}

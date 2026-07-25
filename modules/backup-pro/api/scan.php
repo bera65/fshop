@@ -8,11 +8,7 @@ if (!class_exists('Admin')) {
     require_once dirname(__DIR__, 3) . '/core/Admin.php';
 }
 
-if (!Admin::isLoggedIn()) {
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode(['success' => false, 'message' => 'Yetkisiz erişim']);
-    exit;
-}
+Admin::requireModuleApiAuth();
 
 use BackupPro\Service\ScannerService;
 

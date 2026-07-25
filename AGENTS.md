@@ -63,8 +63,9 @@ fshop/
 
 ### Admin (`admin/index.php`)
 
-- URL: `/admin/{sayfa}` → `container/admin/{sayfa}.php`
-- Modül yapılandırma: `/admin/module-{ad}` → modülün `adminPage()` metodu (otomatik)
+- Public URL: `/{ADMIN_URI}/{sayfa}` → `container/admin/{sayfa}.php` (`ADMIN_URI` in `config/env.php`, default `admin`)
+- Fiziksel klasör her zaman `admin/` — klasörü rename etme; slug’ı `ADMIN_URI` ile değiştir
+- Modül yapılandırma: `/{ADMIN_URI}/module-{ad}` → modülün `adminPage()` metodu (otomatik)
 
 ### API
 
@@ -97,7 +98,7 @@ fshop/
 | Klasör | küçük harf, tire | `my-module` |
 | Dosya | `{ad}/{ad}.php` | `my-module/my-module.php` |
 | Sınıf | PascalCase + `Module` | `MyModuleModule` |
-| Admin URL | otomatik | `/admin/module-my-module` |
+| Admin URL | otomatik | `/{ADMIN_URI}/module-my-module` |
 
 ### Display hook'lar (mağaza şablonunda `{$hooks.*}`)
 
@@ -118,6 +119,8 @@ Tema dosyalarında tanımlı hook noktaları:
 
 | Hook | Şablon |
 |------|--------|
+| `admin_header` | `templates/admin/layout/header.tpl` — orta alan üstü (tüm sayfalar) |
+| `admin_footer` | `templates/admin/layout/footer.tpl` — admin footer (tüm sayfalar) |
 | `admin_product_button` | `templates/admin/product.tpl` — Kaydet butonu yanı |
 | `admin_order_detail` | `templates/admin/order.tpl` — sipariş detay sağ sütun |
 | `admin_dashboard_top` | `templates/admin/dashboard.tpl` — hoş geldin altı |

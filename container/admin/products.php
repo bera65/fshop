@@ -18,8 +18,32 @@
 			}
 		}
 	}
-	
-	
+
+	if (Tools::isSubmit('bulkProductAction'))
+	{
+		$formToken = md5(Tools::getValue('bulkProductToken'));
+		if (md5($adminToken) === $formToken)
+		{
+			$action = trim((string) Tools::getValue('bulkProductAction'));
+			$productIds = Tools::getValue('productIds');
+			$ids = is_array($productIds) ? $productIds : [];
+
+			if ($action === 'activate') {
+				$result = Product::bulkSetActive($ids, 1);
+			} elseif ($action === 'deactivate') {
+				$result = Product::bulkSetActive($ids, 0);
+			} elseif ($action === 'delete') {
+				$result = Product::bulkDelete($ids);
+			} else {
+				$result = ['success' => false, 'message' => 'Geçersiz toplu işlem'];
+			}
+
+			$sonuc = (string) ($result['message'] ?? '');
+			$sonucType = !empty($result['success']) ? 'success' : 'danger';
+		}
+	}
+
+
 	$currentPage 	= max(1, (int) Tools::getValue('page'));
 	$query 			= trim((string) Tools::getValue('q'));
 	$idCategory 	= (int) Tools::getValue('category');
@@ -38,114 +62,11 @@
 	$pagination = Pagination::build($total, $currentPage, $perPage, Admin::url('products'), $queryParams);
 	$products 	= Product::getAdminList($query, $idCategory, $idBrand, $activeFilter, $perPage, $pagination['offset']);
 
-	if (Tools::isSubmit('imprtExcel'))
-	{
-		$postToken = (string) Tools::getValue('imprtExcel');
-
-		if (!hash_equals($adminToken, $postToken)) {
-			$sonuc = adminT('Invalid request');
-			$sonucType = 'danger';
-		} elseif (empty($_FILES['excelFile']['tmp_name']) || !is_uploaded_file($_FILES['excelFile']['tmp_name'])) {
-			$sonuc = adminT('Select an Excel file');
-			$sonucType = 'danger';
-		} else {
-			$ext = strtolower(pathinfo((string) ($_FILES['excelFile']['name'] ?? ''), PATHINFO_EXTENSION));
-
-			if ($ext !== 'xlsx') {
-				$sonuc = adminT('Only .xlsx files are allowed');
-				$sonucType = 'danger';
-			} else {
-				include(dirname(__FILE__, 3) . '/libs/SimpleXLSX.php');
-
-				$xlsx = SimpleXLSX::parse($_FILES['excelFile']['tmp_name']);
-
-				if (!$xlsx) {
-					$sonuc = 'Excel okunamadı: ' . SimpleXLSX::parseError();
-					$sonucType = 'danger';
-				} else {
-					$result = Product::importFromExcel($xlsx->rows());
-					$sonuc = $result['message'];
-					$sonucType = $result['success'] ? 'success' : 'danger';
-
-					if ($result['success']) {
-						$total = Product::countAdmin($query, $idCategory, $idBrand, $activeFilter);
-						$pagination = Pagination::build($total, $currentPage, $perPage, Admin::url('products'), $queryParams);
-						$products = Product::getAdminList($query, $idCategory, $idBrand, $activeFilter, $perPage, $pagination['offset']);
-					}
-				}
-			}
-		}
+	$flash = class_exists('ExportExcelService', false) ? ExportExcelService::consumeFlash() : null;
+	if ($flash && $flash['message'] !== '') {
+		$sonuc = $flash['message'];
+		$sonucType = $flash['type'] === 'danger' ? 'danger' : 'success';
 	}
-
-	if (Tools::isSubmit('exprtExcel'))
-	{
-		$postToken = (string) Tools::getValue('exprtExcel');
-
-		if (!hash_equals($adminToken, $postToken)) {
-			$flash = adminT('Invalid request');
-		} 
-		else 
-		{
-			include(dirname(__FILE__, 3) . '/libs/SimpleXLSX.php');
-			include(dirname(__FILE__, 3) . '/libs/SimpleGEN.php');
-			
-			$books 	= [
-			[ 
-				'<b>Product Name</b>',
-				'<b>Barcode</b>', 
-				'<b>Stock Code</b>',
-				'<b>Desi</b>',
-				'<b>Price</b>', 
-				'<b>Old Price</b>', 
-				'<b>Vat</b>', 
-				'<b>Stock</b>', 
-				'<b>short Description</b>', 
-				'<b>Description</b>', 
-				'<b>Meta Title</b>', 
-				'<b>Meta Description</b>', 
-				'<b>Slug</b>', 
-				'<b>Category Name</b>', 
-				'<b>Brand Name</b>', 
-				'<b>Images</b>', 
-				'<b>Active</b>', 
-			]];
-			$exportProducts = Product::getAdminList($query, $idCategory, $idBrand, $activeFilter, max(1, $total), 0);
-			$exportLang = Lang::getDefault();
-
-			foreach ($exportProducts as $gd)
-			{
-				$gd = Lang::applyProductForLang($gd, $exportLang);
-
-				$books[] = [
-					$gd['product_name'], 
-					$gd['barcode'], 
-					$gd['stock_code'], 
-					$gd['desi'], 
-					$gd['price'], 
-					$gd['old_price'], 
-					$gd['vat'], 
-					$gd['stock'], 
-					SimpleXLSXGen::raw($gd['short_description']),
-					SimpleXLSXGen::raw(decodeHtmlEntities($gd['description'])),
-					$gd['meta_title'], 
-					$gd['meta_description'], 
-					$gd['product_link'], 
-					$gd['category_name'], 
-					$gd['brand_name'], 
-					Product::getExportImageUrls((int) $gd['id_product']), 
-					$gd['active_label'], 
-				];
-			}
-			$name = 'product-list.xlsx';
-			header('Content-Disposition: attachment; filename="' . $name . '"');
-			header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-			SimpleXLSXGen::fromArray($books)->downloadAs($name);
-			//exit;
-		}
-	}
-function decodeHtmlEntities($string) {
-    return html_entity_decode($string, ENT_QUOTES | ENT_XHTML | ENT_HTML5, 'UTF-8');
-}
 
 	$smarty->assign([
 		'products' 			=> $products,

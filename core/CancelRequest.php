@@ -407,7 +407,14 @@ class CancelRequest
 		}
 
 		global $domain;
+		$uri = 'admin';
 
-		return rtrim($domain, '/') . '/admin/' . ltrim($path, '/');
+		if (class_exists('App', false)) {
+			$raw = trim((string) App::env('ADMIN_URI', 'admin'), "/ \t\n\r\0\x0B");
+			$sanitized = preg_replace('/[^a-zA-Z0-9_-]/', '', $raw);
+			$uri = ($sanitized !== null && $sanitized !== '') ? $sanitized : 'admin';
+		}
+
+		return rtrim((string) $domain, '/') . '/' . $uri . '/' . ltrim($path, '/');
 	}
 }

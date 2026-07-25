@@ -80,6 +80,14 @@
 
 		} else {
 
+			$captchaError = fshop_validate_captcha('register');
+
+			if ($captchaError !== '') {
+
+				$authError = $captchaError;
+
+			} else {
+
 			$password = (string) Tools::getValue('password');
 
 			$password2 = (string) Tools::getValue('password2');
@@ -121,6 +129,8 @@
 
 
 				$authError = $result['message'];
+
+			}
 
 			}
 

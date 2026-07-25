@@ -65,17 +65,40 @@ class VirtualProduct
 	public static function getKindLabel(string $kind): string
 	{
 		$labels = [
-			'download' => 'İndirilebilir dosya',
-			'license' => 'Lisans anahtarı',
-			'text' => 'Metin teslimatı',
+			'download' => 'Downloadable file',
+			'license' => 'License key',
+			'text' => 'Text delivery',
 		];
 
-		return $labels[$kind] ?? '';
+		$key = $labels[$kind] ?? '';
+
+		return $key !== '' ? translate($key) : '';
 	}
 
 	public static function storageDir(int $idProduct): string
 	{
 		return dirname(__DIR__) . '/storage/digital/' . (int) $idProduct;
+	}
+
+	/** Ensure storage/ is not web-accessible (Apache). */
+	public static function ensureStorageProtection(): void
+	{
+		$root = dirname(__DIR__) . '/storage';
+		$htaccess = $root . '/.htaccess';
+
+		if (!is_dir($root)) {
+			@mkdir($root, 0755, true);
+		}
+
+		if (!is_file($htaccess)) {
+			@file_put_contents(
+				$htaccess,
+				"# Deny all web access (digital downloads served via PHP only)\n"
+				. "<IfModule mod_authz_core.c>\n\tRequire all denied\n</IfModule>\n"
+				. "<IfModule !mod_authz_core.c>\n\tOrder deny,allow\n\tDeny from all\n</IfModule>\n"
+				. "Options -Indexes\n"
+			);
+		}
 	}
 
 	public static function countAvailableLicenses(int $idProduct): int
@@ -270,6 +293,7 @@ class VirtualProduct
 		}
 
 		$dir = self::storageDir($idProduct);
+		self::ensureStorageProtection();
 
 		if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
 			return ['success' => false, 'message' => 'Dosya klasörü oluşturulamadı'];

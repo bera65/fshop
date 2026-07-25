@@ -100,29 +100,29 @@ $editKey = $editId > 0 ? ApiKey::getById($editId) : null;
 
 $apiDocsBase = 'https://frisay.com/developer/';
 $apiDocs = [
-	[
-		'group' => 'Başlangıç',
-		'items' => [
-			['title' => 'Giriş / Genel bilgi', 'url' => $apiDocsBase, 'desc' => 'API entegrasyonuna genel bakış'],
-			['title' => 'Kimlik doğrulama', 'url' => $apiDocsBase . '?page=authentication', 'desc' => 'X-API-Key / Bearer kullanımı'],
-		],
-	],
-	[
-		'group' => 'Products',
-		'items' => [
-			['title' => 'Ürün listesi', 'url' => $apiDocsBase . '?page=list-products', 'desc' => 'GET /products'],
-			['title' => 'Ürün ekleme', 'url' => $apiDocsBase . '?page=add-product', 'desc' => 'POST /products'],
-			['title' => 'Ürün güncelleme', 'url' => $apiDocsBase . '?page=update-product', 'desc' => 'PATCH /products/{id}'],
-			['title' => 'Ürün silme', 'url' => $apiDocsBase . '?page=delete-product', 'desc' => 'DELETE /products/{id}'],
-		],
-	],
-	[
-		'group' => 'Orders',
-		'items' => [
-			['title' => 'Sipariş listesi', 'url' => $apiDocsBase . '?page=list-orders', 'desc' => 'GET /orders'],
-			['title' => 'Sipariş durumu güncelle', 'url' => $apiDocsBase . '?page=update-order-status', 'desc' => 'PATCH /orders/{id}'],
-		],
-	],
+    [
+        'group' => adminT('Getting Started'),
+        'items' => [
+            ['title' => adminT('Introduction / Overview'), 'url' => $apiDocsBase, 'desc' => adminT('Overview of the API integration')],
+            ['title' => adminT('Authentication'), 'url' => $apiDocsBase . '?page=authentication', 'desc' => adminT('Using X-API-Key / Bearer authentication')],
+        ],
+    ],
+    [
+        'group' => 'Products',
+        'items' => [
+            ['title' => adminT('List Products'), 'url' => $apiDocsBase . '?page=list-products', 'desc' => 'GET /products'],
+            ['title' => adminT('Create Product'), 'url' => $apiDocsBase . '?page=add-product', 'desc' => 'POST /products'],
+            ['title' => adminT('Update Product'), 'url' => $apiDocsBase . '?page=update-product', 'desc' => 'PATCH /products/{id}'],
+            ['title' => adminT('Delete Product'), 'url' => $apiDocsBase . '?page=delete-product', 'desc' => 'DELETE /products/{id}'],
+        ],
+    ],
+    [
+        'group' => 'Orders',
+        'items' => [
+            ['title' => adminT('List Orders'), 'url' => $apiDocsBase . '?page=list-orders', 'desc' => 'GET /orders'],
+            ['title' => adminT('Update Order Status'), 'url' => $apiDocsBase . '?page=update-order-status', 'desc' => 'PATCH /orders/{id}'],
+        ],
+    ],
 ];
 
 $smarty->assign([

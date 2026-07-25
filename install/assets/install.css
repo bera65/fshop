@@ -1,148 +1,107 @@
-* { box-sizing: border-box; }
-
 body {
 	margin: 0;
-	font-family:Segoe UI, Tahoma, sans-serif;
-	background: linear-gradient(135deg, #f5f7fb 0%, #e9eef5 100%);
+	font-family: Inter, system-ui, sans-serif;
+	background: #f4f6f8;
 	color: #1a1a1a;
 }
 
 .install-wrap {
-	min-height: 100vh;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	padding: 24px;
+	max-width: 720px;
+	margin: 48px auto;
+	padding: 0 16px;
 }
 
 .install-card {
-	width: 100%;
-	max-width: 720px;
 	background: #fff;
-	border-radius: 16px;
-	box-shadow: 0 20px 50px rgba(0,0,0,.08);
+	border-radius: 12px;
+	box-shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
 	padding: 32px;
 }
 
-.install-card h1 {
+.install-title {
 	margin: 0 0 8px;
 	font-size: 1.75rem;
 }
 
-.install-lead {
-	margin: 0 0 24px;
+.install-subtitle {
 	color: #666;
+	margin-bottom: 24px;
 }
 
 .install-steps {
 	display: flex;
 	gap: 8px;
-	list-style: none;
-	padding: 0;
-	margin: 0 0 24px;
-	flex-wrap: wrap;
+	margin-bottom: 24px;
 }
 
-.install-steps li {
-	padding: 6px 12px;
-	border-radius: 999px;
-	background: #f1f3f6;
-	font-size: .85rem;
-	color: #666;
+.install-step {
+	flex: 1;
+	text-align: center;
+	padding: 8px;
+	border-radius: 8px;
+	background: #eef1f4;
+	font-size: 0.85rem;
 }
 
-.install-steps li.active {
-	background: #1a1a1a;
+.install-step.is-active {
+	background: #111;
 	color: #fff;
 }
 
-.install-checks {
-	list-style: none;
-	padding: 0;
-	margin: 0 0 20px;
-}
-
-.install-checks li {
-	display: flex;
-	justify-content: space-between;
-	gap: 12px;
-	padding: 10px 0;
-	border-bottom: 1px solid #eee;
-}
-
-.install-checks li.ok strong::before { content: '✓ '; color: #198754; }
-.install-checks li.fail strong::before { content: '✗ '; color: #dc3545; }
-
-.install-form label {
-	display: block;
-	margin-bottom: 14px;
-	font-size: .92rem;
+.form-label {
 	font-weight: 600;
 }
 
-.install-form input[type="text"],
-.install-form input[type="url"],
-.install-form input[type="email"],
-.install-form input[type="password"] {
-	display: block;
-	width: 100%;
-	margin-top: 6px;
-	padding: 10px 12px;
-	border: 1px solid #d7dce2;
-	border-radius: 8px;
-	font: inherit;
-}
-
-.install-checkbox {
-	display: flex !important;
-	align-items: center;
-	gap: 8px;
-	font-weight: 500 !important;
-}
-
-.install-checkbox input { width: auto; margin: 0; }
-
-.install-actions {
-	display: flex;
-	gap: 10px;
-	flex-wrap: wrap;
-	margin-top: 20px;
-}
-
-.install-btn {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	padding: 10px 18px;
-	border-radius: 8px;
-	background: #1a1a1a;
-	color: #fff;
-	text-decoration: none;
-	border: 0;
-	font: inherit;
-	cursor: pointer;
-}
-
-.install-btn-muted { background: #eef1f5; color: #1a1a1a; }
-
-.install-alert {
-	padding: 12px 14px;
+.alert {
+	padding: 12px 16px;
 	border-radius: 8px;
 	margin-bottom: 16px;
 }
 
-.install-alert-danger {
+.alert-danger {
 	background: #fdecec;
-	color: #842029;
+	color: #9b1c1c;
 }
 
-.install-note, .install-muted { color: #666; font-size: .9rem; }
-
-.install-summary {
-	padding-left: 18px;
+.alert-success {
+	background: #e8f7ee;
+	color: #146c43;
 }
 
-.install-summary code {
-	word-break: break-all;
-	font-size: .82rem;
+.btn {
+	display: inline-block;
+	border: 0;
+	border-radius: 8px;
+	padding: 10px 18px;
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.btn-primary {
+	background: #111;
+	color: #fff;
+}
+
+.btn-secondary {
+	background: #eef1f4;
+	color: #111;
+}
+
+.check-list {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.check-list li {
+	padding: 8px 0;
+	border-bottom: 1px solid #eee;
+}
+
+.check-ok {
+	color: #146c43;
+}
+
+.check-fail {
+	color: #9b1c1c;
 }

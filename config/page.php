@@ -22,6 +22,10 @@
 				$pageSchemas
 			));
 
+			if (class_exists('Performance', false)) {
+				Performance::assignThemeStylesheets($smarty);
+			}
+
 			$prefix = '';
 			if ($noLayout)
 				$prefix = '-login';

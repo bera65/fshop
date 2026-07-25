@@ -48,7 +48,7 @@
 	$variationData = ProductVariation::getForStorefront($idProduct, (float) $product['price']);
 	$optionData = ProductOption::getForStorefront($idProduct);
 
-	$relatedData = Product::getRelatedForProduct($product, 4);
+	$relatedData = Product::getRelatedForProduct($product, 5);
 
 	$havalePercent = Module::getPaymentModule('bank_transfer')
 		? (float) Module::getPaymentDiscount('bank_transfer', 100)['percent']

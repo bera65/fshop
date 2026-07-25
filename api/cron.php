@@ -38,5 +38,27 @@ if ($action === 'currency' || $action === 'doviz') {
 	exit;
 }
 
+if ($action === 'abandoned-cart' || $action === 'abandoned_cart') {
+	Module::bootstrap('cron');
+	$file = Module::path('abandoned-cart') . '/lib/AbandonedCartService.php';
+
+	if (!is_file($file)) {
+		http_response_code(404);
+		echo json_encode(['success' => false, 'message' => 'abandoned-cart modülü yüklü değil']);
+		exit;
+	}
+
+	require_once $file;
+	$result = AbandonedCartService::runAutoReminders();
+
+	echo json_encode([
+		'success' => true,
+		'message' => $result['sent'] . ' hatırlatma gönderildi, ' . $result['skipped'] . ' atlandı',
+		'sent' => $result['sent'],
+		'skipped' => $result['skipped'],
+	]);
+	exit;
+}
+
 http_response_code(400);
 echo json_encode(['success' => false, 'message' => 'Bilinmeyen cron işlemi']);

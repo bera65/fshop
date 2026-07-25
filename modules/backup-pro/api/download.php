@@ -8,11 +8,7 @@ if (!class_exists('Admin')) {
     require_once dirname(__DIR__, 3) . '/core/Admin.php';
 }
 
-if (!Admin::isLoggedIn()) {
-    http_response_code(403);
-    echo 'Yetkisiz erişim';
-    exit;
-}
+Admin::requireModuleApiAuth();
 
 use BackupPro\Repository\BackupRepository;
 use BackupPro\Service\StorageService;

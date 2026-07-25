@@ -25,7 +25,7 @@
 	}
 
 	foreach (Category::getMenuList() as $cat) {
-		$products = Product::getActiveList((int) $cat['id_category'], 8);
+		$products = Product::getActiveList((int) $cat['id_category'], 5);
 
 		if (!$products) {
 			continue;

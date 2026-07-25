@@ -1,6 +1,7 @@
 {if $flash}
 <div class="alert alert-info py-2">{$flash|escape}</div>
 {/if}
+<script>window.bifaturaAdminToken = {$adminToken|@json_encode nofilter};</script>
 
 <ul class="nav nav-tabs mb-3">
 	<li class="nav-item">
@@ -130,7 +131,8 @@ document.querySelectorAll('.bifatura-inbox-pdf').forEach(function (btn) {
 			credentials: 'same-origin',
 			body: new URLSearchParams({
 				uuid: btn.getAttribute('data-uuid'),
-				system_type: btn.getAttribute('data-type')
+				system_type: btn.getAttribute('data-type'),
+				token: window.bifaturaAdminToken || window.adminToken || ''
 			}).toString()
 		}).then(function (r) { return r.json(); })
 		.then(function (res) {

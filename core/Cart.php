@@ -144,6 +144,7 @@ class Cart
 		$added = min($qty, $maxAllowed);
 		$_SESSION[self::SESSION_KEY][$key] = $current + $added;
 		self::setLineMeta($key, ['options' => $options]);
+		self::notifyChanged();
 
 		return self::ok(translate('Added to cart'));
 	}
@@ -251,6 +252,7 @@ class Cart
 
 		$newQty = min($stock, max(1, $qty));
 		$_SESSION[self::SESSION_KEY][$key] = $newQty;
+		self::notifyChanged();
 
 		return self::ok(translate('Cart Updated'));
 	}
@@ -262,6 +264,7 @@ class Cart
 		$key = self::resolveCartKey($idProduct, $idVariation, [], $cartKey);
 		unset($_SESSION[self::SESSION_KEY][$key]);
 		self::clearLineMeta($key);
+		self::notifyChanged();
 
 		return self::ok(translate('The product has been removed from the cart'));
 	}
@@ -270,6 +273,7 @@ class Cart
 	{
 		$_SESSION[self::SESSION_KEY] = [];
 		$_SESSION[self::META_KEY] = [];
+		self::notifyChanged();
 
 		return self::ok(translate('The cart has been emptied'));
 	}
@@ -453,5 +457,14 @@ class Cart
 			'success' => false,
 			'message' => $message,
 		], self::getSummary());
+	}
+
+	private static function notifyChanged(): void
+	{
+		if (!class_exists('Module', false)) {
+			return;
+		}
+
+		Module::runHook('cart.changed', [self::getSummary()]);
 	}
 }

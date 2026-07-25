@@ -1,19 +1,17 @@
 {if $flash}
-<div class="alert alert-{$flashType|default:'info'} alert-dismissible fade show d-flex align-items-center justify-content-between p-3 mb-4 rounded-3 border-0 shadow-sm" role="alert" style="background-color: {if $flashType == 'success'}#e6f4ea{else if $flashType == 'danger'}#fce8e6{else}#e8f0fe{/if}; color: {if $flashType == 'success'}#137333{else if $flashType == 'danger'}#c5221f{else}#1a73e8{/if};">
-	<div class="d-flex align-items-center gap-2">
-		<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-			{if $flashType == 'success'}
-			<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
-			{else if $flashType == 'danger'}
-			<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-			{else}
-			<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-			{/if}
-		</svg>
-		<span class="fw-semibold">{$flash|escape}</span>
+	<div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index:9999;">
+		<div class="toast frisay-toast {$flashType|default:'success'} show" role="alert">
+			<div class="toast-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-icon lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+			</div>
+			<div class="toast-body p-0">
+				<div class="toast-message">
+					{$flash|escape}
+				</div>
+			</div>
+			<button class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+		</div>
 	</div>
-	<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-</div>
 {/if}
 
 <style>
@@ -160,6 +158,8 @@
 					</form>
 					{if $theme.edit_module}
 					<a href="{$adminUrl}module-{$theme.edit_module|escape}" class="btn btn-sm btn-dark rounded-pill px-3 shadow-sm">{'Edit'|adminT}</a>
+					{elseif $theme.has_schema}
+					<a href="{$adminUrl}theme-customize?theme={$theme.name|escape:url}" class="btn btn-sm btn-dark rounded-pill px-3 shadow-sm">{'Customize'|adminT}</a>
 					{/if}
 				</div>
 				{/if}
@@ -174,6 +174,8 @@
 				<div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
 				{if $theme.edit_module}
 				<a href="{$adminUrl}module-{$theme.edit_module|escape}" class="btn btn-sm btn-outline-light rounded-pill px-3">{'Edit'|adminT}</a>
+				{elseif $theme.has_schema}
+				<a href="{$adminUrl}theme-customize?theme={$theme.name|escape:url}" class="btn btn-sm btn-outline-light rounded-pill px-3">{'Customize'|adminT}</a>
 				{/if}
 				<a href="{$domain}?theme_preview={$theme.name|escape:url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-light rounded-pill px-3">{'Preview'|adminT}</a>
 				</div>

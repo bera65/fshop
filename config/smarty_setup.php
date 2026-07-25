@@ -35,6 +35,12 @@ function fshop_configure_smarty(Smarty\Smarty $smarty): void
 
 		return strpos((string) $haystack, (string) $needle) !== false;
 	});
+
+	$smarty->registerPlugin('modifier', 'asset_url', static function ($url) {
+		return class_exists('Performance', false)
+			? Performance::versionedUrl((string) $url)
+			: (string) $url;
+	});
 }
 
 function fshop_clear_smarty_compile_cache(): int

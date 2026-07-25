@@ -1,0 +1,17 @@
+.cn-customer-results .list-group-item {
+	cursor: pointer;
+}
+
+.cn-selected-list .badge {
+	font-size: 0.85rem;
+	font-weight: 500;
+}
+
+.cn-selected-list .btn-close {
+	font-size: 0.65rem;
+}
+
+.notification-detail-body {
+	line-height: 1.7;
+	white-space: normal;
+}

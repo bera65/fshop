@@ -1,0 +1,168 @@
+.marketplace-toggle:hover {
+	background: #f8fafc !important;
+}
+
+.marketplace-toggle:focus {
+	box-shadow: none;
+}
+
+.marketplace-item-header {
+	min-width: 0;
+}
+
+.marketplace-connections {
+	display: flex;
+	gap: 0.5rem;
+	overflow-x: auto;
+	padding: 0.55rem 0.7rem 0.7rem;
+	border-top: 1px solid #eef1f5;
+	background: #f8fafc;
+}
+
+.marketplace-connection {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	min-width: 192px;
+	padding: 0.45rem 0.55rem;
+	border: 1px solid #dfe5ed;
+	border-radius: 0.5rem;
+	background: #fff;
+	color: #1f2937;
+	text-align: left;
+	font: inherit;
+}
+
+button.marketplace-connection {
+	cursor: pointer;
+}
+
+button.marketplace-connection:hover {
+	border-color: #98a9bd;
+	box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.marketplace-connection.is-linked {
+	border-color: #9bd5b2;
+	background: #f4fcf6;
+}
+
+.marketplace-connection--planned {
+	min-width: 145px;
+	opacity: 0.65;
+	background: #f7f8fa;
+}
+
+.marketplace-platform-mark {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	border-radius: 0.4rem;
+	background: #f27a1a;
+	color: #fff;
+	font-size: 0.72rem;
+	font-weight: 800;
+	line-height: 1;
+}
+
+.marketplace-platform-icon {
+	width: 28px;
+	height: 28px;
+	flex: 0 0 28px;
+	object-fit: contain;
+}
+
+.marketplace-connection--hepsiburada .marketplace-platform-mark {
+	background: #f15a24;
+}
+
+.marketplace-connection--n11 .marketplace-platform-mark {
+	background: #6e3bb8;
+}
+
+.marketplace-connection-body {
+	display: flex;
+	min-width: 0;
+	flex: 1;
+	flex-direction: column;
+}
+
+.marketplace-platform-name {
+	font-size: 0.78rem;
+	font-weight: 700;
+}
+
+.marketplace-connection-status {
+	overflow: hidden;
+	color: #64748b;
+	font-size: 0.72rem;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.marketplace-connection.is-linked .marketplace-connection-status {
+	color: #16803c;
+}
+
+
+.marketplace-item .collapse {
+	border-top: 1px solid #e2e8f0;
+}
+
+.marketplace-admin .admin-panel {
+	background: #fff;
+}
+
+.marketplace-admin ul {
+	list-style: none;
+	padding-left: 0;
+	margin-bottom: 0;
+}
+
+.trendyol-product-panel {
+	background: #fafbfc;
+}
+
+.ty-picker {
+	position: relative;
+}
+
+.ty-picker-results .ty-picker-list {
+	max-height: 240px;
+	overflow-y: auto;
+	background: #fff;
+	z-index: 20;
+	position: relative;
+}
+
+.ty-picker-results .list-group-item {
+	cursor: pointer;
+	padding: 0.4rem 0.65rem;
+}
+
+.ty-picker-results .list-group-item:hover {
+	background: #f0f2f5;
+}
+
+.ty-picker-selected .badge {
+	font-weight: 500;
+	white-space: normal;
+	text-align: left;
+}
+
+.ty-category-map-row .ty-picker-results {
+	max-width: 520px;
+}
+
+.ty-attr-form .form-label {
+	font-weight: 500;
+}
+
+.trendyol-products-toolbar {
+	padding: 0.65rem 1rem;
+	border: 1px solid #e5e7eb;
+	border-radius: 10px;
+	background: #f8fafc;
+}

@@ -25,6 +25,7 @@
 	require_once(dirname(__FILE__).'/../core/Security.php');
 	require_once(dirname(__FILE__).'/../core/RateLimit.php');
 	require_once(dirname(__FILE__).'/../core/Product.php');
+	require_once(dirname(__FILE__).'/../core/StockAnalysis.php');
 	require_once(dirname(__FILE__).'/../core/ProductVariation.php');
 	require_once(dirname(__FILE__).'/../core/ProductOption.php');
 	require_once(dirname(__FILE__).'/../core/VirtualProduct.php');
@@ -46,9 +47,11 @@
 	require_once(dirname(__FILE__).'/../core/Brand.php');
 	require_once(dirname(__FILE__).'/../core/Cms.php');
 	require_once(dirname(__FILE__).'/../core/Currency.php');
+	require_once(dirname(__FILE__).'/../core/Tax.php');
 	Currency::handleSwitchRequest();
 	require_once(dirname(__FILE__).'/../core/ModuleBase.php');
 	require_once(dirname(__FILE__).'/../core/Module.php');
+	require_once(dirname(__FILE__).'/../core/Captcha.php');
 	require_once(dirname(__FILE__).'/../core/Schema.php');
 	require_once(dirname(__FILE__).'/../core/Mail.php');
 	require_once(dirname(__FILE__).'/../core/StoreStatus.php');
@@ -58,6 +61,8 @@
 	require_once(dirname(__FILE__).'/../core/Theme.php');
 	require_once(dirname(__FILE__).'/../core/SiteAssets.php');
 	require_once(dirname(__FILE__).'/../core/Performance.php');
+	require_once(dirname(__FILE__).'/../core/Lcp.php');
+	require_once(dirname(__FILE__).'/../core/CanonicalHost.php');
 
 	Performance::ensureDefaults();
 	App::configureErrors();
@@ -68,6 +73,7 @@
 	Cookie::autoLoginFromRememberCookie();
 	$rootDir 	= Settings::get('FOLDER');
 	$domain		= Settings::get('DOMAIN');
+	CanonicalHost::redirectIfNeeded();
 	$theme		= Settings::get('THEME') ?: 'default';
 	$previewTheme = (string) Tools::getValue('theme_preview');
 
@@ -218,6 +224,7 @@
 			'bar' => SiteAssets::resolveLogoUrl('bar'),
 			'footer' => SiteAssets::resolveLogoUrl('footer'),
 		],
+		'footerDescription' => Settings::getFooterDescription(),
 		'moduleAssets' 		=> $moduleAssets,
 		'hooks' 			=> Module::getRenderedDisplayHooks(),
 		'cartI18n' 			=> $cartI18n,

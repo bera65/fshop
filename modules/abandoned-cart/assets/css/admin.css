@@ -1,0 +1,12 @@
+.abandoned-cart-row--success {
+	background: rgba(25, 135, 84, 0.08);
+}
+
+.abandoned-cart-row--warning {
+	background: rgba(255, 193, 7, 0.08);
+}
+
+.abandoned-cart-table ul {
+	max-height: 120px;
+	overflow: auto;
+}

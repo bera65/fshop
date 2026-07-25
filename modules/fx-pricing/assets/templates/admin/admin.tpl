@@ -53,8 +53,11 @@
 					<input type="hidden" name="token" value="{$adminToken|escape}">
 					<button type="submit" class="btn btn-outline-primary btn-sm">Kurları yenile & ürün fiyatlarını güncelle</button>
 				</form>
-				<label class="form-label small">Cron URL (günde birkaç kez çağırın)</label>
-				<input type="text" class="form-control form-control-sm" readonly value="{$cronUrl|escape}" onclick="this.select();">
+				<label class="form-label small">Cron URL — genel döviz (api/cron)</label>
+				<input type="text" class="form-control form-control-sm mb-2" readonly value="{$cronUrl|escape}" onclick="this.select();">
+				<label class="form-label small">Cron URL — fx-pricing refresh (SHOP_TOKEN zorunlu)</label>
+				<input type="text" class="form-control form-control-sm" readonly value="{$fxRefreshCronUrl|escape}" onclick="this.select();">
+				<div class="form-text">Token olmadan çağrı 403 döner. Tercihen <code>X-Cron-Token</code> header kullanın.</div>
 			</div>
 		</div>
 	</div>

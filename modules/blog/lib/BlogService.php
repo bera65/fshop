@@ -366,7 +366,7 @@ class BlogService
 		$title = trim((string) ($data['title'] ?? ''));
 		$slug = trim((string) ($data['slug'] ?? ''));
 		$excerpt = trim((string) ($data['excerpt'] ?? ''));
-		$content = (string) ($data['content'] ?? '');
+		$content = Security::sanitizeHtml((string) ($data['content'] ?? ''));
 		$cover = trim((string) ($data['cover_image'] ?? ''));
 		$metaTitle = trim((string) ($data['meta_title'] ?? ''));
 		$metaDesc = trim((string) ($data['meta_description'] ?? ''));

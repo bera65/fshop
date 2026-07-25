@@ -1,4 +1,5 @@
 <div class="admin-panel mt-3 bifatura-panel">
+<script>window.bifaturaAdminToken = {$adminToken|@json_encode nofilter};</script>
 	<div class="admin-panel__head d-flex justify-content-between align-items-center">
 		<h2 class="h6 mb-0">Bifatura e-Fatura</h2>
 		{if isset($invoice.status) && $invoice.status == 'created'}
@@ -50,7 +51,9 @@
 			method: 'POST',
 			headers: {'Content-Type': 'application/x-www-form-urlencoded'},
 			credentials: 'same-origin',
-			body: new URLSearchParams(data).toString()
+			body: new URLSearchParams(Object.assign({
+				token: window.bifaturaAdminToken || window.adminToken || ''
+			}, data)).toString()
 		}).then(function (r) { return r.json(); })
 		.then(function (res) {
 			btn.disabled = false;

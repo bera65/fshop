@@ -18,22 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-// Admin session kontrolü
-if (empty($_SESSION['id_admin'])) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Yetkisiz erişim']);
-    exit;
-}
-
-// Admin CSRF: admin panel token'ı (admin_csrf_token) esas alınır.
-$token = Tools::getValue('token') ?: ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
-$sessionToken = (string) ($_SESSION['admin_csrf_token'] ?? ($_SESSION['csrf_token'] ?? ''));
-
-if ($sessionToken === '' || !hash_equals($sessionToken, (string) $token)) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Geçersiz istek']);
-    exit;
-}
+if (!class_exists('Admin')) { require_once dirname(__DIR__, 3) . '/core/Admin.php'; }
+Admin::requireModuleApiAuth();
 
 try {
     @unlink(GoogleShoppingModule::cachePath());

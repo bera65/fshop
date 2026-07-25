@@ -86,12 +86,15 @@ HTTP isteği
 
 ### Admin
 
-- `/admin/dashboard`, `/admin/products`, `/admin/module-whatsapp` vb.
-- Modül config: otomatik `/admin/module-{modul-adi}`
+- Public URL: `/{ADMIN_URI}/dashboard`, `/{ADMIN_URI}/products`, `/{ADMIN_URI}/module-whatsapp` (default `ADMIN_URI=admin`)
+- Fiziksel klasör her zaman `admin/` — yalnızca public slug `config/env.php` → `ADMIN_URI` ile değişir
+- Değişiklik sonrası panele bir kez girin (`.htaccess` otomatik senkron); eski `/admin` kapanır
+- Modül config: otomatik `/{ADMIN_URI}/module-{modul-adi}`
 
 ### `.htaccess`
 
 `RewriteBase` kurulumda ayarlanır (ör. `/fshop/`). Kurulum sihirbazı bunu günceller.
+`# BEGIN FSHOP_ADMIN` … `# END FSHOP_ADMIN` bloğu `ADMIN_URI` rewrite kurallarını tutar.
 
 ---
 

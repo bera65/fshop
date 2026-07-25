@@ -9,6 +9,10 @@
 
 	App::configureSession();
 
+	if (session_status() !== PHP_SESSION_ACTIVE) {
+		session_start();
+	}
+
 	require_once dirname(__FILE__) . '/../core/Cms.php';
 	require_once dirname(__FILE__) . '/../core/Lang.php';
 	require_once dirname(__FILE__) . '/../core/AdminLang.php';
@@ -47,11 +51,15 @@
 	require_once dirname(__FILE__) . '/../core/Cms.php';
 	require_once dirname(__FILE__) . '/../core/Lang.php';
 	require_once dirname(__FILE__) . '/../core/Currency.php';
+	require_once dirname(__FILE__) . '/../core/Tax.php';
 	require_once dirname(__FILE__) . '/../core/Customer.php';
 	require_once dirname(__FILE__) . '/../core/Address.php';
 	require_once dirname(__FILE__) . '/../core/Pagination.php';
 	require_once dirname(__FILE__) . '/../core/ModuleBase.php';
 	require_once dirname(__FILE__) . '/../core/Module.php';
+	require_once dirname(__FILE__) . '/../core/Marketplace.php';
+	require_once dirname(__FILE__) . '/../core/MarketplaceAdmin.php';
+	require_once dirname(__FILE__) . '/../core/Captcha.php';
 	require_once dirname(__FILE__) . '/../core/Schema.php';
 	require_once dirname(__FILE__) . '/../core/ApiKey.php';
 	require_once dirname(__FILE__) . '/../core/Cargo.php';
@@ -70,21 +78,21 @@
 	Performance::ensureDefaults();
 	App::configureErrors();
 	require_once dirname(__FILE__) . '/../core/Seo.php';
-
-	if (session_status() !== PHP_SESSION_ACTIVE) {
-		session_start();
-	}
+	require_once dirname(__FILE__) . '/../core/CanonicalHost.php';
 
 	App::sendSecurityHeaders();
 
 	date_default_timezone_set('Europe/Istanbul');
 
-	$domain = Settings::get('DOMAIN');
-	$adminUrl = rtrim($domain, '/') . '/admin/';
+	$domain = rtrim((string) Settings::get('DOMAIN'), '/') . '/';
+	CanonicalHost::redirectIfNeeded();
+	$adminUrl = rtrim($domain, '/') . '/' . Admin::uri() . '/';
+	Admin::syncHtaccessRewrite();
 	$siteName = Settings::get('SITE_NAME');
 
 	define('_ADMIN_THEME_DIR_', dirname(__FILE__) . '/../templates/admin/');
 	define('_ADMIN_CSS_DIR_', $domain . 'templates/admin/css/');
+	define('_ADMIN_JS_DIR_', $domain . 'templates/admin/js/');
 
 	require_once dirname(__FILE__) . '/../libs/Smarty.class.php';
 	require_once dirname(__FILE__) . '/smarty_setup.php';
@@ -103,6 +111,7 @@
 
 	Module::bootstrap('admin');
 	Schema::ensure();
+	Marketplace::ensureSchema();
 
 	$adminNavBadges = [
 		'orders' => Order::countAdmin(Order::STATUS_PENDING) + Order::countAdmin(Order::STATUS_PROCESSING),
@@ -113,11 +122,11 @@
 	];
 
 	$adminMenuItems = Module::getAdminMenuItems();
-
 	$smarty->assign([
 		'domain' => $domain,
 		'adminUrl' => $adminUrl,
 		'adminCssDir' => _ADMIN_CSS_DIR_,
+		'adminJsDir' => _ADMIN_JS_DIR_,
 		'siteName' => $siteName,
 		'adminToken' => $adminToken,
 		'adminUser' => $adminUser,
@@ -126,6 +135,7 @@
 			: 'A',
 		'adminNavBadges' => $adminNavBadges,
 		'adminMenuItems' => $adminMenuItems,
+		'marketplaceAdminAssets' => ['css' => [], 'js' => []],
 		'year' => date('Y'),
 		'moduleAdminAssets' => ['css' => [], 'js' => []],
 		'adminUseCharts' => false,
@@ -134,8 +144,10 @@
 		'adminLogoUrl' => SiteAssets::resolveLogoUrl('admin'),
 		'adminLang' => $adminLang,
 		'adminLangSwitcher' => AdminLang::getSwitcherList(),
+		'adminUriIsDefault' => Admin::uri() === 'admin',
 		'fshopVersion' => FShop::version(),
 		'fshopName' => FShop::NAME,
+		'adminHooks' => [],
 		'adminI18n' => [
 			'confirmTitle' => adminT('Confirm action'),
 			'confirmMessage' => adminT('Are you sure you want to perform this action?'),

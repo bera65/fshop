@@ -28,6 +28,7 @@
 				Performance::KEY_PAGE_CACHE_TTL => Tools::getValue(Performance::KEY_PAGE_CACHE_TTL),
 				Performance::KEY_GZIP => Tools::getValue(Performance::KEY_GZIP),
 				Performance::KEY_HTML_MINIFY => Tools::getValue(Performance::KEY_HTML_MINIFY),
+				Performance::KEY_CSS_BUNDLE => Tools::getValue(Performance::KEY_CSS_BUNDLE),
 				'perf_debug_mode' => Tools::getValue('perf_debug_mode'),
 			]);
 

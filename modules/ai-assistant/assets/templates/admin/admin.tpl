@@ -1,5 +1,9 @@
-{* AI Assistant module settings *}
 <link rel="stylesheet" href="{$domain}modules/ai-assistant/assets/css/admin.css?v={$smarty.now}">
+
+<div class="mb-4">
+	<h1 class="h4 mb-1">{$moduleTitle|escape}</h1>
+	<p class="text-muted small mb-0">API anahtarı ve model ayarları. AI çubuğu yalnızca dashboard, sipariş, iptal, iade, blog, CMS, SEO ve ürün düzenleme sayfalarında görünür.</p>
+</div>
 
 {if $flash}
 <div class="alert alert-{$flashType|default:'success'}">{$flash|escape}</div>
@@ -65,7 +69,7 @@
 
 			<div class="row g-3 mb-3">
 				<div class="col-md-6">
-					<label class="form-label">Ürün metni tonu</label>
+					<label class="form-label">Metin tonu</label>
 					<select name="tone" class="form-select">
 						<option value="professional"{if $tone == 'professional'} selected{/if}>Profesyonel</option>
 						<option value="friendly"{if $tone == 'friendly'} selected{/if}>Samimi</option>
@@ -82,9 +86,7 @@
 				</div>
 			</div>
 
-			<div class="d-flex flex-wrap gap-2">
-				<button type="submit" class="btn btn-dark btn-sm">Kaydet</button>
-			</div>
+			<button type="submit" class="btn btn-dark btn-sm">Kaydet</button>
 		</form>
 
 		<form method="post" class="mt-3">
@@ -97,7 +99,7 @@
 	<div class="col-lg-5">
 		<div class="admin-panel p-3 ai-settings-card">
 			<h2 class="h6 mb-2">Token / API key nereden alınır?</h2>
-			<p class="text-muted small">Test için önce <strong>Groq</strong> önerilir (ücretsiz kota).</p>
+			<p class="text-muted small">Test için önce <strong>Groq</strong> önerilir.</p>
 			<ul class="list-unstyled ai-guide-list mb-0">
 				{foreach $tokenGuides as $g}
 				<li class="mb-3">
@@ -110,13 +112,14 @@
 		</div>
 
 		<div class="admin-panel p-3 ai-settings-card mt-3">
-			<h2 class="h6 mb-2">Nasıl kullanılır?</h2>
-			<ol class="small text-muted mb-0 ps-3">
-				<li>Modülü kurup etkinleştirin</li>
-				<li>Buradan API anahtarını kaydedin</li>
-				<li><strong>Ürün düzenle</strong> → Yapay Zeka paneli → Alanları iyileştir</li>
-				<li><strong>Dashboard</strong> → Sayfayı analiz et</li>
-			</ol>
+			<h2 class="h6 mb-2">Nerede çalışır?</h2>
+			<ul class="small text-muted mb-0 ps-3">
+				<li>Dashboard, siparişler, iptal, iade → sayfa özeti / analiz</li>
+				<li>SEO → meta başlık &amp; açıklama</li>
+				<li>CMS düzenle → sayfa içeriği</li>
+				<li>Blog (yazılar) → fikirden yazı / mevcut yazıyı düzenle</li>
+				<li>Ürün düzenle → ürün metinleri</li>
+			</ul>
 		</div>
 	</div>
 </div>

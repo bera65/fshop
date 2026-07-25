@@ -1,0 +1,17 @@
+.pct-product-list {
+	max-height: 220px;
+	overflow-y: auto;
+	background: #fafbfc;
+}
+
+.pct-product-item {
+	margin-bottom: 0.35rem;
+}
+
+.pct-product-item:last-child {
+	margin-bottom: 0;
+}
+
+.pct-product-item.is-hidden {
+	display: none;
+}

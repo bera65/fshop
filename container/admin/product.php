@@ -170,6 +170,69 @@
 		}
 	}
 
+	if (Tools::isSubmit('quickAddCategory')) {
+		$postToken = (string) Tools::getValue('token');
+		$isAjax = Tools::getValue('ajax') === '1'
+			|| (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower((string) $_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
+
+		if (!$isAjax) {
+			http_response_code(400);
+			exit;
+		}
+
+		if (!hash_equals($adminToken, $postToken)) {
+			header('Content-Type: application/json; charset=utf-8');
+			echo json_encode(['success' => false, 'message' => adminT('Invalid request')]);
+			exit;
+		}
+
+		$result = Category::save([
+			'category_name' => trim((string) Tools::getValue('category_name')),
+			'id_parent' => (int) Tools::getValue('id_parent'),
+			'active' => 1,
+		], 0);
+
+		header('Content-Type: application/json; charset=utf-8');
+		echo json_encode([
+			'success' => !empty($result['success']),
+			'message' => (string) ($result['message'] ?? ''),
+			'id' => (int) ($result['id'] ?? 0),
+			'categoryOptions' => Category::getProductSelectOptions(),
+		]);
+		exit;
+	}
+
+	if (Tools::isSubmit('quickAddBrand')) {
+		$postToken = (string) Tools::getValue('token');
+		$isAjax = Tools::getValue('ajax') === '1'
+			|| (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower((string) $_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
+
+		if (!$isAjax) {
+			http_response_code(400);
+			exit;
+		}
+
+		if (!hash_equals($adminToken, $postToken)) {
+			header('Content-Type: application/json; charset=utf-8');
+			echo json_encode(['success' => false, 'message' => adminT('Invalid request')]);
+			exit;
+		}
+
+		$result = Brand::save([
+			'brand_name' => trim((string) Tools::getValue('brand_name')),
+			'active' => 1,
+		], 0);
+
+		header('Content-Type: application/json; charset=utf-8');
+		echo json_encode([
+			'success' => !empty($result['success']),
+			'message' => (string) ($result['message'] ?? ''),
+			'id' => (int) ($result['id'] ?? 0),
+			'brandOptions' => Brand::getOptions(),
+		]);
+		exit;
+	}
+
 	if (Tools::isSubmit('uploadVirtualFile') && $id > 0) {
 		$postToken = (string) Tools::getValue('token');
 
@@ -223,7 +286,7 @@
 		'doviz_price' 		=> '0.00',
 		'doviz_old_price'	=> '0.00',
 		'old_price' 		=> '0.00',
-		'vat' 				=> '20.00',
+		'vat' 				=> (string) Tax::getDefaultRate(),
 		'stock' 			=> 0,
 		'cargo_day' 		=> 0,
 		'label' 			=> '',
@@ -303,7 +366,7 @@
 		'flash' 			=> $flash,
 		'flashType' 		=> $flashType,
 		'pLink' 			=> $pLink,
-		'categoryOptions' 	=> Category::getMenuList(),
+		'categoryOptions' 	=> Category::getProductSelectOptions(),
 		'brandOptions' 		=> Brand::getOptions(),
 		'adminUseEditor' 	=> true,
 		'licenseStats' 		=> $licenseStats,
@@ -316,6 +379,7 @@
 			]),
 		],
 		'shopCurrencyLabel' => Currency::label(),
+		'taxOptions' => Tax::getProductOptions((float) ($form['vat'] ?? Tax::getDefaultRate())),
 	]);
 
 	AdminPage::add('product', $isNew ? 'New Product' : 'Edit product');

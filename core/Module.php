@@ -10,6 +10,10 @@ class Module
 		'order.placed',
 		'product.updated',
 		'order.updated',
+		'form.captcha.validate',
+		'product.filter.sql',
+		'catalog.filter.context',
+		'cart.changed',
 	];
 
 	/** @var array<string, ModuleBase> */
@@ -19,6 +23,8 @@ class Module
 	private static array $hookListeners = [];
 
 	private static bool $booted = false;
+
+	private const MAX_ZIP_BYTES = 52428800;
 
 	public static function rootPath(): string
 	{
@@ -143,6 +149,7 @@ class Module
 			'order.placed' => 'Sipariş oluşturulunca tetiklenir',
 			'product.updated' => 'Ürün admin veya API üzerinden kaydedilince tetiklenir',
 			'order.updated' => 'Sipariş admin veya API üzerinden güncellenince tetiklenir',
+			'form.captcha.validate' => 'Form gönderiminde CAPTCHA doğrulaması (modül dinler)',
 		];
 	}
 
@@ -153,10 +160,13 @@ class Module
 			'footer' 			=> 'Footer — {$hooks.footer}',
 			'header' 			=> 'Üst bar — {$hooks.header}',
 			'main_menu' 		=> 'Ana menü (kategori menüsü) — {$hooks.main_menu}',
+			'mobile_menu' 		=> 'Mobil menü (drawer) — {$hooks.mobile_menu}',
 			'head.top' 			=> 'Head üst alanı — {$hooks.head.top}',
 			'home' 				=> 'Ana sayfa — {$hooks.home}',
 			'home_slider' 		=> 'Ana sayfa üst slayt — {$hooks.home_slider}',
 			'home_promo_slider' => 'Ana sayfa kampanya slaytı — {$hooks.home_promo_slider}',
+			'home_bottom'       => 'Ana sayfa alt bölüm — {$hooks.home_bottom}',
+			'catalog_filters'   => 'Kategori filtreleri — {$hooks.catalog_filters}',
 			'product' 			=> 'Ürün sayfası — {$hooks.product}',
 			'product_detail' 	=> 'Ürün detay sayfası — {$hooks.product_detail}',
 			'product_tab' 		=> 'Ürün Tabı (sekme butonu) — {$hooks.product_tab}',
@@ -165,8 +175,14 @@ class Module
 			'order_payment' 	=> 'Ödeme Modülü — {$hooks.order_payment}',
 			'order_confirmation' => 'Sipariş onay sayfası — {$hooks.order_confirmation}',
 			'auth_social'       => 'Giriş / kayıt — sosyal butonlar — {$hooks.auth_social}',
+			'contact_form'      => 'İletişim formu — CAPTCHA / ek alan — {$hooks.contact_form}',
+			'auth_login'        => 'Giriş formu — CAPTCHA — {$hooks.auth_login}',
+			'auth_register'     => 'Kayıt formu — CAPTCHA — {$hooks.auth_register}',
+			'admin_login'       => 'Admin giriş formu — CAPTCHA — {$adminHooks.admin_login}',
 			'admin_product_button' => 'Admin ürün düzenleme — Kaydet butonu yanı — {$adminHooks.admin_product_button}',
 			'admin_order_detail' => 'Admin sipariş detay — {$adminHooks.admin_order_detail}',
+			'admin_header' => 'Admin orta alan üstü (tüm sayfalar) — {$adminHooks.admin_header}',
+			'admin_footer' => 'Admin footer (tüm sayfalar) — {$adminHooks.admin_footer}',
 			'admin_dashboard_top' => 'Admin gösterge paneli — üst alan — {$adminHooks.admin_dashboard_top}',
 			'admin_dashboard_kpi' => 'Admin gösterge paneli — KPI kartları altı — {$adminHooks.admin_dashboard_kpi}',
 			'admin_dashboard_main_left' => 'Admin gösterge paneli — sol sütun — {$adminHooks.admin_dashboard_main_left}',
@@ -315,6 +331,8 @@ class Module
 			'auth_social',
 			'admin_product_button',
 			'admin_order_detail',
+			'admin_header',
+			'admin_footer',
 			'admin_dashboard_top',
 			'admin_dashboard_kpi',
 			'admin_dashboard_main_left',
@@ -384,6 +402,35 @@ class Module
 		usort($list, static fn($a, $b) => strcmp($a['title'], $b['title']));
 
 		return $list;
+	}
+
+	/**
+	 * @return array{total: int, installed: int, active: int, inactive: int, not_installed: int}
+	 */
+	public static function getAdminStats(): array
+	{
+		$list = self::getAdminList();
+		$total = count($list);
+		$installed = 0;
+		$active = 0;
+
+		foreach ($list as $row) {
+			if (!empty($row['installed'])) {
+				++$installed;
+			}
+
+			if (!empty($row['active'])) {
+				++$active;
+			}
+		}
+
+		return [
+			'total' => $total,
+			'installed' => $installed,
+			'active' => $active,
+			'inactive' => max(0, $installed - $active),
+			'not_installed' => max(0, $total - $installed),
+		];
 	}
 
 	public static function getDetail(string $name): ?array
@@ -474,6 +521,148 @@ class Module
 		return self::ok('Modül kuruldu ve etkinleştirildi');
 	}
 
+	/**
+	 * ZIP arşivinden modül yükler (modules/{ad}/).
+	 *
+	 * @param array<string, mixed> $file $_FILES entry
+	 * @return array{success: bool, message: string, name?: string}
+	 */
+	public static function installFromZip(array $file): array
+	{
+		if (class_exists('Admin', false) && Admin::isDemoMode()) {
+			return self::fail(adminT('Demo mode: module upload is not allowed'));
+		}
+
+		if (!class_exists('ZipArchive')) {
+			return self::fail('Sunucuda ZipArchive eklentisi yok');
+		}
+
+		if (empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+			return self::fail('ZIP dosyası seçilmedi');
+		}
+
+		if (!empty($file['error'])) {
+			return self::fail('ZIP yüklenemedi');
+		}
+
+		if (($file['size'] ?? 0) > self::MAX_ZIP_BYTES) {
+			return self::fail('ZIP dosyası en fazla 50 MB olabilir');
+		}
+
+		$ext = strtolower(pathinfo((string) ($file['name'] ?? ''), PATHINFO_EXTENSION));
+
+		if ($ext !== 'zip') {
+			return self::fail('Yalnızca .zip dosyası yükleyebilirsiniz');
+		}
+
+		$zip = new ZipArchive();
+		$opened = $zip->open($file['tmp_name']);
+
+		if ($opened !== true) {
+			return self::fail('ZIP dosyası açılamadı');
+		}
+
+		$detected = self::detectZipModuleRoot($zip);
+
+		if ($detected === null) {
+			$zip->close();
+
+			return self::fail('Geçersiz modül ZIP\'i. Klasör yapısı: modul-adi/modul-adi.php olmalı');
+		}
+
+		$name = $detected['name'];
+		$prefix = $detected['prefix'];
+		$targetDir = self::rootPath() . '/' . $name;
+
+		if (is_dir($targetDir)) {
+			$zip->close();
+
+			return self::fail('Bu isimde bir modül zaten mevcut: ' . $name);
+		}
+
+		$tempDir = sys_get_temp_dir() . '/fshop-module-' . bin2hex(random_bytes(8));
+
+		if (!mkdir($tempDir, 0755, true) && !is_dir($tempDir)) {
+			$zip->close();
+
+			return self::fail('Geçici klasör oluşturulamadı');
+		}
+
+		for ($i = 0; $i < $zip->numFiles; $i++) {
+			$entry = str_replace('\\', '/', (string) $zip->getNameIndex($i));
+
+			if (!self::isSafeZipEntry($entry, $prefix)) {
+				self::removeDirectory($tempDir);
+				$zip->close();
+
+				return self::fail('ZIP içinde güvenli olmayan dosya yolu');
+			}
+
+			$relative = $prefix === '' ? $entry : substr($entry, strlen($prefix));
+
+			if ($relative === '' || substr($relative, -1) === '/') {
+				continue;
+			}
+
+			$dest = $tempDir . '/' . $relative;
+			$destDir = dirname($dest);
+
+			if (!is_dir($destDir) && !mkdir($destDir, 0755, true) && !is_dir($destDir)) {
+				self::removeDirectory($tempDir);
+				$zip->close();
+
+				return self::fail('Modül dosyaları çıkarılamadı');
+			}
+
+			$contents = $zip->getFromIndex($i);
+
+			if ($contents === false || file_put_contents($dest, $contents) === false) {
+				self::removeDirectory($tempDir);
+				$zip->close();
+
+				return self::fail('Modül dosyaları yazılamadı');
+			}
+		}
+
+		$zip->close();
+
+		if (!is_file($tempDir . '/' . $name . '.php')) {
+			self::removeDirectory($tempDir);
+
+			return self::fail('Modül ana dosyası bulunamadı: ' . $name . '/' . $name . '.php');
+		}
+
+		$modulesRoot = self::rootPath();
+
+		if (!is_dir($modulesRoot) && !mkdir($modulesRoot, 0755, true) && !is_dir($modulesRoot)) {
+			self::removeDirectory($tempDir);
+
+			return self::fail('modules/ klasörü oluşturulamadı');
+		}
+
+		if (!self::copyDirectory($tempDir, $targetDir)) {
+			self::removeDirectory($tempDir);
+
+			return self::fail('Modül klasörü taşınamadı');
+		}
+
+		self::removeDirectory($tempDir);
+
+		$module = self::loadInstance($name, false);
+
+		if (!$module) {
+			self::removeDirectory($targetDir);
+
+			return self::fail('Modül yüklendi ancak sınıf okunamadı. Dosya adı ve ModuleBase uyumunu kontrol edin');
+		}
+
+		return [
+			'success' => true,
+			'message' => 'Modül yüklendi: ' . $module->title . '. Şimdi kurabilirsiniz.',
+			'name' => $name,
+		];
+	}
+
 	public static function uninstall(string $name): array
 	{
 		if (!self::isInstalled($name)) {
@@ -518,6 +707,16 @@ class Module
 		$row = self::getDbRow($name);
 
 		return $row && (int) $row['installed'] === 1 && (int) $row['active'] === 1;
+	}
+
+	/** Modül sınıf örneği (admin route, özel sayfalar). */
+	public static function getInstance(string $name, bool $cache = true): ?ModuleBase
+	{
+		if (!self::isInstalled($name)) {
+			return null;
+		}
+
+		return self::loadInstance($name, $cache);
 	}
 
 	public static function resolveFrontRoute(string $slug): ?string
@@ -720,7 +919,7 @@ class Module
 	/**
 	 * Admin sidebar items from the admin.menu hook, grouped for header.tpl.
 	 *
-	 * @return array{general: array<int, array<string, mixed>>, catalog: array<int, array<string, mixed>>, system: array<int, array<string, mixed>>}
+	 * @return array{general: array<int, array<string, mixed>>, catalog: array<int, array<string, mixed>>, system: array<int, array<string, mixed>>, sales: array<int, array<string, mixed>>, marketplace: array<int, array<string, mixed>>}
 	 */
 	public static function getAdminMenuItems(): array
 	{
@@ -760,7 +959,7 @@ class Module
 
 			$group = strtolower(trim((string) ($item['group'] ?? 'system')));
 
-			if (!in_array($group, ['general', 'catalog', 'system'], true)) {
+			if (!in_array($group, ['general', 'catalog', 'system', 'sales', 'marketplace'], true)) {
 				$group = 'system';
 			}
 
@@ -795,7 +994,9 @@ class Module
 
 		$grouped = [
 			'general' => [],
+			'sales' => [],
 			'catalog' => [],
+			'marketplace' => [],
 			'system' => [],
 		];
 
@@ -829,6 +1030,14 @@ class Module
 		}
 
 		self::runHook('head.assets', [&$assets]);
+
+		foreach (['css', 'js'] as $type) {
+			foreach ($assets[$type] as $index => $url) {
+				$assets[$type][$index] = Performance::versionedUrl((string) $url);
+			}
+
+			$assets[$type] = array_values(array_unique($assets[$type]));
+		}
 
 		return $assets;
 	}
@@ -876,7 +1085,7 @@ class Module
 	}
 
 	/** @return string[] */
-	private static function getEnabledNames(): array
+	public static function getEnabledNames(): array
 	{
 		$rows = DB::execute('SELECT name FROM modules WHERE installed = 1 AND active = 1 ORDER BY name ASC') ?: [];
 
@@ -915,6 +1124,133 @@ class Module
 		}
 
 		self::setDisplayHooks($module->name, $defaults);
+	}
+
+	private static function isValidModuleName(string $name): bool
+	{
+		return $name !== '' && (bool) preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $name);
+	}
+
+	/** @return array{name: string, prefix: string}|null */
+	private static function detectZipModuleRoot(ZipArchive $zip): ?array
+	{
+		$matches = [];
+
+		for ($i = 0; $i < $zip->numFiles; $i++) {
+			$entry = str_replace('\\', '/', (string) $zip->getNameIndex($i));
+
+			if ($entry === '' || strpos($entry, '__MACOSX/') === 0) {
+				continue;
+			}
+
+			if (preg_match('#^([^/]+)/\1\.php$#', $entry, $m)) {
+				$matches[$m[1]] = $m[1] . '/';
+			}
+		}
+
+		if (count($matches) !== 1) {
+			return null;
+		}
+
+		$name = (string) array_key_first($matches);
+
+		if (!self::isValidModuleName($name)) {
+			return null;
+		}
+
+		$prefix = $matches[$name];
+
+		for ($i = 0; $i < $zip->numFiles; $i++) {
+			$entry = str_replace('\\', '/', (string) $zip->getNameIndex($i));
+
+			if ($entry === '' || strpos($entry, '__MACOSX/') === 0) {
+				continue;
+			}
+
+			if (strpos($entry, $prefix) !== 0) {
+				return null;
+			}
+		}
+
+		return ['name' => $name, 'prefix' => $prefix];
+	}
+
+	private static function isSafeZipEntry(string $entry, string $rootPrefix): bool
+	{
+		$entry = str_replace('\\', '/', $entry);
+
+		if ($entry === '' || strpos($entry, "\0") !== false) {
+			return false;
+		}
+
+		if ($entry[0] === '/' || strpos($entry, '../') !== false || substr($entry, -3) === '/..') {
+			return false;
+		}
+
+		if ($rootPrefix !== '' && strpos($entry, $rootPrefix) !== 0) {
+			return false;
+		}
+
+		if (strpos($entry, '__MACOSX/') === 0) {
+			return false;
+		}
+
+		return true;
+	}
+
+	private static function copyDirectory(string $source, string $target): bool
+	{
+		if (!is_dir($source)) {
+			return false;
+		}
+
+		if (!is_dir($target) && !mkdir($target, 0755, true) && !is_dir($target)) {
+			return false;
+		}
+
+		$iterator = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator($source, RecursiveDirectoryIterator::SKIP_DOTS),
+			RecursiveIteratorIterator::SELF_FIRST
+		);
+
+		foreach ($iterator as $item) {
+			/** @var SplFileInfo $item */
+			$subPath = substr($item->getPathname(), strlen($source) + 1);
+			$dest = $target . DIRECTORY_SEPARATOR . $subPath;
+
+			if ($item->isDir()) {
+				if (!is_dir($dest) && !mkdir($dest, 0755, true) && !is_dir($dest)) {
+					return false;
+				}
+			} elseif (!copy($item->getPathname(), $dest)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	private static function removeDirectory(string $dir): void
+	{
+		if (!is_dir($dir)) {
+			return;
+		}
+
+		$iterator = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
+			RecursiveIteratorIterator::CHILD_FIRST
+		);
+
+		foreach ($iterator as $item) {
+			/** @var SplFileInfo $item */
+			if ($item->isDir()) {
+				@rmdir($item->getPathname());
+			} else {
+				@unlink($item->getPathname());
+			}
+		}
+
+		@rmdir($dir);
 	}
 
 	private static function ok(string $message): array

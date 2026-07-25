@@ -1,5 +1,17 @@
 {if $flash}
-<div class="alert alert-{$flashType|default:'info'} py-2">{$flash|escape}</div>
+	<div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index:9999;">
+		<div class="toast frisay-toast {$flashType|default:'success'} show" role="alert">
+			<div class="toast-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-icon lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+			</div>
+			<div class="toast-body p-0">
+				<div class="toast-message">
+					{$flash|escape}
+				</div>
+			</div>
+			<button class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+		</div>
+	</div>
 {/if}
 
 <div class="admin-panel p-3">
@@ -32,44 +44,6 @@
 			</div>
 		</div>
 		{/foreach}
-
-		<h2 class="h6 mt-4 mb-3">{'Schema.org — Business information'|adminT}</h2>
-		<p class="text-muted small mb-3">{'Used in Organization schema. Email and phone come from Site Settings.'|adminT}</p>
-		<div class="row g-3 border rounded p-3 mb-3">
-			<div class="col-md-8">
-				<label class="form-label">{'Address'|adminT}</label>
-				<input type="text" name="schema_org_street" class="form-control" value="{$schemaOrg.SCHEMA_ORG_STREET|escape}">
-			</div>
-			<div class="col-md-4">
-				<label class="form-label">{'City'|adminT}</label>
-				<input type="text" name="schema_org_city" class="form-control" value="{$schemaOrg.SCHEMA_ORG_CITY|escape}">
-			</div>
-			<div class="col-md-3">
-				<label class="form-label">{'Postal code'|adminT}</label>
-				<input type="text" name="schema_org_postal" class="form-control" value="{$schemaOrg.SCHEMA_ORG_POSTAL|escape}">
-			</div>
-			<div class="col-md-3">
-				<label class="form-label">{'Latitude'|adminT}</label>
-				<input type="text" name="schema_org_lat" class="form-control" value="{$schemaOrg.SCHEMA_ORG_LAT|escape}" placeholder="36.8912617">
-			</div>
-			<div class="col-md-3">
-				<label class="form-label">{'Longitude'|adminT}</label>
-				<input type="text" name="schema_org_lng" class="form-control" value="{$schemaOrg.SCHEMA_ORG_LNG|escape}" placeholder="30.7094271">
-			</div>
-			<div class="col-md-12">
-				<label class="form-label">Facebook</label>
-				<input type="url" name="schema_facebook_url" class="form-control" value="{$schemaOrg.SCHEMA_FACEBOOK_URL|escape}">
-			</div>
-			<div class="col-md-6">
-				<label class="form-label">Instagram</label>
-				<input type="url" name="schema_instagram_url" class="form-control" value="{$schemaOrg.SCHEMA_INSTAGRAM_URL|escape}">
-			</div>
-			<div class="col-md-6">
-				<label class="form-label">YouTube</label>
-				<input type="url" name="schema_youtube_url" class="form-control" value="{$schemaOrg.SCHEMA_YOUTUBE_URL|escape}">
-			</div>
-		</div>
-
 		<button type="submit" class="btn btn-dark">{'Save SEO settings'|adminT}</button>
 	</form>
 </div>

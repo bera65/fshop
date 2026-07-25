@@ -8,8 +8,10 @@ class Performance
 	public const KEY_DEBUG = 'PERF_DEBUG';
 	public const KEY_GZIP = 'PERF_GZIP';
 	public const KEY_HTML_MINIFY = 'PERF_HTML_MINIFY';
+	public const KEY_CSS_BUNDLE = 'PERF_CSS_BUNDLE';
 
 	private const PAGE_CACHE_DIR = 'pages';
+	private const CSS_BUNDLE_DIR = 'assets/css';
 
 	/** @var array<string, string> */
 	public static function defaults(): array
@@ -21,6 +23,7 @@ class Performance
 			self::KEY_DEBUG => '',
 			self::KEY_GZIP => '1',
 			self::KEY_HTML_MINIFY => '0',
+			self::KEY_CSS_BUNDLE => '0',
 		];
 	}
 
@@ -54,6 +57,7 @@ class Performance
 			self::KEY_PAGE_CACHE,
 			self::KEY_GZIP,
 			self::KEY_HTML_MINIFY,
+			self::KEY_CSS_BUNDLE,
 		];
 
 		foreach ($flags as $key) {
@@ -74,8 +78,9 @@ class Performance
 		}
 
 		App::configureErrors();
+		self::clearCssBundleCache();
 
-		return ['success' => true, 'message' => 'Performans ayarları kaydedildi'];
+		return ['success' => true, 'message' => self::t('Performance settings have been saved')];
 	}
 
 	public static function isCacheEnabled(): bool
@@ -103,6 +108,209 @@ class Performance
 	public static function shouldMinifyHtml(): bool
 	{
 		return Settings::get(self::KEY_HTML_MINIFY) === '1';
+	}
+
+	public static function isCssBundleEnabled(): bool
+	{
+		return Settings::get(self::KEY_CSS_BUNDLE) === '1';
+	}
+
+	/**
+	 * @param Smarty\Smarty $smarty
+	 */
+	public static function assignThemeStylesheets($smarty): void
+	{
+		if (!self::isCssBundleEnabled()) {
+			$smarty->assign('themeCssBundleUrl', '');
+
+			return;
+		}
+
+		$theme = (string) ($smarty->getTemplateVars('activeTheme') ?? Settings::get('THEME') ?: 'fyazilim');
+		$pageCss = $smarty->getTemplateVars('css');
+		$pageCss = is_string($pageCss) && $pageCss !== '' && $pageCss !== '0' ? $pageCss : null;
+		$themeOptions = $smarty->getTemplateVars('themeOptions');
+		$includeHeader2 = is_array($themeOptions) && ($themeOptions['header'] ?? '') === 'header2';
+
+		$url = self::buildThemeCssBundleUrl($theme, $pageCss, $includeHeader2);
+		$smarty->assign('themeCssBundleUrl', $url);
+	}
+
+	public static function buildThemeCssBundleUrl(string $theme, ?string $pageCss = null, bool $includeHeader2 = false): string
+	{
+		if (!class_exists('Theme', false) || !Theme::isValidName($theme)) {
+			return '';
+		}
+
+		$files = self::collectThemeCssFiles($theme, $pageCss, $includeHeader2);
+
+		if ($files === []) {
+			return '';
+		}
+
+		$signature = self::cssBundleSignature($theme, $files);
+		$cacheFile = self::cssBundleCacheDir() . '/' . $theme . '-' . $signature . '.css';
+
+		if (!is_file($cacheFile)) {
+			if (!self::writeThemeCssBundle($theme, $files, $cacheFile)) {
+				return '';
+			}
+		}
+
+		global $domain;
+
+		return rtrim((string) $domain, '/') . '/cache/' . self::CSS_BUNDLE_DIR . '/' . $theme . '-' . $signature . '.css';
+	}
+
+	/** @return string[] */
+	public static function collectThemeCssFiles(string $theme, ?string $pageCss, bool $includeHeader2): array
+	{
+		$lists = [
+			'fyazilim' => [
+				'colors.css',
+				'custom.css',
+				'style.css',
+				'pages.css',
+				'notifications.css',
+				'cart-modal.css',
+				'fyazilim.css',
+			],
+			'blue' => [
+				'colors.css',
+				'custom.css',
+				'style.css',
+				'pages.css',
+				'notifications.css',
+				'cart-modal.css',
+			],
+			'shopmore' => [
+				'colors.css',
+				'custom.css',
+				'style.css',
+				'shopmore.css',
+				'pages.css',
+				'notifications.css',
+				'cart-modal.css',
+			],
+			'restoran' => [
+				'bootstrap.min.css',
+				'colors.css',
+				'custom.css',
+				'app.css',
+				'cart-modal.css',
+			],
+		];
+
+		$files = $lists[$theme] ?? [];
+
+		if ($includeHeader2 && $theme === 'blue') {
+			$files[] = 'header2.css';
+		}
+
+		if ($pageCss !== null && preg_match('/^[a-zA-Z0-9_-]+\.css$/', $pageCss)) {
+			$files[] = $pageCss;
+		}
+
+		$cssDir = self::rootPath() . '/templates/' . $theme . '/css/';
+		$existing = [];
+
+		foreach ($files as $file) {
+			if (is_file($cssDir . $file)) {
+				$existing[] = $file;
+			}
+		}
+
+		return $existing;
+	}
+
+	/** @param string[] $files */
+	private static function cssBundleSignature(string $theme, array $files): string
+	{
+		$cssDir = self::rootPath() . '/templates/' . $theme . '/css/';
+		$parts = [$theme, self::coreVersion()];
+
+		foreach ($files as $file) {
+			$path = $cssDir . $file;
+			$parts[] = $file . ':' . (is_file($path) ? (int) filemtime($path) : 0);
+		}
+
+		return substr(hash('sha256', implode('|', $parts)), 0, 16);
+	}
+
+	/** @param string[] $files */
+	private static function writeThemeCssBundle(string $theme, array $files, string $dest): bool
+	{
+		$cssDir = self::rootPath() . '/templates/' . $theme . '/css/';
+		$chunks = [];
+
+		foreach ($files as $file) {
+			$path = $cssDir . $file;
+			$content = @file_get_contents($path);
+
+			if ($content === false) {
+				continue;
+			}
+
+			$content = self::absolutizeCssUrls($content, $theme, $cssDir);
+			$chunks[] = '/* ' . $file . " */\n" . trim($content);
+		}
+
+		if ($chunks === []) {
+			return false;
+		}
+
+		$dir = dirname($dest);
+
+		if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+			return false;
+		}
+
+		return file_put_contents($dest, implode("\n\n", $chunks) . "\n") !== false;
+	}
+
+	private static function absolutizeCssUrls(string $css, string $theme, string $cssDir): string
+	{
+		global $domain;
+
+		$webRoot = rtrim((string) $domain, '/') . '/';
+		$cssDir = rtrim(str_replace('\\', '/', $cssDir), '/') . '/';
+
+		return (string) preg_replace_callback(
+			'#url\(\s*([\'"]?)([^\'")]+)\1\s*\)#i',
+			static function (array $match) use ($webRoot, $cssDir): string {
+				$path = trim($match[2]);
+
+				if ($path === ''
+					|| preg_match('#^(data:|https?:|//|/)#i', $path)
+				) {
+					return $match[0];
+				}
+
+				$absolute = realpath($cssDir . $path);
+
+				if ($absolute === false || !is_file($absolute)) {
+					return $match[0];
+				}
+
+				$root = dirname(__DIR__);
+				$relative = str_replace('\\', '/', substr($absolute, strlen($root)));
+				$relative = ltrim($relative, '/');
+
+				return 'url(' . $webRoot . $relative . ')';
+			},
+			$css
+		);
+	}
+
+	private static function cssBundleCacheDir(): string
+	{
+		return self::rootPath() . '/cache/' . self::CSS_BUNDLE_DIR;
+	}
+
+	/** @return array{files: int, bytes: int} */
+	public static function clearCssBundleCache(): array
+	{
+		return self::clearDirectory(self::cssBundleCacheDir());
 	}
 
 	/** @return 'env'|'0'|'1' */
@@ -225,12 +433,13 @@ class Performance
 		$compile = self::clearDirectory(self::rootPath() . '/cache/force');
 		$smarty = self::clearDirectory(self::rootPath() . '/cache/cache');
 		$pages = self::clearDirectory(self::pageCacheRoot());
+		$cssBundles = self::clearCssBundleCache();
 
-		$total = $compile['files'] + $smarty['files'] + $pages['files'];
+		$total = $compile['files'] + $smarty['files'] + $pages['files'] + $cssBundles['files'];
 
 		return [
 			'success' => true,
-			'message' => 'Önbellek temizlendi (' . $total . ' dosya)',
+			'message' => self::t('Cache cleared'),
 			'stats' => self::getStats(),
 		];
 	}
@@ -241,6 +450,7 @@ class Performance
 		$compile = self::directoryStats(self::rootPath() . '/cache/force');
 		$smarty = self::directoryStats(self::rootPath() . '/cache/cache');
 		$pages = self::directoryStats(self::pageCacheRoot());
+		$cssBundles = self::directoryStats(self::cssBundleCacheDir());
 
 		$opcache = false;
 
@@ -258,6 +468,8 @@ class Performance
 			'page_files' => $pages['files'],
 			'page_bytes' => $pages['bytes'],
 			'page_size_kb' => number_format($pages['bytes'] / 1024, 1),
+			'css_bundle_files' => $cssBundles['files'],
+			'css_bundle_bytes' => $cssBundles['bytes'],
 			'opcache_enabled' => $opcache,
 			'zlib_enabled' => extension_loaded('zlib'),
 		];
@@ -407,5 +619,75 @@ class Performance
 		}
 
 		return $stats;
+	}
+	private static function t(string $message): string
+	{
+		return function_exists('translate') ? translate($message) : $message;
+	}
+
+	public static function versionedUrl(string $url, ?string $filePath = null): string
+	{
+		$url = trim($url);
+
+		if ($url === '') {
+			return $url;
+		}
+
+		$version = self::fileVersion($filePath ?? self::urlToPath($url));
+
+		if (preg_match('/([?&])v=[^&]*/', $url)) {
+			return (string) preg_replace('/([?&])v=[^&]*/', '${1}v=' . rawurlencode($version), $url);
+		}
+
+		return $url . (strpos($url, '?') !== false ? '&' : '?') . 'v=' . rawurlencode($version);
+	}
+
+	public static function fileVersion(?string $filePath): string
+	{
+		$base = self::coreVersion();
+
+		if ($filePath !== null && is_file($filePath)) {
+			return $base . '.' . (int) filemtime($filePath);
+		}
+
+		return $base;
+	}
+
+	private static function coreVersion(): string
+	{
+		if (!class_exists('FShop', false)) {
+			require_once dirname(__DIR__) . '/core/FShop.php';
+		}
+
+		return FShop::version();
+	}
+
+	private static function urlToPath(string $url): ?string
+	{
+		$path = (string) (parse_url($url, PHP_URL_PATH) ?: '');
+
+		if ($path === '') {
+			return null;
+		}
+
+		$root = self::rootPath();
+
+		if (preg_match('#/templates/([^/]+)/css/([^/?]+)$#', $path, $m)) {
+			return $root . '/templates/' . $m[1] . '/css/' . $m[2];
+		}
+
+		if (preg_match('#/templates/([^/]+)/js/([^/?]+)$#', $path, $m)) {
+			return $root . '/templates/' . $m[1] . '/js/' . $m[2];
+		}
+
+		if (preg_match('#/modules/([^/]+)/assets/(css|js)/([^/?]+)$#', $path, $m)) {
+			return $root . '/modules/' . $m[1] . '/assets/' . $m[2] . '/' . $m[3];
+		}
+
+		if (preg_match('#/img/([^/?]+)$#', $path, $m)) {
+			return $root . '/img/' . $m[1];
+		}
+
+		return null;
 	}
 }

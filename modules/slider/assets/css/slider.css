@@ -2,7 +2,7 @@
 .fshop-slider--hero {
 	position: relative;
 	width: 100%;
-	height: 420px;
+	height: 450px;
 	overflow: hidden;
 	background: #f4efe9;
 	margin-top:0.5rem;
@@ -21,11 +21,19 @@
 	opacity: 0;
 	visibility: hidden;
 	transition: opacity .5s ease, visibility .5s ease;
-	background-size: cover;
-	background-position: center;
-	background-repeat: no-repeat;
 	padding: 1rem;
 	border-radius:0.5rem
+}
+
+.fshop-slider--hero .fshop-slider__image {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: center;
+	border-radius: inherit;
 }
 
 .fshop-slider--hero .fshop-slider__slide.is-active {
@@ -37,7 +45,7 @@
 .fshop-slider--hero .fshop-slider__overlay {
 	position: absolute;
 	inset: 0;
-	
+	z-index: 1;
 }
 
 .fshop-slider--hero .fshop-slider__content {
@@ -259,8 +267,9 @@
 	.fshop-slider--hero,
 	.fshop-slider--hero .fshop-slider__track,
 	.fshop-slider--hero .fshop-slider__content {
-		min-height: 200px;
+		min-height: 150px;
 	}
+	.fshop-slider__btn {display:none}
 	.fshop-slider--hero {height:auto}
 	.fshop-slider--hero .fshop-slider__content {
 		align-items: flex-end;

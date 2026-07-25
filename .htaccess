@@ -1,5 +1,40 @@
+# Statik dosyalar — tarayıcı önbelleği (PageSpeed: efficient cache policy)
+<IfModule mod_expires.c>
+	ExpiresActive On
+	ExpiresByType text/css "access plus 1 year"
+	ExpiresByType application/javascript "access plus 1 year"
+	ExpiresByType text/javascript "access plus 1 year"
+	ExpiresByType image/png "access plus 1 year"
+	ExpiresByType image/jpeg "access plus 1 year"
+	ExpiresByType image/webp "access plus 1 year"
+	ExpiresByType image/gif "access plus 1 year"
+	ExpiresByType image/svg+xml "access plus 1 year"
+	ExpiresByType image/x-icon "access plus 1 year"
+	ExpiresByType font/woff2 "access plus 1 year"
+	ExpiresByType font/woff "access plus 1 year"
+</IfModule>
+
+<IfModule mod_headers.c>
+	<FilesMatch "\.(css|js|png|jpe?g|webp|gif|svg|ico|woff2?|ttf|eot)$">
+		Header set Cache-Control "public, max-age=31536000, immutable"
+	</FilesMatch>
+</IfModule>
+
+<IfModule mod_deflate.c>
+	AddOutputFilterByType DEFLATE text/css application/javascript text/javascript application/json image/svg+xml
+</IfModule>
+
 RewriteEngine On
 RewriteBase /fshop/
+
+# PWA — dynamic manifest & service worker (mobil-app module)
+RewriteRule ^manifest\.json$ manifest.php [L]
+RewriteRule ^sw\.js$ sw.php [L]
+
+# BEGIN FSHOP_ADMIN
+RewriteRule ^admin/?$ admin/index.php [L,QSA]
+RewriteRule ^admin/([a-zA-Z0-9_-]+)/?$ admin/index.php?container=$1 [L,QSA]
+# END FSHOP_ADMIN
 
 # 404 Sayfası
 ErrorDocument 404 /404
@@ -9,9 +44,6 @@ ErrorDocument 404 /404
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
-
-# 4. Kritik Dosyalar (PWA ve Favicon için ekstra koruma)
-RewriteRule ^(sw\.js|manifest\.json|favicon\.ico|robots\.txt)$ - [L]
 
 # 4b. Sitemap
 RewriteRule ^sitemap\.xml$ sitemap.php [L]
@@ -38,13 +70,27 @@ RewriteRule ^([a-zA-Z0-9-]+)/(.+)-([0-9]+)$ index.php?container=product&category
 # 5b. Marka sayfası
 RewriteRule ^marka/([0-9a-zA-Z-]+)$ index.php?container=brand&link=$1 [L,QSA,NC]
 
-# 5c. Admin paneli
-RewriteRule ^admin/?$ admin/index.php [L,QSA]
-RewriteRule ^admin/([a-zA-Z0-9_-]+)/?$ admin/index.php?container=$1 [L,QSA]
-
 # 6. Genel Konteyner Yönlendirmesi (En sonda olmalı)
 # Eğer üstteki hiçbir kurala uymazsa buraya düşer
 RewriteCond %{REQUEST_URI} !^/index\.php
 RewriteRule ^([a-zA-Z0-9_-]+)$ index.php?container=$1 [NC,L,QSA]
 
+<IfModule mod_expires.c> 
+  ExpiresActive On
+  ExpiresDefault "access plus 1 seconds"
+  ExpiresByType text/html "access plus 1 seconds"
+  ExpiresByType image/x-icon "access plus 2592000 seconds"
+  ExpiresByType image/gif "access plus 2592000 seconds"
+  ExpiresByType image/jpeg "access plus 2592000 seconds"
+  ExpiresByType image/png "access plus 2592000 seconds"
+  ExpiresByType text/css "access plus 604800 seconds"
+  ExpiresByType text/javascript "access plus 86400 seconds"
+  ExpiresByType application/x-javascript "access plus 86400 seconds"
+</IfModule>
+<FilesMatch "\.(?i:gif|jpe?g|png|ico|css|js|swf)$">
 
+  <IfModule mod_headers.c>
+    Header set Cache-Control "max-age=172800, public, must-revalidate"
+  </IfModule>
+
+</FilesMatch>

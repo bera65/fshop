@@ -158,6 +158,7 @@ class Installer
 		try {
 			$pdo = self::pdo($dbConfig, true);
 			self::runSqlFile($pdo, self::rootPath() . '/install/schema.sql');
+			self::runSqlFileIfExists($pdo, self::rootPath() . '/install/patch_taxes.sql');
 
 			if ($withDemo) {
 				self::runSqlFile($pdo, self::rootPath() . '/install/seed_demo.sql');
@@ -204,9 +205,21 @@ class Installer
 				'DB_USER' => $dbUser,
 				'DB_PASS' => $dbPass,
 				'REWRITE_BASE' => $rewriteBase,
+				'ADMIN_URI' => 'admin',
 			]);
 
 			self::updateRewriteBase($rewriteBase);
+
+			if (is_file(self::rootPath() . '/core/Admin.php')) {
+				require_once self::rootPath() . '/config/app.php';
+				require_once self::rootPath() . '/core/Admin.php';
+
+				if (class_exists('App', false)) {
+					App::boot();
+				}
+
+				Admin::syncHtaccessRewrite();
+			}
 			file_put_contents(self::lockPath(), date('c') . PHP_EOL);
 
 			if ($withDemo) {
@@ -251,9 +264,22 @@ class Installer
 			throw new RuntimeException('SQL dosyası bulunamadı: ' . $path);
 		}
 
-		$sql = file_get_contents($path);
+		self::executeSqlStatements($pdo, (string) file_get_contents($path));
+	}
+
+	private static function runSqlFileIfExists(PDO $pdo, string $path): void
+	{
+		if (!is_file($path)) {
+			return;
+		}
+
+		self::executeSqlStatements($pdo, (string) file_get_contents($path));
+	}
+
+	private static function executeSqlStatements(PDO $pdo, string $sql): void
+	{
 		$sql = preg_replace('/^\s*--.*$/m', '', $sql);
-		$statements = preg_split('/;\s*[\r\n]+/', (string) $sql);
+		$statements = preg_split('/;\s*[\r\n]+/', $sql);
 
 		foreach ($statements as $statement) {
 			$statement = trim($statement);

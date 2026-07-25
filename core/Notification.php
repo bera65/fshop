@@ -20,7 +20,10 @@ class Notification
 		return $id ? (int) $id : null;
 	}
 
-	public static function notifyUser(int $idUser, string $type, string $title, string $message, string $link = ''): void
+	/**
+	 * @param array{type?:string,new_status?:int,old_status?:int} $meta
+	 */
+	public static function notifyUser(int $idUser, string $type, string $title, string $message, string $link = '', array $meta = []): void
 	{
 		self::create($idUser, $type, $title, $message, $link);
 
@@ -37,14 +40,100 @@ class Notification
 
 			Mail::send($email, $title, $body);
 		}
+
+		$meta = array_merge(['type' => $type], $meta);
+		self::dispatchWebPush($idUser, $title, $message, $link, $meta);
+	}
+
+	/**
+	 * @param array{type?:string,new_status?:int,old_status?:int} $meta
+	 */
+	public static function dispatchWebPush(int $idUser, string $title, string $message, string $link = '', array $meta = []): void
+	{
+		if ($idUser <= 0) {
+			return;
+		}
+
+		// customer-notify → OneSignal / yerel kuyruk
+		if (Module::isEnabled('customer-notify')) {
+			$cnPath = dirname(__DIR__) . '/modules/customer-notify/lib/CustomerNotifyPush.php';
+
+			if (is_file($cnPath)) {
+				require_once $cnPath;
+
+				if (class_exists('CustomerNotifyPush', false)) {
+					CustomerNotifyPush::dispatch($idUser, $title, $message, $link, $meta);
+				}
+			}
+		}
+
+		// mobil-app (eski native Web Push)
+		if (!Module::isEnabled('mobil-app')) {
+			return;
+		}
+
+		$servicePath = dirname(__DIR__) . '/modules/mobil-app/lib/WebPushService.php';
+
+		if (!is_file($servicePath)) {
+			return;
+		}
+
+		require_once $servicePath;
+
+		if (!WebPushService::isAvailable()) {
+			return;
+		}
+
+		WebPushService::sendToUser($idUser, $title, $message, self::buildNotificationUrl($link));
 	}
 
 	public static function welcome(int $idUser, string $fullName): void
 	{
+		$siteName = trim((string) Settings::get('SITE_NAME')) ?: 'Mağazamız';
 		$title = 'Hoş geldiniz!';
-		$message = 'Merhaba ' . $fullName . ",\n\nFShop'a kayıt olduğunuz için teşekkür ederiz. Hesabınızdan siparişlerinizi takip edebilirsiniz.";
+		$message = 'Merhaba ' . $fullName . ",\n\n"
+			. $siteName . "'a kayıt olduğunuz için teşekkür ederiz. Hesabınızdan siparişlerinizi takip edebilirsiniz.";
 
 		self::notifyUser($idUser, 'welcome', $title, $message, 'my-account');
+	}
+
+	public static function getByIdForUser(int $idNotification, int $idUser): ?array
+	{
+		if ($idNotification <= 0 || $idUser <= 0) {
+			return null;
+		}
+
+		$row = DB::getRow(
+			'SELECT * FROM user_notifications WHERE id_notification = ? AND id_user = ? LIMIT 1',
+			[$idNotification, $idUser]
+		);
+
+		if (!$row) {
+			return null;
+		}
+
+		$row['date_formatted'] = Tools::formatDate3($row['date_add']);
+		$row['is_read'] = (int) $row['is_read'];
+		$row['url'] = self::buildNotificationUrl((string) ($row['link'] ?? ''));
+
+		return $row;
+	}
+
+	public static function buildNotificationUrl(string $link): string
+	{
+		global $domain;
+		$link = trim($link);
+		$base = rtrim((string) $domain, '/');
+
+		if ($link === '') {
+			return $base . '/my-account#notifications';
+		}
+
+		if (preg_match('#^https?://#i', $link)) {
+			return $link;
+		}
+
+		return $base . '/' . ltrim($link, '/');
 	}
 
 	public static function orderPlaced(int $idUser, string $reference, float $total, int $idOrder = 0): void
@@ -73,7 +162,10 @@ class Notification
 		$idOrder = (int) ($order['id_order'] ?? 0);
 		$link = $idOrder > 0 ? 'my-account?order=' . $idOrder : 'my-account';
 
-		self::notifyUser($idUser, 'order_status', $title, $message, $link);
+		self::notifyUser($idUser, 'order_status', $title, $message, $link, [
+			'new_status' => $newStatus,
+			'old_status' => $oldStatus,
+		]);
 	}
 
 	private static function buildStatusMessage(string $reference, int $oldStatus, int $newStatus, string $payment): string
@@ -129,6 +221,7 @@ class Notification
 		foreach ($rows as &$row) {
 			$row['date_formatted'] = Tools::formatDate3($row['date_add']);
 			$row['is_read'] = (int) $row['is_read'];
+			$row['url'] = self::buildNotificationUrl((string) ($row['link'] ?? ''));
 		}
 		unset($row);
 

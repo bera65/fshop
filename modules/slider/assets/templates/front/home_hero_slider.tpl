@@ -2,7 +2,8 @@
 <div class="fshop-slider fshop-slider--hero" data-slider-type="hero">
 	<div class="fshop-slider__track">
 		{foreach $slides as $slide name=heroSlides}
-		<div class="fshop-slider__slide{if $smarty.foreach.heroSlides.first} is-active{/if}" style="background-image:url('{$slide.image_url|escape}');">
+		<div class="fshop-slider__slide{if $smarty.foreach.heroSlides.first} is-active{/if}">
+			<img class="fshop-slider__image" src="{$slide.image_url|escape}" alt="{$slide.title|default:$slide.subtitle|default:'Slayt'|escape}" width="1920" height="420"{if $smarty.foreach.heroSlides.first} fetchpriority="high" decoding="sync"{else} loading="lazy" decoding="async"{/if}>
 			<div class="fshop-slider__overlay"></div>
 			<div class="fshop-slider__content site-container">
 				<div class="fshop-slider__text">

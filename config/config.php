@@ -77,4 +77,24 @@
 
 			return $values;
 		}
+
+		public static function getFooterDescriptionDefault(): string
+		{
+			if (class_exists('Lang', false)) {
+				$translated = trim(Lang::translate('Footer description'));
+
+				if ($translated !== '' && $translated !== 'Footer description') {
+					return $translated;
+				}
+			}
+
+			return 'Güvenilir alışveriş deneyimi, hızlı teslimat ve geniş ürün yelpazesi ile yanınızdayız.';
+		}
+
+		public static function getFooterDescription(): string
+		{
+			$custom = trim((string) self::get('FOOTER_DESCRIPTION'));
+
+			return $custom !== '' ? $custom : self::getFooterDescriptionDefault();
+		}
 	}

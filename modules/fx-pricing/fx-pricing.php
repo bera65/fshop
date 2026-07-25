@@ -163,6 +163,7 @@ class FxPricingModule extends ModuleBase
 			'shopCurrency' => Currency::getShopCurrency(),
 			'currencyList' => Currency::getAdminList(),
 			'cronUrl' => rtrim((string) $domain, '/') . '/api/cron.php?action=currency&token=' . rawurlencode($shopToken),
+			'fxRefreshCronUrl' => rtrim((string) $domain, '/') . '/api/module.php?m=fx-pricing&action=refresh&token=' . rawurlencode($shopToken),
 			'fxProductCount' => FxPricingService::countFxProducts(),
 		]);
 	}

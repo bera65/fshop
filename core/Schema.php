@@ -13,6 +13,11 @@ class Schema
 		self::$ready = true;
 		Product::ensureSchema();
 
+		if (is_file(dirname(__DIR__) . '/core/Tax.php')) {
+			require_once dirname(__DIR__) . '/core/Tax.php';
+			Tax::ensureSchema();
+		}
+
 		if (is_file(dirname(__DIR__) . '/core/ApiKey.php')) {
 			require_once dirname(__DIR__) . '/core/ApiKey.php';
 			ApiKey::ensureSchema();

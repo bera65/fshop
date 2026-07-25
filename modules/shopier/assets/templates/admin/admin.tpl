@@ -171,4 +171,5 @@
 
 <script>
 window.shopierCategoriesApiUrl = {$categoriesApiUrl|@json_encode nofilter};
+window.shopierAdminToken = {$adminToken|@json_encode nofilter};
 </script>

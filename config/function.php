@@ -357,3 +357,27 @@ if (!function_exists('clearSQL')) {
 		return $data;
 	}
 }
+
+if (!function_exists('fshop_validate_captcha')) {
+	function fshop_validate_captcha(string $form): string
+	{
+		$captchaFile = dirname(__FILE__) . '/../core/Captcha.php';
+
+		if (!class_exists('Captcha', false) && is_file($captchaFile)) {
+			require_once $captchaFile;
+		}
+
+		if (class_exists('Captcha', false)) {
+			return Captcha::validate($form);
+		}
+
+		if (!class_exists('Module', false)) {
+			return '';
+		}
+
+		$error = '';
+		Module::runHook('form.captcha.validate', [$form, &$error]);
+
+		return trim((string) $error);
+	}
+}

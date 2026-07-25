@@ -1,5 +1,17 @@
 {if $flash}
-<div class="alert alert-{$flashType|default:'info'} py-2">{$flash|escape}</div>
+	<div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index:9999;">
+		<div class="toast frisay-toast {$flashType|default:'success'} show" role="alert">
+			<div class="toast-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-icon lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+			</div>
+			<div class="toast-body p-0">
+				<div class="toast-message">
+					{$flash|escape}
+				</div>
+			</div>
+			<button class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+		</div>
+	</div>
 {/if}
 
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
@@ -36,10 +48,11 @@
 				OPcache:
 				{if $perfStats.opcache_enabled}<span class="badge text-bg-success">{'Enabled'|adminT}</span>{else}<span class="badge text-bg-secondary">{'Disabled'|adminT}</span>{/if}
 			</p>
-			<p class="mb-0">
+			<p class="mb-1">
 				Gzip:
 				{if $perfStats.zlib_enabled}<span class="badge text-bg-success">{'Supported'|adminT}</span>{else}<span class="badge text-bg-warning">{'None'|adminT}</span>{/if}
 			</p>
+			<p class="mb-0 small text-muted">{'CSS bundle cache'|adminT}: {$perfStats.css_bundle_files|default:0|escape} — <code>cache/assets/css/</code></p>
 		</div>
 	</div>
 </div>
@@ -96,13 +109,23 @@
 					</label>
 				</div>
 
-				<div class="form-check form-switch mb-0">
+				<div class="form-check form-switch mb-3">
 					<input class="form-check-input" type="checkbox" role="switch" id="perf_html_minify"
 						name="PERF_HTML_MINIFY" value="1"
 						{if $perfConfig.PERF_HTML_MINIFY == '1'}checked{/if}>
 					<label class="form-check-label" for="perf_html_minify">
 						<strong>{'HTML minification'|adminT}</strong>
 						<span class="d-block text-muted small">{'Removes extra whitespace. script/style blocks are preserved.'|adminT}</span>
+					</label>
+				</div>
+
+				<div class="form-check form-switch mb-0">
+					<input class="form-check-input" type="checkbox" role="switch" id="perf_css_bundle"
+						name="PERF_CSS_BUNDLE" value="1"
+						{if $perfConfig.PERF_CSS_BUNDLE == '1'}checked{/if}>
+					<label class="form-check-label" for="perf_css_bundle">
+						<strong>{'CSS bundle'|adminT}</strong>
+						<span class="d-block text-muted small">{'Combines theme CSS files into one cached file. Fewer render-blocking requests (PageSpeed). Module CSS stays separate. Clear cache after theme edits if needed.'|adminT}</span>
 					</label>
 				</div>
 			</div>

@@ -75,7 +75,7 @@ class Order
 			if (!isset($methods[$method])) {
 				return false;
 			}
-		} elseif (!in_array($method, ['bank_transfer', 'cash_on_delivery'], true)) {
+		} else {
 			return false;
 		}
 
@@ -272,13 +272,11 @@ class Order
 		$paymentMethods = Module::getPaymentMethods();
 
 		if ($paymentMethods !== []) {
-			// Ödeme modülleri kurulu: yöntem onlardan birine ait olmalı
 			if (!isset($paymentMethods[$payment])) {
 				return self::fail(translate('Invalid payment method'));
 			}
-		} elseif (!in_array($payment, ['bank_transfer', 'cash_on_delivery'], true)) {
-			// Hiç ödeme modülü yoksa eski sabit yöntemler geçerli
-			return self::fail(translate('Invalid payment method'));
+		} else {
+			return self::fail(translate('No payment methods available'));
 		}
 
 		if (empty($data['accept_terms'])) {
@@ -451,6 +449,15 @@ class Order
 			$db->commit();
 			Cart::clear();
 
+			if (class_exists('Marketplace', false)) {
+				foreach ($cart['items'] as $item) {
+					$idProd = (int) ($item['id_product'] ?? 0);
+					if ($idProd > 0) {
+						Marketplace::syncProductStockAcrossPlatforms($idProd, null);
+					}
+				}
+			}
+
 			if ($couponCode !== '') {
 				Coupon::markUsed($couponCode);
 				Coupon::remove();
@@ -619,6 +626,10 @@ class Order
 	private static function hydrateCustomerOrder(array $order, int $idUser): array
 	{
 		$idOrder = (int) $order['id_order'];
+
+		if (self::isPaymentAccepted((int) $order['status']) && class_exists('VirtualProduct', false)) {
+			VirtualProduct::fulfillOrder($idOrder);
+		}
 
 		$order['status_label'] = self::getStatusLabel((int) $order['status']);
 		$order['payment_label'] = self::getPaymentLabel($order['payment_method']);

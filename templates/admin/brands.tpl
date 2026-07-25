@@ -1,5 +1,17 @@
 {if $sonuc}
-	<div class="alert alert-success">{$sonuc}</div>
+	<div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index:9999;">
+		<div class="toast frisay-toast dark show" role="alert">
+			<div class="toast-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-icon lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+			</div>
+			<div class="toast-body p-0">
+				<div class="toast-message">
+					{$sonuc|escape}
+				</div>
+			</div>
+			<button class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+		</div>
+	</div>
 {/if}
 <div class="admin-toolbar d-flex flex-wrap gap-2 mb-3">
 	<a href="{$adminUrl}brands" class="btn btn-sm {if $activeFilter == -1}btn-dark{else}btn-outline-dark{/if}">{'All'|adminT}</a>
@@ -8,7 +20,7 @@
 	<a href="{$adminUrl}brand" class="btn btn-sm btn-primary ms-auto">{'+ New brand'|adminT}</a>
 </div>
 
-<div class="admin-panel">
+<div class="admin-panel p-0">
 	<div class="table-responsive">
 		<table class="table table-sm align-middle mb-0">
 			<thead>

@@ -71,6 +71,7 @@
 	if (file_exists($filePath)) {
 		include $filePath;
 		if (!$skipPageRender) {
+			Lcp::assignPreload($container);
 			$smarty->assign('searchQuery', $searchQuery);
 			$page->add($container, $pageTitle, $css, $js, $pageDesc, $noLayout);
 		}

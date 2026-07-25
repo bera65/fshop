@@ -87,6 +87,13 @@ class Product
 			);
 		}
 
+		$stockEmptyAt = DB::execute("SHOW COLUMNS FROM `products` LIKE 'stock_empty_at'");
+		if (empty($stockEmptyAt)) {
+			DB::execute(
+				'ALTER TABLE `products` ADD COLUMN `stock_empty_at` datetime DEFAULT NULL AFTER `stock`'
+			);
+		}
+
 		$label = DB::execute("SHOW COLUMNS FROM `products` LIKE 'label'");
 		if (empty($label)) {
 			DB::execute(
@@ -105,6 +112,12 @@ class Product
 
 		VirtualProduct::ensureSchema();
 		ProductVariation::ensureSchema();
+
+		if (!class_exists('Tax', false)) {
+			require_once dirname(__DIR__) . '/core/Tax.php';
+		}
+
+		Tax::ensureSchema();
 	}
 
 	public static function isPackProduct(array $product): bool
@@ -776,40 +789,35 @@ class Product
 
 	public static function countActive(?int $idCategory = null, ?int $idBrand = null): int
 	{
-		return self::countFiltered(
-			$idCategory ? [$idCategory] : [],
-			$idBrand
-		);
+		if ($idCategory) {
+			$filter = CatalogFilter::forCategory($idCategory);
+		} else {
+			$filter = new CatalogFilter();
+		}
+
+		$filter->brandId = max(0, (int) $idBrand);
+
+		return self::countFiltered($filter);
 	}
 
-	/**
-	 * @param int[] $categoryIds
-	 */
-	public static function countFiltered(
-		array $categoryIds = [],
-		?int $idBrand = null,
-		?float $priceMin = null,
-		?float $priceMax = null
-	): int {
+	public static function countFiltered(CatalogFilter $filter): int
+	{
 		$sql = 'SELECT COUNT(*) FROM products p WHERE p.active = 1';
 		$params = [];
-		self::appendFilterSql($sql, $params, $categoryIds, $idBrand, $priceMin, $priceMax);
+		$filter->appendProductSql($sql, $params);
+		self::runFilterHook($sql, $params, $filter);
 
 		return (int) DB::getValue($sql, $params);
 	}
 
 	/**
-	 * @param int[] $categoryIds
 	 * @return array<int, array<string, mixed>>
 	 */
 	public static function getFilteredList(
-		array $categoryIds = [],
+		CatalogFilter $filter,
 		int $limit = 24,
 		int $offset = 0,
-		string $sort = 'newest',
-		?int $idBrand = null,
-		?float $priceMin = null,
-		?float $priceMax = null
+		string $sort = 'newest'
 	): array {
 		$sql = 'SELECT p.*, b.brand_name, b.brand_link, c.category_name, c.category_link, i.id_image
 			FROM products p
@@ -818,7 +826,8 @@ class Product
 			LEFT JOIN images i ON p.id_product = i.id_product AND i.cover = 1
 			WHERE p.active = 1';
 		$params = [];
-		self::appendFilterSql($sql, $params, $categoryIds, $idBrand, $priceMin, $priceMax);
+		$filter->appendProductSql($sql, $params);
+		self::runFilterHook($sql, $params, $filter);
 
 		$sql .= ' ORDER BY ' . Pagination::resolveSort($sort);
 		$sql .= ' LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
@@ -832,42 +841,20 @@ class Product
 		return self::enrichList($rows);
 	}
 
-	/**
-	 * @param int[] $categoryIds
-	 * @param array<int, scalar> $params
-	 */
-	private static function appendFilterSql(
-		string &$sql,
-		array &$params,
-		array $categoryIds,
-		?int $idBrand,
-		?float $priceMin,
-		?float $priceMax
-	): void {
-		$categoryIds = array_values(array_filter(array_map('intval', $categoryIds)));
-
-		if ($categoryIds !== []) {
-			$placeholders = implode(',', array_fill(0, count($categoryIds), '?'));
-			$sql .= ' AND p.id_category IN (' . $placeholders . ')';
-			foreach ($categoryIds as $id) {
-				$params[] = $id;
-			}
+	/** @param array<int, scalar> $params */
+	private static function runFilterHook(string &$sql, array &$params, CatalogFilter $filter): void
+	{
+		if (!class_exists('Module', false)) {
+			return;
 		}
 
-		if ($idBrand) {
-			$sql .= ' AND p.id_brand = ?';
-			$params[] = $idBrand;
-		}
-
-		if ($priceMin !== null) {
-			$sql .= ' AND p.price >= ?';
-			$params[] = $priceMin;
-		}
-
-		if ($priceMax !== null) {
-			$sql .= ' AND p.price <= ?';
-			$params[] = $priceMax;
-		}
+		Module::runHook('product.filter.sql', [&$sql, &$params, [
+			'filter' => $filter,
+			'categoryIds' => $filter->getCategoryIds(),
+			'idBrand' => $filter->brandId > 0 ? $filter->brandId : null,
+			'priceMin' => $filter->priceMin,
+			'priceMax' => $filter->priceMax,
+		]]);
 	}
 
 	/**
@@ -1084,7 +1071,7 @@ class Product
 			$name = trim((string) ($entry['product_name'] ?? ''));
 			$link = trim((string) ($entry['product_link'] ?? ''));
 			$shortDescription = trim(strip_tags((string) ($entry['short_description'] ?? '')));
-			$description = (string) ($entry['description'] ?? '');
+			$description = Security::sanitizeHtml((string) ($entry['description'] ?? ''));
 			$metaTitle = trim(strip_tags((string) ($entry['meta_title'] ?? '')));
 			$metaDescription = trim(strip_tags((string) ($entry['meta_description'] ?? '')));
 
@@ -1165,11 +1152,11 @@ class Product
 		$shortDescription 	= trim(strip_tags((string) ($defaultEntry['short_description'] ?? $data['short_description'] ?? '')));
 		$metaTitle 			= trim(strip_tags((string) ($defaultEntry['meta_title'] ?? $data['meta_title'] ?? '')));
 		$metaDescription 	= trim(strip_tags((string) ($defaultEntry['meta_description'] ?? $data['meta_description'] ?? '')));
-		$description 		= (string) ($defaultEntry['description'] ?? $data['description'] ?? '');
+		$description 		= Security::sanitizeHtml((string) ($defaultEntry['description'] ?? $data['description'] ?? ''));
 		$price 				= (float) str_replace(',', '.', (string) ($data['price'] ?? 0));
 		$cost 				= (float) str_replace(',', '.', (string) ($data['cost'] ?? 0));
 		$oldPrice 			= (float) str_replace(',', '.', (string) ($data['old_price'] ?? 0));
-		$vat 				= (float) str_replace(',', '.', (string) ($data['vat'] ?? 20));
+		$vat 				= Tax::sanitizeRate((float) str_replace(',', '.', (string) ($data['vat'] ?? Tax::getDefaultRate())));
 		$stock 				= (int) ($data['stock'] ?? 0);
 		$active 			= isset($data['active']) ? (int) $data['active'] : 0;
 		$productVideo 		= mb_substr(trim((string) ($data['product_video'] ?? '')), 0, 256);
@@ -1317,10 +1304,15 @@ class Product
 		];
 
 		if ($id > 0) {
+			$oldStock = isset($existing) ? (int) ($existing['stock'] ?? 0) : 0;
 			$ok = DB::update('products', $row, 'id_product = :where_id', ['where_id' => $id]);
 
 			if ($ok === false) {
 				return self::fail('Ürün güncellenemedi');
+			}
+
+			if (class_exists('StockAnalysis', false)) {
+				StockAnalysis::touchStockEmptyAt($id, $oldStock, (int) $row['stock']);
 			}
 
 			$langError = self::saveLangRows($id, $langData);
@@ -1746,6 +1738,14 @@ class Product
 
 		$ok = DB::update('products', $row, 'id_product = :where_id', ['where_id' => $id]);
 
+		if ($ok !== false && array_key_exists('stock', $row) && class_exists('StockAnalysis', false)) {
+			StockAnalysis::touchStockEmptyAt($id, (int) ($product['stock'] ?? 0), (int) $row['stock']);
+		}
+
+		if ($ok !== false && array_key_exists('stock', $row)) {
+			self::fireUpdatedHook($id, false);
+		}
+
 		return $ok !== false
 			? ['success' => true, 'message' => 'Ürün hızlı güncellendi', 'id' => $id]
 			: self::fail('Ürün güncellenemedi');
@@ -1764,6 +1764,84 @@ class Product
 		DB::update('images', ['cover' => 1], 'id_image = :where_id', ['where_id' => $idImage]);
 
 		return ['success' => true, 'message' => 'Kapak görseli güncellendi', 'id' => $idImage];
+	}
+
+	/**
+	 * @param list<int|string> $ids
+	 * @return array{success: bool, message: string, count: int}
+	 */
+	public static function bulkSetActive(array $ids, int $active): array
+	{
+		$ids = array_values(array_unique(array_filter(array_map('intval', $ids), static function (int $id): bool {
+			return $id > 0;
+		})));
+
+		if ($ids === []) {
+			return self::fail('Ürün seçilmedi');
+		}
+
+		$active = $active === 1 ? 1 : 0;
+		$count = 0;
+
+		foreach ($ids as $id) {
+			if (!self::getByIdAdmin($id)) {
+				continue;
+			}
+
+			$ok = DB::update('products', ['active' => $active], 'id_product = :where_id', ['where_id' => $id]);
+
+			if ($ok === false) {
+				continue;
+			}
+
+			self::fireUpdatedHook($id, false);
+			$count++;
+		}
+
+		if ($count === 0) {
+			return self::fail('Seçili ürünler güncellenemedi');
+		}
+
+		return [
+			'success' => true,
+			'message' => $count . ' ürün ' . ($active === 1 ? 'aktif' : 'pasif') . ' edildi',
+			'count' => $count,
+		];
+	}
+
+	/**
+	 * @param list<int|string> $ids
+	 * @return array{success: bool, message: string, count: int}
+	 */
+	public static function bulkDelete(array $ids): array
+	{
+		$ids = array_values(array_unique(array_filter(array_map('intval', $ids), static function (int $id): bool {
+			return $id > 0;
+		})));
+
+		if ($ids === []) {
+			return self::fail('Ürün seçilmedi');
+		}
+
+		$count = 0;
+
+		foreach ($ids as $id) {
+			$result = self::deleteById($id);
+
+			if (!empty($result['success'])) {
+				$count++;
+			}
+		}
+
+		if ($count === 0) {
+			return self::fail('Seçili ürünler silinemedi');
+		}
+
+		return [
+			'success' => true,
+			'message' => $count . ' ürün silindi',
+			'count' => $count,
+		];
 	}
 
 	public static function deleteById(int $id): array

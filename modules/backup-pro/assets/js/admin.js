@@ -1,14 +1,20 @@
 function getBackupApiUrl(action) {
     if (window.backupProApiBase) {
-        return window.backupProApiBase + action;
+        var url = window.backupProApiBase + action;
+    } else {
+        let base = window.location.origin + '/';
+        if (typeof domain !== 'undefined' && domain) {
+            base = domain;
+        } else if (typeof adminUrl !== 'undefined' && adminUrl) {
+            base = adminUrl.split('/admin')[0] + '/';
+        }
+        var url = base.replace(/\/+$/, '/') + 'api/module.php?m=backup-pro&action=' + action;
     }
-    let base = window.location.origin + '/';
-    if (typeof domain !== 'undefined' && domain) {
-        base = domain;
-    } else if (typeof adminUrl !== 'undefined' && adminUrl) {
-        base = adminUrl.split('/admin')[0] + '/';
+    var token = window.backupProAdminToken || window.adminToken || '';
+    if (token) {
+        url += (url.indexOf('?') >= 0 ? '&' : '?') + 'token=' + encodeURIComponent(token);
     }
-    return base.replace(/\/+$/, '/') + 'api/module.php?m=backup-pro&action=' + action;
+    return url;
 }
 
 var BackupPro = window.BackupPro || {

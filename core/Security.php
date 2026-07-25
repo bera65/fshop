@@ -83,6 +83,52 @@ class Security
 		return true;
 	}
 
+	/**
+	 * Allowlist HTML for product/CMS/blog editors (XSS hardening).
+	 * Keeps common editor tags; strips scripts, event handlers, javascript: URLs.
+	 */
+	public static function sanitizeHtml(string $html): string
+	{
+		$html = trim($html);
+
+		if ($html === '') {
+			return '';
+		}
+
+		$allowed = '<p><br><br/><strong><b><em><i><u><s><ul><ol><li><a><img>'
+			. '<h1><h2><h3><h4><h5><h6><blockquote><table><thead><tbody><tr><th><td>'
+			. '<span><div><hr><pre><code><figure><figcaption><sub><sup>';
+
+		$html = strip_tags($html, $allowed);
+		$html = preg_replace('/\s+on[a-z]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html) ?? '';
+		$html = preg_replace_callback(
+			'/\s(href|src|xlink:href)\s*=\s*("|\')\s*(.*?)\s*\2/is',
+			static function (array $m): string {
+				$attr = strtolower($m[1]);
+				$quote = $m[2];
+				$url = trim(html_entity_decode($m[3], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+				$lower = strtolower($url);
+
+				if (strpos($lower, 'javascript:') === 0 || strpos($lower, 'vbscript:') === 0) {
+					return '';
+				}
+
+				if ($attr === 'href' && strpos($lower, 'data:') === 0) {
+					return '';
+				}
+
+				if ($attr === 'src' && strpos($lower, 'data:') === 0 && strpos($lower, 'data:image/') !== 0) {
+					return '';
+				}
+
+				return ' ' . $attr . '=' . $quote . $m[3] . $quote;
+			},
+			$html
+		) ?? '';
+
+		return $html;
+	}
+
 	public static function isBlockedOutboundIp(string $ip): bool
 	{
 		if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {

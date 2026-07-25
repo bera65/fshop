@@ -1,0 +1,3 @@
+.tb-admin-table input[type="number"] {
+	max-width: 64px;
+}

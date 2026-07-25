@@ -83,6 +83,14 @@
 
 		} else {
 
+			$captchaError = fshop_validate_captcha('login');
+
+			if ($captchaError !== '') {
+
+				$authError = $captchaError;
+
+			} else {
+
 			$remember = Tools::getValue('remember') !== '0';
 
 			$result = Customer::login(
@@ -112,6 +120,8 @@
 
 
 			$authError = $result['message'];
+
+			}
 
 		}
 

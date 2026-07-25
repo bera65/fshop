@@ -10,10 +10,7 @@ if (!class_exists('Admin')) {
 
 header('Content-Type: application/json; charset=utf-8');
 
-if (!Admin::isLoggedIn()) {
-	echo json_encode(['success' => false, 'message' => 'Yetkisiz erişim']);
-	exit;
-}
+Admin::requireModuleApiAuth();
 
 require_once dirname(__DIR__) . '/lib/InvoiceService.php';
 

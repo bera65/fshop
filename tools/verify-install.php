@@ -10,6 +10,7 @@ $root = dirname(__DIR__);
 $required = [
 	'install/index.php'           => 'Kurulum sihirbazı giriş noktası',
 	'install/schema.sql'          => 'Ana veritabanı şeması (Installer zorunlu)',
+	'install/patch_taxes.sql'     => 'Vergi oranları tablosu (kurulumda otomatik)',
 	'install/seed_demo.sql'       => 'Demo veri (isteğe bağlı kurulum)',
 	'install/assets/install.css'  => 'Kurulum arayüzü stilleri',
 	'install/.htaccess'           => 'Web erişim notu / güvenlik',
@@ -38,6 +39,7 @@ $schemaTables = [
 	'settings', 'categories', 'brands', 'products', 'images', 'users', 'orders',
 	'order_detail', 'favorites', 'contact_messages', 'user_addresses',
 	'user_notifications', 'coupons', 'admins', 'modules', 'module_display_hooks',
+	'taxes',
 ];
 
 echo "FShop install/ doğrulama\n";
@@ -66,16 +68,27 @@ foreach ($optional as $file) {
 }
 
 $schemaPath = $root . '/install/schema.sql';
+$taxPatchPath = $root . '/install/patch_taxes.sql';
 if (is_file($schemaPath)) {
 	echo "\nschema.sql tablo kontrolü:\n";
 	$schema = file_get_contents($schemaPath) ?: '';
 	foreach ($schemaTables as $table) {
-		$found = (bool) preg_match('/CREATE TABLE `' . preg_quote($table, '/') . '`/i', $schema);
+		if ($table === 'taxes' && !is_file($taxPatchPath)) {
+			$found = (bool) preg_match('/CREATE TABLE (`|IF NOT EXISTS `)' . preg_quote($table, '/') . '`/i', $schema);
+		} elseif ($table === 'taxes') {
+			$patch = is_file($taxPatchPath) ? (file_get_contents($taxPatchPath) ?: '') : '';
+			$found = (bool) preg_match('/CREATE TABLE (`|IF NOT EXISTS `)' . preg_quote($table, '/') . '`/i', $patch)
+				|| (bool) preg_match('/CREATE TABLE (`|IF NOT EXISTS `)' . preg_quote($table, '/') . '`/i', $schema);
+		} else {
+			$found = (bool) preg_match('/CREATE TABLE (`|IF NOT EXISTS `)' . preg_quote($table, '/') . '`/i', $schema);
+		}
 		echo ($found ? '[OK] ' : '[EKSIK] ') . 'CREATE TABLE `' . $table . "`\n";
 		if (!$found) {
 			++$errors;
 		}
 	}
+} elseif (is_file($taxPatchPath)) {
+	echo "\n[patch] install/patch_taxes.sql mevcut (schema.sql yok — kurulumda patch çalışır)\n";
 }
 
 $indexPath = $root . '/install/index.php';
@@ -93,7 +106,7 @@ $installerPath = $root . '/core/Installer.php';
 if (is_file($installerPath)) {
 	echo "\nInstaller.php bağımlılıkları:\n";
 	$installer = file_get_contents($installerPath) ?: '';
-	foreach (['/install/schema.sql', '/install/seed_demo.sql'] as $needle) {
+	foreach (['/install/schema.sql', '/install/patch_taxes.sql', '/install/seed_demo.sql'] as $needle) {
 		$found = strpos($installer, $needle) !== false;
 		echo ($found ? '[OK] ' : '[EKSIK] ') . 'Referans: ' . trim($needle, '/') . "\n";
 		if (!$found) {

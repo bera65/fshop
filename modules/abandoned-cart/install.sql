@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS `abandoned_carts` (
+	`id_cart` int unsigned NOT NULL AUTO_INCREMENT,
+	`session_id` varchar(64) NOT NULL DEFAULT '',
+	`id_user` int unsigned NOT NULL DEFAULT 0,
+	`customer_email` varchar(128) NOT NULL DEFAULT '',
+	`customer_name` varchar(128) NOT NULL DEFAULT '',
+	`cart_json` mediumtext NOT NULL,
+	`item_count` int unsigned NOT NULL DEFAULT 0,
+	`subtotal` decimal(20,2) NOT NULL DEFAULT 0.00,
+	`status` enum('active','converted','abandoned') NOT NULL DEFAULT 'active',
+	`id_order` int unsigned NOT NULL DEFAULT 0,
+	`reminder_count` int unsigned NOT NULL DEFAULT 0,
+	`last_reminder_at` datetime DEFAULT NULL,
+	`coupon_code` varchar(32) NOT NULL DEFAULT '',
+	`date_add` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	`date_upd` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	PRIMARY KEY (`id_cart`),
+	KEY `session_id` (`session_id`),
+	KEY `id_user` (`id_user`),
+	KEY `status` (`status`),
+	KEY `date_upd` (`date_upd`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

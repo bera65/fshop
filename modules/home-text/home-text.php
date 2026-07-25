@@ -97,7 +97,7 @@ class HomeTextModule extends ModuleBase
 
 	public function saveContent(string $html): bool
 	{
-		$html = trim($html);
+		$html = Security::sanitizeHtml(trim($html));
 		$row = DB::getRowSafe(self::TABLE, 'id = ?', [self::ROW_ID]);
 
 		if ($row) {

@@ -1,0 +1,233 @@
+.mobil-app-menu {
+	padding: 0.25rem 0 0.75rem;
+}
+
+.mobil-app-menu__section {
+	margin: 0.75rem 1rem 0.35rem;
+	font-size: 0.72rem;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	opacity: 0.55;
+}
+
+.mobil-app-menu__btn {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	width: calc(100% - 1rem);
+	margin: 0.15rem 0.5rem;
+	padding: 0.75rem 0.85rem;
+	border: 0;
+	border-radius: 0.75rem;
+	background: transparent;
+	color: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.mobil-app-menu__btn:hover,
+.mobil-app-menu__btn:focus-visible {
+	background: rgba(15, 23, 42, 0.06);
+}
+
+.mobil-app-menu__ico {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 2rem;
+	height: 2rem;
+	border-radius: 0.65rem;
+	background: rgba(25, 78, 112, 0.1);
+	color: #194e70;
+	flex-shrink: 0;
+}
+
+.mobil-app-menu__label {
+	font-size: 0.95rem;
+	font-weight: 500;
+}
+
+.mobil-app-menu__hint,
+.mobil-app-menu__installed {
+	margin: 0.25rem 1rem 0.5rem;
+	font-size: 0.82rem;
+	line-height: 1.45;
+	opacity: 0.72;
+}
+
+.mobil-app-menu__installed {
+	color: #15803d;
+	opacity: 1;
+}
+
+.dress-mobile-menu .mobil-app-menu__section {
+	margin-left: 1rem;
+}
+
+.dress-mobile-menu .mobil-app-menu__btn {
+	width: calc(100% - 2rem);
+	margin-left: 1rem;
+	margin-right: 1rem;
+	border-radius: 1rem;
+}
+
+.dress-mobile-menu .mobil-app-menu__hint,
+.dress-mobile-menu .mobil-app-menu__installed {
+	margin-left: 1rem;
+	margin-right: 1rem;
+}
+
+.mobil-app-menu__btn.is-ready .mobil-app-menu__ico {
+	background: rgba(21, 128, 61, 0.15);
+	color: #15803d;
+}
+
+/* Push bildirim izni popup */
+body.mobil-app-push-open {
+	overflow: hidden;
+}
+
+.mobil-app-push {
+	position: fixed;
+	inset: 0;
+	z-index: 10050;
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	padding: 1rem;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.25s ease;
+}
+
+.mobil-app-push.is-visible {
+	pointer-events: auto;
+	opacity: 1;
+}
+
+.mobil-app-push__backdrop {
+	position: absolute;
+	inset: 0;
+	background: rgba(15, 23, 42, 0.45);
+}
+
+.mobil-app-push__dialog {
+	position: relative;
+	width: min(100%, 420px);
+	margin-bottom: env(safe-area-inset-bottom, 0);
+	padding: 1.35rem 1.25rem 1.15rem;
+	border-radius: 1.15rem;
+	background: #fff;
+	box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+	transform: translateY(1.25rem);
+	transition: transform 0.28s ease;
+}
+
+.mobil-app-push.is-visible .mobil-app-push__dialog {
+	transform: translateY(0);
+}
+
+.mobil-app-push__close {
+	position: absolute;
+	top: 0.65rem;
+	right: 0.75rem;
+	width: 2rem;
+	height: 2rem;
+	border: 0;
+	border-radius: 999px;
+	background: transparent;
+	color: #64748b;
+	font-size: 1.5rem;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.mobil-app-push__icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 3rem;
+	height: 3rem;
+	margin-bottom: 0.85rem;
+	border-radius: 999px;
+	background: rgba(25, 78, 112, 0.1);
+	color: #194e70;
+}
+
+.mobil-app-push__title {
+	margin: 0 0 0.55rem;
+	font-size: 1.15rem;
+	font-weight: 700;
+	color: #0f172a;
+}
+
+.mobil-app-push__text {
+	margin: 0 0 0.85rem;
+	font-size: 0.92rem;
+	line-height: 1.55;
+	color: #475569;
+}
+
+.mobil-app-push__list {
+	margin: 0 0 1rem;
+	padding-left: 1.15rem;
+	font-size: 0.88rem;
+	line-height: 1.55;
+	color: #334155;
+}
+
+.mobil-app-push__list li + li {
+	margin-top: 0.25rem;
+}
+
+.mobil-app-push__actions {
+	display: grid;
+	gap: 0.55rem;
+}
+
+.mobil-app-push__accept,
+.mobil-app-push__dismiss {
+	width: 100%;
+	border-radius: 0.85rem;
+	padding: 0.85rem 1rem;
+	font-size: 0.92rem;
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.mobil-app-push__accept {
+	border: 0;
+	background: #194e70;
+	color: #fff;
+}
+
+.mobil-app-push__accept:hover,
+.mobil-app-push__accept:focus-visible {
+	background: #123a54;
+}
+
+.mobil-app-push__accept:disabled {
+	opacity: 0.65;
+	cursor: wait;
+}
+
+.mobil-app-push__dismiss {
+	border: 1px solid #e2e8f0;
+	background: #fff;
+	color: #64748b;
+}
+
+.mobil-app-push__hint {
+	margin: 0.75rem 0 0;
+	font-size: 0.76rem;
+	line-height: 1.45;
+	color: #94a3b8;
+	text-align: center;
+}
+
+@media (min-width: 768px) {
+	.mobil-app-push {
+		align-items: center;
+	}
+}

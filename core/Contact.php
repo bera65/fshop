@@ -121,7 +121,7 @@ class Contact
 			'full_name' => $name,
 			'email' => $email,
 			'phone' => $phone,
-			'subject' => $subject !== '' ? $subject : 'Genel',
+			'subject' => $subject !== '' ? $subject : self::t('General'),
 			'message' => $message,
 			'ip_address' => $ip,
 		]);
@@ -226,17 +226,17 @@ class Contact
 		$replyMessage = trim($replyMessage);
 
 		if (Tools::strlen($replyMessage) < 5) {
-			return self::fail('Yanıt en az 5 karakter olmalıdır');
+			return self::fail(self::t('The response must be at least 5 characters long'));
 		}
 
 		if (!Validate::isCleanHtml($replyMessage)) {
-			return self::fail('Yanıt geçersiz içerik içeriyor');
+			return self::fail(self::t('Invalid message'));
 		}
 
 		$message = self::getById($idMessage);
 
 		if (!$message) {
-			return self::fail('Mesaj bulunamadı');
+			return self::fail(self::t('Message not found'));
 		}
 
 		$idReply = DB::insert('contact_replies', [
@@ -246,7 +246,7 @@ class Contact
 		]);
 
 		if (!$idReply) {
-			return self::fail('Yanıt kaydedilemedi');
+			return self::fail(self::t('The response could not be saved'));
 		}
 
 		$idUser = (int) ($message['id_user'] ?? 0);
@@ -262,13 +262,13 @@ class Contact
 		} else {
 			self::notifyCustomerByEmail(
 				(string) $message['email'],
-				$reference !== '' ? 'Sipariş #' . $reference . ' — yanıtınız' : 'Mesajınıza yanıt',
+				$reference !== '' ? self::t('Order #') . $reference . ' — '.self::t('your response') : self::t('Reply to your message'),
 				$replyMessage,
 				$idOrder
 			);
 		}
 
-		return self::ok('Yanıt müşteriye gönderildi');
+		return self::ok(self::t('Message sent successfully'));
 	}
 
 	public static function getOrderThread(int $idOrder, int $idUser): array
@@ -768,7 +768,7 @@ class Contact
 			'full_name' => (string) ($latest['full_name'] ?? ''),
 			'email' => (string) ($latest['email'] ?? ''),
 			'phone' => (string) ($latest['phone'] ?? ''),
-			'subject' => 'Sipariş #' . ($latest['order_reference'] ?? $idOrder),
+			'subject' => self::t('Order #') . ($latest['order_reference'] ?? $idOrder),
 			'messages' => $messages,
 			'timeline' => self::buildTimeline($messages),
 			'message_count' => count($messages),
@@ -910,14 +910,14 @@ class Contact
 	private static function getThreadStatusLabel(int $unreadCount, int $replyCount): string
 	{
 		if ($unreadCount > 0) {
-			return 'Yeni';
+			return self::t('New');
 		}
 
 		if ($replyCount > 0) {
-			return 'Yanıtlandı';
+			return self::t('Answered');
 		}
 
-		return 'Okundu';
+		return self::t('Read');
 	}
 
 	private static function buildTimeline(array $messages): array

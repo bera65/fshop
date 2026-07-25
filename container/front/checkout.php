@@ -138,6 +138,7 @@
 		'addresses' => $addresses,
 		'selectedAddressId' => $selectedAddressId,
 		'formData' => $formData,
+		'paymentMethods' => $paymentMethods,
 		'cartHasVirtual' => Cart::hasVirtualProducts($cart),
 		'cartRequiresShipping' => $cartRequiresShipping,
 		'cargoOptions' => $cargoOptions,

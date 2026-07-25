@@ -1,0 +1,44 @@
+.alert-stock-notify {
+	margin-top: 1rem;
+	padding: 1rem 1.1rem;
+	border: 1px solid #e8e8e8;
+	border-radius: 10px;
+	background: #fafafa;
+}
+
+.alert-stock-notify__head {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	margin-bottom: 0.35rem;
+}
+
+.alert-stock-notify__desc {
+	margin: 0 0 0.75rem;
+	font-size: 0.875rem;
+	color: #666;
+}
+
+.alert-stock-notify__row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.alert-stock-notify__row .form-control {
+	flex: 1 1 180px;
+	min-width: 0;
+}
+
+.alert-stock-notify__message {
+	margin-top: 0.65rem;
+	font-size: 0.875rem;
+}
+
+.alert-stock-notify__message.is-success {
+	color: #198754;
+}
+
+.alert-stock-notify__message.is-error {
+	color: #dc3545;
+}

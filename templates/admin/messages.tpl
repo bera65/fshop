@@ -4,7 +4,7 @@
 	<a href="{$adminUrl}messages?read=1" class="btn btn-sm {if $readFilter === 1}btn-dark{else}btn-outline-dark{/if}">{'Read'|adminT}</a>
 </div>
 
-<div class="admin-panel">
+<div class="admin-panel p-0">
 	<div class="table-responsive">
 		<table class="table table-sm align-middle mb-0">
 			<thead>

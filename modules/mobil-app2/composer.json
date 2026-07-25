@@ -1,0 +1,15 @@
+{
+	"name": "fshop/mobil-app-push",
+	"description": "Web Push — PHP 7.4 uyumlu (vendor modülle birlikte gelir)",
+	"require": {
+		"php": ">=7.4",
+		"minishlink/web-push": "^7.0"
+	},
+	"config": {
+		"sort-packages": true,
+		"platform": {
+			"php": "7.4.33"
+		},
+		"platform-check": false
+	}
+}

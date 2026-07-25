@@ -786,6 +786,209 @@ class Lang
 		}
 	}
 
+	/**
+	 * @return array<string, string>
+	 */
+	public static function loadUiDictionary(string $code): array
+	{
+		$code = strtolower(trim($code));
+
+		if (!self::isValid($code)) {
+			return [];
+		}
+
+		$path = self::getLangFilePath($code);
+
+		if (!is_file($path)) {
+			return [];
+		}
+
+		$map = include $path;
+
+		if (!is_array($map)) {
+			return [];
+		}
+
+		$out = [];
+
+		foreach ($map as $key => $value) {
+			if (!is_string($key)) {
+				continue;
+			}
+
+			$out[$key] = is_scalar($value) ? (string) $value : '';
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Mevcut dosyayla birleştirerek kaydeder (gönderilmeyen anahtarlar silinmez).
+	 *
+	 * @param array<string, string> $updates
+	 * @return array{success:bool,message:string}
+	 */
+	public static function mergeUiDictionary(string $code, array $updates): array
+	{
+		$code = strtolower(trim($code));
+
+		if (!self::isValid($code)) {
+			return self::fail('Geçersiz dil kodu');
+		}
+
+		if (!in_array($code, self::getAvailable(), true) && $code !== 'en') {
+			return self::fail('Dil mağazada tanımlı değil');
+		}
+
+		$existing = self::loadUiDictionary($code);
+
+		foreach ($updates as $key => $value) {
+			if (!is_string($key) || $key === '') {
+				continue;
+			}
+
+			$existing[$key] = trim((string) $value);
+		}
+
+		ksort($existing, SORT_STRING);
+
+		$path = self::getLangFilePath($code);
+		$dir = dirname($path);
+
+		if (!is_dir($dir) && !@mkdir($dir, 0755, true) && !is_dir($dir)) {
+			return self::fail('Dil klasörü oluşturulamadı');
+		}
+
+		$content = "<?php\n\n\treturn [\n";
+
+		foreach ($existing as $key => $value) {
+			$content .= "\t\t" . var_export($key, true) . ' => ' . var_export($value, true) . ",\n";
+		}
+
+		$content .= "\t];\n";
+
+		if (@file_put_contents($path, $content) === false) {
+			return self::fail('Dil dosyası yazılamadı');
+		}
+
+		return self::ok('Çeviriler kaydedildi');
+	}
+
+	/**
+	 * Yeni mağaza UI çeviri anahtarı ekler (en.php + isteğe bağlı hedef dil).
+	 *
+	 * @return array{success:bool,message:string}
+	 */
+	public static function addUiTranslationKey(
+		string $key,
+		string $enValue,
+		string $targetLang = '',
+		string $targetValue = ''
+	): array {
+		$key = trim($key);
+		$enValue = trim($enValue);
+		$targetLang = strtolower(trim($targetLang));
+		$targetValue = trim($targetValue);
+
+		if ($key === '') {
+			return self::fail('Translation key is required');
+		}
+
+		if (mb_strlen($key) > 512) {
+			return self::fail('Translation key is too long');
+		}
+
+		if ($enValue === '') {
+			$enValue = $key;
+		}
+
+		$existingEn = self::loadUiDictionary('en');
+
+		if (isset($existingEn[$key])) {
+			return self::fail('This key already exists');
+		}
+
+		$enResult = self::mergeUiDictionary('en', [$key => $enValue]);
+
+		if (empty($enResult['success'])) {
+			return $enResult;
+		}
+
+		if ($targetLang !== '' && $targetLang !== 'en' && $targetValue !== '') {
+			if (!in_array($targetLang, self::getAvailable(), true)) {
+				return self::ok('Translation key added');
+			}
+
+			$targetResult = self::mergeUiDictionary($targetLang, [$key => $targetValue]);
+
+			if (empty($targetResult['success'])) {
+				return $targetResult;
+			}
+		}
+
+		return self::ok('Translation key added');
+	}
+
+	/**
+	 * İngilizce (en.php) kaynak; hedef dil değerleriyle satır listesi.
+	 *
+	 * @return array{
+	 *   rows: list<array{key:string,en:string,translation:string,missing:bool}>,
+	 *   total:int,
+	 *   missing:int
+	 * }
+	 */
+	public static function getUiTranslationWorkspace(string $targetLang, string $filter = 'all', string $q = ''): array
+	{
+		$targetLang = strtolower(trim($targetLang));
+		$en = self::loadUiDictionary('en');
+		$target = self::loadUiDictionary($targetLang);
+		$q = mb_strtolower(trim($q));
+		$filter = $filter === 'missing' ? 'missing' : 'all';
+
+		// en'de olmayan ama hedefte olan anahtarları da göster (orphan)
+		$keys = array_unique(array_merge(array_keys($en), array_keys($target)));
+		sort($keys, SORT_STRING);
+
+		$rows = [];
+		$missingCount = 0;
+
+		foreach ($keys as $key) {
+			$enValue = $en[$key] ?? $key;
+			$trValue = $target[$key] ?? '';
+			$isMissing = $trValue === '' || ($targetLang !== 'en' && $trValue === $key);
+
+			if ($isMissing) {
+				$missingCount++;
+			}
+
+			if ($filter === 'missing' && !$isMissing) {
+				continue;
+			}
+
+			if ($q !== '') {
+				$hay = mb_strtolower($key . ' ' . $enValue . ' ' . $trValue);
+
+				if (mb_strpos($hay, $q) === false) {
+					continue;
+				}
+			}
+
+			$rows[] = [
+				'key' => $key,
+				'en' => $enValue,
+				'translation' => $trValue,
+				'missing' => $isMissing,
+			];
+		}
+
+		return [
+			'rows' => $rows,
+			'total' => count($keys),
+			'missing' => $missingCount,
+		];
+	}
+
 	public static function translate(string $text): string
 	{
 		return self::translateFor($text, self::current());

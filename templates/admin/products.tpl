@@ -1,5 +1,17 @@
 {if $sonuc}
-	<div class="alert alert-{$sonucType|default:'success'}">{$sonuc}</div>
+	<div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index:9999;">
+		<div class="toast frisay-toast dark show" role="alert">
+			<div class="toast-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-icon lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+			</div>
+			<div class="toast-body p-0">
+				<div class="toast-message">
+					{$sonuc|escape}
+				</div>
+			</div>
+			<button class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+		</div>
+	</div>
 {/if}
 <form method="get" class="admin-toolbar row g-2 mb-3">
 	<div class="col-md-3">
@@ -33,32 +45,31 @@
 		<a href="{$adminUrl}products" class="btn btn-sm btn-outline-secondary">{'Clear'|adminT}</a>
 	</div>
 </form>
-<div class="admin-panel mb-3 d-flex justify-content-between align-items-center">
+<div class="admin-panel mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
 	<div>
 		<a href="{$adminUrl}product" class="btn btn-sm btn-primary">
 			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-plus-icon lucide-circle-plus"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
 			{'New Product'|adminT}
 		</a>
 	</div>
-	<div class="d-flex gap-2">
-		<form action="" method="POST">
-			<button class="btn btn-dark btn-sm" name="exprtExcel" value="{$adminToken}">
-				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-download-icon lucide-download"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
-				{'Export'|adminT}
-			</button>
-		</form>
-		<button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#importExcelModal">
-			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-upload-icon lucide-upload"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>
-			{'Import'|adminT}
-		</button>
-	</div>
+	<form method="post" id="productsBulkForm" class="d-flex align-items-center flex-wrap gap-2" hidden>
+		<input type="hidden" name="bulkProductToken" value="{$adminToken}">
+		<span class="small text-muted" id="productsBulkCount">0 {'selected'|adminT}</span>
+		<button type="submit" name="bulkProductAction" value="activate" class="btn btn-sm btn-outline-success js-bulk-product-submit">{'Active'|adminT}</button>
+		<button type="submit" name="bulkProductAction" value="deactivate" class="btn btn-sm btn-outline-secondary js-bulk-product-submit">{'Deactive'|adminT}</button>
+		<button type="submit" name="bulkProductAction" value="delete" class="btn btn-sm btn-outline-danger js-bulk-product-submit js-admin-confirm" data-confirm-title="Toplu sil" data-confirm-message="{'Selected items will be permanently deleted. Do you want to continue?'|adminT}">{'Delete'|adminT}</button>
+	</form>
 </div>
-<div class="admin-panel">
+<div class="admin-panel p-0">
 	<div class="table-responsive">
 		<table class="table table-sm align-middle mb-0">
 			<thead>
 				<tr>
+					<th style="width:36px">
+						<input type="checkbox" class="form-check-input" id="productsSelectAll" aria-label="Tümünü seç">
+					</th>
 					<th></th>
+					<th class="text-muted" style="width:56px">{'ID'|adminT}</th>
 					<th>{'Product'|adminT}</th>
 					<th>{'Category'|adminT}</th>
 					<th>{'Brand'|adminT}</th>
@@ -72,8 +83,12 @@
 				{if $products|@count}
 				{foreach $products as $row}
 				<tr>
+					<td>
+						<input type="checkbox" form="productsBulkForm" name="productIds[]" value="{$row.id_product}" class="form-check-input js-product-select" aria-label="Ürün #{$row.id_product} seç">
+					</td>
 					<td style="width:48px"><img src="{$row.image_url}" alt="" width="40" height="40" style="object-fit:contain"></td>
-					<td>{$row.product_name|escape}{if $row.product_type|default:'physical' == 'virtual'} <span class="badge bg-info">{'Virtual'|adminT}</span>{/if}</td>
+					<td class="text-muted small">{$row.id_product}</td>
+					<td>{$row.product_name|escape|truncate:40}{if $row.product_type|default:'physical' == 'virtual'} <span class="badge bg-info">{'Virtual'|adminT}</span>{/if}</td>
 					<td>{$row.category_name|escape}</td>
 					<td>{$row.brand_name|escape}</td>
 					<td>{$row.price_formatted}</td>
@@ -93,7 +108,7 @@
 				</tr>
 				{/foreach}
 				{else}
-				<tr><td colspan="8" class="text-muted">{'No records found.'|adminT}</td></tr>
+				<tr><td colspan="10" class="text-muted">{'No records found.'|adminT}</td></tr>
 				{/if}
 			</tbody>
 		</table>
@@ -102,44 +117,62 @@
 
 {include file='admin/plugin/pagination.tpl'}
 
-<div class="modal fade" id="importExcelModal" tabindex="-1" aria-labelledby="importExcelModalLabel" aria-hidden="true">
-	<div class="modal-dialog modal-lg modal-dialog-scrollable">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h5 class="modal-title" id="importExcelModalLabel">{'Import products from Excel'|adminT}</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{'Close'|adminT}"></button>
-			</div>
-			<form action="" method="POST" enctype="multipart/form-data">
-				<div class="modal-body">
-					<div class="alert alert-info mb-3">
-						<strong>{'Information'|adminT}</strong>
-						<ul class="mb-0 mt-2 small">
-							<li>{'Only <strong>.xlsx</strong> files are allowed.'|adminT nofilter}</li>
-							<li>{'Download the current product list with <strong>Export</strong> first to get a sample template.'|adminT nofilter}</li>
-							<li>{'If <strong>SKU</strong> matches an existing product, the record is updated; otherwise a new product is created.'|adminT nofilter}</li>
-							<li>{'If <strong>category</strong> or <strong>brand</strong> in Excel does not exist, it is created automatically.'|adminT nofilter}</li>
-							<li>{'In the <strong>Images</strong> column, enter image URLs separated by <strong>;</strong>. On import, existing product images are replaced with the URLs in Excel.'|adminT nofilter}</li>
-						</ul>
-					</div>
-					<div class="mb-3">
-						<p class="fw-semibold mb-2">{'Expected columns'|adminT}</p>
-						<div class="small text-muted">
-							Product Name, Barcode, Stock Code, {'Desi'|adminT}, Price, Old Price, Vat, Stock,
-							short Description, Description, Meta Title, Meta Description, Slug,
-							Category Name, Brand Name, Active
-						</div>
-					</div>
-					<div class="mb-0">
-						<label for="excelFile" class="form-label">{'Excel file'|adminT}</label>
-						<input type="file" id="excelFile" name="excelFile" class="form-control" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required>
-					</div>
-				</div>
-				<div class="modal-footer">
-					<button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{'Cancel'|adminT}</button>
-					<input type="hidden" name="imprtExcel" value="{$adminToken}">
-					<button type="submit" class="btn btn-success">{'Upload and import'|adminT}</button>
-				</div>
-			</form>
-		</div>
-	</div>
-</div>
+<script>
+(function () {
+	'use strict';
+
+	var selectAll = document.getElementById('productsSelectAll');
+	var bulkForm = document.getElementById('productsBulkForm');
+	var countEl = document.getElementById('productsBulkCount');
+
+	function getBoxes() {
+		return document.querySelectorAll('.js-product-select');
+	}
+
+	function updateBulkBar() {
+		var checked = document.querySelectorAll('.js-product-select:checked');
+		var total = getBoxes().length;
+		var selected = checked.length;
+
+		if (bulkForm) {
+			bulkForm.hidden = selected === 0;
+		}
+
+		if (countEl) {
+			countEl.textContent = selected + ' ürün seçildi';
+		}
+
+		if (!selectAll) {
+			return;
+		}
+
+		selectAll.checked = total > 0 && selected === total;
+		selectAll.indeterminate = selected > 0 && selected < total;
+	}
+
+	if (selectAll) {
+		selectAll.addEventListener('change', function () {
+			getBoxes().forEach(function (box) {
+				box.checked = selectAll.checked;
+			});
+			updateBulkBar();
+		});
+	}
+
+	document.addEventListener('change', function (event) {
+		if (event.target && event.target.classList.contains('js-product-select')) {
+			updateBulkBar();
+		}
+	});
+
+	document.querySelectorAll('.js-bulk-product-submit').forEach(function (btn) {
+		btn.addEventListener('click', function (event) {
+			if (document.querySelectorAll('.js-product-select:checked').length === 0) {
+				event.preventDefault();
+				event.stopPropagation();
+				window.alert('Lütfen en az bir ürün seçin.');
+			}
+		});
+	});
+})();
+</script>

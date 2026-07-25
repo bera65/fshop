@@ -1,1 +1,0 @@
-{include file='./catalog.tpl'}

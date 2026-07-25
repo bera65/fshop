@@ -127,6 +127,8 @@ class App
 			return;
 		}
 
+		$originSources = self::cspOriginSources();
+
 		header('X-Content-Type-Options: nosniff');
 		header('X-Frame-Options: SAMEORIGIN');
 		header('Referrer-Policy: strict-origin-when-cross-origin');
@@ -139,14 +141,84 @@ class App
 			. "frame-ancestors 'self'; "
 			. "img-src 'self' data: https: blob:; "
 			. "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; "
-			. "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
-			. "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://www.googletagmanager.com; "
-			. "connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com; "
+			. "style-src {$originSources} 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+			. "script-src {$originSources} 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.onesignal.com https://api.onesignal.com https://www.googletagmanager.com https://googleads.g.doubleclick.net https://www.googleadservices.com https://www.google.com https://www.gstatic.com https://www.recaptcha.net https://connect.facebook.net; "
+			. "worker-src {$originSources} blob:; "
+			. "manifest-src {$originSources}; "
+			. "connect-src {$originSources} https://api.onesignal.com https://cdn.onesignal.com https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.google.com https://www.google.com https://www.gstatic.com https://www.recaptcha.net https://www.facebook.com https://connect.facebook.net https://googleads.g.doubleclick.net https://www.googleadservices.com https://ad.doubleclick.net; "
 			. "frame-src 'self' https:;"
 		);
 
 		if (self::isProduction()) {
 			header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
 		}
+	}
+
+	/** CSP: 'self' + aktif istek ve DOMAIN ayarındaki origin'ler (www / www'siz uyumu). */
+	private static function cspOriginSources(): string
+	{
+		$origins = ["'self'"];
+		$seen = [];
+
+		$addOrigin = static function (?string $origin) use (&$origins, &$seen): void {
+			$origin = trim((string) $origin);
+
+			if ($origin === '' || isset($seen[$origin])) {
+				return;
+			}
+
+			$seen[$origin] = true;
+			$origins[] = $origin;
+		};
+
+		$addHostVariants = static function (string $scheme, string $host) use ($addOrigin): void {
+			$host = strtolower(trim($host));
+
+			if ($host === '') {
+				return;
+			}
+
+			$addOrigin($scheme . '://' . $host);
+
+			if (strpos($host, 'www.') === 0) {
+				$addOrigin($scheme . '://' . substr($host, 4));
+			} else {
+				$addOrigin($scheme . '://www.' . $host);
+			}
+		};
+
+		$https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+			|| (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string) $_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
+			|| (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443);
+		$scheme = $https ? 'https' : 'http';
+
+		if (!empty($_SERVER['HTTP_HOST'])) {
+			$addHostVariants($scheme, (string) $_SERVER['HTTP_HOST']);
+		}
+
+		if (class_exists('Settings', false)) {
+			$domain = trim((string) Settings::get('DOMAIN'));
+
+			if ($domain !== '') {
+				$parsed = parse_url($domain);
+
+				if (!empty($parsed['host'])) {
+					$domainScheme = !empty($parsed['scheme']) ? (string) $parsed['scheme'] : $scheme;
+					$port = isset($parsed['port']) ? ':' . (int) $parsed['port'] : '';
+					$host = strtolower((string) $parsed['host']) . $port;
+					$addOrigin($domainScheme . '://' . $host);
+
+					$hostOnly = strtolower((string) $parsed['host']);
+
+					if (strpos($hostOnly, 'www.') === 0) {
+						$addOrigin($domainScheme . '://' . substr($hostOnly, 4) . $port);
+					} else {
+						$addOrigin($domainScheme . '://www.' . $hostOnly . $port);
+					}
+				}
+			}
+		}
+
+		return implode(' ', $origins);
 	}
 }

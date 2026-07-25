@@ -275,11 +275,9 @@
 				<p class="small text-muted mb-2"><code>img/{$logo.file|escape}</code></p>
 
 				<form method="post" enctype="multipart/form-data">
-
 					<input type="hidden" name="uploadLogo" value="1">
-
 					<input type="hidden" name="token" value="{$adminToken}">
-
+					<input type="hidden" name="theme" value="{$editTheme|escape}">
 					<input type="hidden" name="logo_key" value="{$logo.key|escape}">
 
 					<input type="file" name="logo_file" class="form-control form-control-sm mb-2" accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml" required>
@@ -295,6 +293,30 @@
 		{/foreach}
 
 	</div>
+
+</div>
+
+
+
+<div class="admin-panel p-3 mt-2">
+
+	<h2 class="h6 mb-3">{'Footer description'|adminT}</h2>
+
+	<p class="text-muted small mb-3">{'Short text shown in the site footer under the logo.'|adminT}</p>
+
+	<form method="post">
+
+		<input type="hidden" name="saveFooterDescription" value="1">
+
+		<input type="hidden" name="token" value="{$adminToken}">
+
+		<input type="hidden" name="theme" value="{$editTheme|escape}">
+
+		<textarea name="footer_description" class="form-control mb-3" rows="4" placeholder="{$footerDescriptionDefault|escape}">{if $footerDescription|default:'' != ''}{$footerDescription|escape}{/if}</textarea>
+
+		<button type="submit" class="btn btn-dark btn-sm">{'Save'|adminT}</button>
+
+	</form>
 
 </div>
 

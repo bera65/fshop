@@ -1,5 +1,17 @@
 {if $flash}
-<div class="alert alert-{$flashType|default:'info'} py-2">{$flash|escape}</div>
+	<div class="toast-container position-fixed bottom-0 end-0 p-4" style="z-index:9999;">
+		<div class="toast frisay-toast {$flashType|default:'success'} show" role="alert">
+			<div class="toast-icon">
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-icon lucide-check"><path d="M20 6 9 17l-5-5"/></svg>
+			</div>
+			<div class="toast-body p-0">
+				<div class="toast-message">
+					{$flash|escape}
+				</div>
+			</div>
+			<button class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+		</div>
+	</div>
 {/if}
 
 <ul class="nav nav-tabs mb-3">
@@ -34,11 +46,16 @@
 						<label class="form-label">{$settingsKeys.SITE_NAME.label|adminT|escape}</label>
 						<input type="text" name="SITE_NAME" class="form-control" value="{$settingsValues.SITE_NAME|escape}">
 					</div>
-					<div class="mb-0">
+					<div class="mb-3">
 						<label class="form-label">{'Store currency'|adminT}</label>
 						<p class="mb-2"><strong>{$shopCurrencyLabel|escape}</strong> <code>{$shopCurrencyCode|escape}</code></p>
 						<a href="{$adminUrl}currencies" class="btn btn-sm btn-outline-secondary">{'Manage currencies'|adminT}</a>
 						<div class="form-text mt-2">{'Use the currencies page to add units or change the active currency.'|adminT}</div>
+					</div>
+					<div class="mb-0">
+						<label class="form-label">{'Tax rates (VAT)'|adminT}</label>
+						<a href="{$adminUrl}taxes" class="btn btn-sm btn-outline-secondary">{'Manage tax rates'|adminT}</a>
+						<div class="form-text mt-2">{'Add or edit VAT rates used on products (e.g. 1%, 10%, 20%).'|adminT}</div>
 					</div>
 				</div>
 
