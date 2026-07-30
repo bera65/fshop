@@ -15,6 +15,10 @@
 
 {if $marketplacePlatform == 'trendyol'}
 {include file='admin/marketplace/settings_trendyol.tpl'}
+{elseif $marketplacePlatform == 'hepsiburada'}
+{include file='admin/marketplace/settings_hepsiburada.tpl'}
+{elseif $marketplacePlatform == 'n11'}
+{include file='admin/marketplace/settings_n11.tpl'}
 {else}
 <div class="admin-panel p-4 text-center">
 	<h2 class="h5 mb-2">Yakında</h2>

@@ -51,8 +51,11 @@ CREATE TABLE `products` (
   `old_price` decimal(20,2) NOT NULL DEFAULT 0.00,
   `vat` decimal(6,2) NOT NULL DEFAULT 20.00,
   `active` tinyint(1) NOT NULL DEFAULT 1,
-  `stock` int(11) NOT NULL DEFAULT 100,
-  `stock_empty_at` datetime DEFAULT NULL,
+  `stock` decimal(12,2) NOT NULL DEFAULT 100.00,
+  `stock_empty_at` datetime,
+  `sale_unit` varchar(8) NOT NULL DEFAULT 'piece',
+  `sale_qty_min` decimal(12,3) NOT NULL DEFAULT 1.000,
+  `sale_qty_step` decimal(12,3) NOT NULL DEFAULT 1.000,
   `cargo_day` int(3) NOT NULL DEFAULT 0,
   `label` varchar(128) NOT NULL DEFAULT '',
   `product_video` varchar(256) NOT NULL DEFAULT '',
@@ -92,11 +95,24 @@ CREATE TABLE `users` (
   `reset_token` varchar(64) NOT NULL DEFAULT '',
   `reset_expires` datetime DEFAULT NULL,
   `active` tinyint(1) NOT NULL DEFAULT 1,
+  `id_group` int(11) NOT NULL DEFAULT 0,
   `date_add` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id_user`),
   UNIQUE KEY `phone` (`phone`),
   UNIQUE KEY `google_id` (`google_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `customer_groups` (
+  `id_group` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(64) NOT NULL DEFAULT '',
+  `discount_percent` decimal(5,2) NOT NULL DEFAULT 0.00,
+  `is_default` tinyint(1) NOT NULL DEFAULT 0,
+  `active` tinyint(1) NOT NULL DEFAULT 1,
+  PRIMARY KEY (`id_group`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO `customer_groups` (`name`, `discount_percent`, `is_default`, `active`) VALUES
+('Default', 0.00, 1, 1);
 
 CREATE TABLE `orders` (
   `id_order` int(11) NOT NULL AUTO_INCREMENT,
@@ -122,11 +138,18 @@ CREATE TABLE `orders` (
   `promotion_discount` decimal(10,2) NOT NULL DEFAULT 0.00,
   `payment_discount` decimal(10,2) NOT NULL DEFAULT 0.00,
   `payment_discount_label` varchar(128) NOT NULL DEFAULT '',
+  `manual_discount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `manual_discount_type` varchar(16) NOT NULL DEFAULT '',
+  `manual_discount_value` decimal(10,2) NOT NULL DEFAULT 0.00,
   `subtotal` decimal(20,2) NOT NULL DEFAULT 0.00,
   `shipping` decimal(20,2) NOT NULL DEFAULT 0.00,
   `total` decimal(20,2) NOT NULL DEFAULT 0.00,
   `date_add` datetime NOT NULL DEFAULT current_timestamp(),
   `date_delivered` datetime DEFAULT NULL,
+  `invoice_type` varchar(8) NOT NULL DEFAULT '',
+  `invoice_file` varchar(255) NOT NULL DEFAULT '',
+  `invoice_url` varchar(512) NOT NULL DEFAULT '',
+  `invoice_name` varchar(128) NOT NULL DEFAULT '',
   PRIMARY KEY (`id_order`),
   KEY `id_user` (`id_user`),
   KEY `reference` (`reference`)
@@ -140,8 +163,9 @@ CREATE TABLE `order_detail` (
   `product_name` varchar(128) NOT NULL,
   `variation_label` varchar(255) NOT NULL DEFAULT '',
   `price` decimal(20,2) NOT NULL,
-  `qty` int(11) NOT NULL,
+  `qty` decimal(12,3) NOT NULL,
   `total` decimal(20,2) NOT NULL,
+  `line_meta` text DEFAULT NULL,
   `virtual_delivery` text DEFAULT NULL,
   `download_token` varchar(64) NOT NULL DEFAULT '',
   PRIMARY KEY (`id_order_detail`),
@@ -254,6 +278,82 @@ CREATE TABLE `module_display_hooks` (
   PRIMARY KEY (`id_hook`),
   UNIQUE KEY `module_hook` (`module_name`,`hook_name`),
   KEY `hook_name` (`hook_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `marketplace_orders` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `platform` varchar(32) NOT NULL,
+  `order_number` varchar(64) NOT NULL,
+  `shipment_package_id` varchar(64) NOT NULL DEFAULT '',
+  `status` varchar(64) NOT NULL DEFAULT '',
+  `customer_name` varchar(255) NOT NULL DEFAULT '',
+  `total_price` decimal(20,2) NOT NULL DEFAULT 0.00,
+  `cargo_tracking_number` varchar(128) NOT NULL DEFAULT '',
+  `cargo_provider` varchar(128) NOT NULL DEFAULT '',
+  `id_product` int(11) NOT NULL DEFAULT 0,
+  `lines_json` mediumtext NULL,
+  `raw_json` mediumtext NULL,
+  `stock_deducted` tinyint(1) NOT NULL DEFAULT 0,
+  `order_date` datetime NULL,
+  `last_sync_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `platform_order_package` (`platform`,`order_number`,`shipment_package_id`),
+  KEY `platform_status` (`platform`,`status`),
+  KEY `order_date` (`order_date`),
+  KEY `id_product` (`id_product`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `marketplace_questions` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `platform` varchar(32) NOT NULL,
+  `question_id` varchar(64) NOT NULL,
+  `product_name` varchar(255) NOT NULL DEFAULT '',
+  `barcode` varchar(64) NOT NULL DEFAULT '',
+  `id_product` int(11) NOT NULL DEFAULT 0,
+  `question_text` text NULL,
+  `answer_text` text NULL,
+  `status` varchar(64) NOT NULL DEFAULT '',
+  `answered` tinyint(1) NOT NULL DEFAULT 0,
+  `customer_id` varchar(64) NOT NULL DEFAULT '',
+  `raw_json` mediumtext NULL,
+  `question_date` datetime NULL,
+  `last_sync_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `platform_question` (`platform`,`question_id`),
+  KEY `platform_answered` (`platform`,`answered`),
+  KEY `id_product` (`id_product`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `marketplace_logs` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `platform` varchar(32) NOT NULL DEFAULT '',
+  `event_type` varchar(64) NOT NULL,
+  `event_label` varchar(128) NOT NULL DEFAULT '',
+  `reference` varchar(128) NOT NULL DEFAULT '',
+  `id_product` int(11) NOT NULL DEFAULT 0,
+  `message` text NOT NULL,
+  `meta_json` mediumtext NULL,
+  `date_add` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `date_add` (`date_add`),
+  KEY `event_type` (`event_type`),
+  KEY `platform` (`platform`),
+  KEY `reference` (`reference`),
+  KEY `id_product` (`id_product`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `product_logs` (
+  `id_log` int(11) NOT NULL AUTO_INCREMENT,
+  `id_product` int(11) NOT NULL,
+  `event_type` varchar(32) NOT NULL DEFAULT '',
+  `message` varchar(512) NOT NULL DEFAULT '',
+  `meta` text DEFAULT NULL,
+  `id_admin` int(11) NOT NULL DEFAULT 0,
+  `id_order` int(11) NOT NULL DEFAULT 0,
+  `date_add` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_log`),
+  KEY `id_product` (`id_product`),
+  KEY `date_add` (`date_add`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO `admins` (`id_admin`, `full_name`, `email`, `password`, `active`) VALUES

@@ -233,6 +233,29 @@
 		exit;
 	}
 
+	if (Tools::isSubmit('deleteLicense') && $id > 0) {
+		$postToken = (string) Tools::getValue('token');
+		if (hash_equals($adminToken, $postToken)) {
+			$idLicense = (int) Tools::getValue('id_license');
+			$success = VirtualProduct::deleteLicenseKey($idLicense);
+			header('Content-Type: application/json; charset=utf-8');
+			echo json_encode(['success' => $success]);
+			exit;
+		}
+	}
+
+	if (Tools::isSubmit('updateLicense') && $id > 0) {
+		$postToken = (string) Tools::getValue('token');
+		if (hash_equals($adminToken, $postToken)) {
+			$idLicense = (int) Tools::getValue('id_license');
+			$newKey = (string) Tools::getValue('license_key');
+			$success = VirtualProduct::updateLicenseKey($idLicense, $newKey);
+			header('Content-Type: application/json; charset=utf-8');
+			echo json_encode(['success' => $success]);
+			exit;
+		}
+	}
+
 	if (Tools::isSubmit('uploadVirtualFile') && $id > 0) {
 		$postToken = (string) Tools::getValue('token');
 
@@ -304,14 +327,15 @@
 	];
 
 	$licenseStats = ['available' => 0, 'used' => 0];
-	$availableLicenses = [];
+	$allLicenses = [];
 
 	if (!$isNew && $product && VirtualProduct::isVirtualProduct($product) && VirtualProduct::getKind($product) === 'license') {
 		$licenseStats = [
 			'available' => VirtualProduct::countAvailableLicenses($id),
 			'used' => VirtualProduct::countUsedLicenses($id),
 		];
-		$availableLicenses = VirtualProduct::getAvailableLicenses($id);
+		// Sadece müsait (satılmamış) lisansları listeleyelim, böylece sayfa çok uzun olmaz
+		$allLicenses = VirtualProduct::getAvailableLicenses($id);
 	}
 
 	$langRows = $isNew ? [] : Product::getLangRows($id);
@@ -370,7 +394,8 @@
 		'brandOptions' 		=> Brand::getOptions(),
 		'adminUseEditor' 	=> true,
 		'licenseStats' 		=> $licenseStats,
-		'availableLicenses' => $availableLicenses,
+		'allLicenses'       => $allLicenses,
+		'productLogs' => (!$isNew && $id > 0) ? ProductLog::getForProduct($id, 150) : [],
 		'adminHooks' => [
 			'admin_product_button' => Module::renderDisplayHook('admin_product_button', [
 				'id_product' => $id,

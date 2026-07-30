@@ -29,6 +29,13 @@ class Order
 			'tracking_number' => "varchar(64) NOT NULL DEFAULT '' AFTER `cargo_company`",
 			'payment_discount' => "decimal(10,2) NOT NULL DEFAULT 0.00 AFTER `promotion_discount`",
 			'payment_discount_label' => "varchar(128) NOT NULL DEFAULT '' AFTER `payment_discount`",
+			'invoice_type' => "varchar(8) NOT NULL DEFAULT '' AFTER `date_delivered`",
+			'invoice_file' => "varchar(255) NOT NULL DEFAULT '' AFTER `invoice_type`",
+			'invoice_url' => "varchar(512) NOT NULL DEFAULT '' AFTER `invoice_file`",
+			'invoice_name' => "varchar(128) NOT NULL DEFAULT '' AFTER `invoice_url`",
+			'manual_discount' => "decimal(10,2) NOT NULL DEFAULT 0.00 AFTER `payment_discount_label`",
+			'manual_discount_type' => "varchar(16) NOT NULL DEFAULT '' AFTER `manual_discount`",
+			'manual_discount_value' => "decimal(10,2) NOT NULL DEFAULT 0.00 AFTER `manual_discount_type`",
 		];
 
 		foreach ($columns as $name => $definition) {
@@ -39,6 +46,8 @@ class Order
 			}
 		}
 
+		self::ensureInvoiceDir();
+
 		$dateDelivered = DB::execute("SHOW COLUMNS FROM `orders` LIKE 'date_delivered'");
 
 		if (empty($dateDelivered)) {
@@ -48,6 +57,21 @@ class Order
 			DB::execute(
 				'UPDATE orders SET date_delivered = date_add WHERE status = ? AND date_delivered IS NULL',
 				[self::STATUS_DELIVERED]
+			);
+		}
+
+		$qtyCol = DB::execute("SHOW COLUMNS FROM `order_detail` LIKE 'qty'");
+		$qtyType = strtolower((string) ($qtyCol[0]['Type'] ?? ''));
+		if ($qtyType !== '' && strpos($qtyType, 'decimal') === false) {
+			DB::execute(
+				'ALTER TABLE `order_detail` MODIFY COLUMN `qty` decimal(12,3) NOT NULL'
+			);
+		}
+
+		$lineMeta = DB::execute("SHOW COLUMNS FROM `order_detail` LIKE 'line_meta'");
+		if (empty($lineMeta)) {
+			DB::execute(
+				"ALTER TABLE `order_detail` ADD COLUMN `line_meta` text DEFAULT NULL AFTER `total`"
 			);
 		}
 	}
@@ -384,8 +408,9 @@ class Order
 			foreach ($cart['items'] as $item) {
 				$idVariation = (int) ($item['id_variation'] ?? 0);
 				$product = Product::getById((int) $item['id_product']);
+				$lineQty = (float) ($item['qty'] ?? 0);
 
-				if (!$product || !Product::isInStock($product, (int) $item['qty'], $idVariation)) {
+				if (!$product || !Product::isInStock($product, $lineQty, $idVariation)) {
 					throw new RuntimeException('Sepette stokta olmayan ürün var: ' . ($item['product_name'] ?? ''));
 				}
 
@@ -393,7 +418,7 @@ class Order
 					throw new RuntimeException('Set ürünü sepete doğrudan eklenemez: ' . ($item['product_name'] ?? ''));
 				}
 
-				if (!Product::decreaseStock((int) $item['id_product'], (int) $item['qty'], $idVariation)) {
+				if (!Product::decreaseStock((int) $item['id_product'], $lineQty, $idVariation)) {
 					throw new RuntimeException('Stok yetersiz: ' . ($item['product_name'] ?? ''));
 				}
 			}
@@ -430,6 +455,10 @@ class Order
 			}
 
 			foreach ($cart['items'] as $item) {
+				$lineQty = round((float) ($item['qty'] ?? 0), 3);
+				$measure = is_array($item['measure'] ?? null) ? $item['measure'] : [];
+				$lineMeta = SaleUnit::lineMetaForOrder($measure, $lineQty);
+
 				$ok = DB::insert('order_detail', [
 					'id_order' => (int) $idOrder,
 					'id_product' => (int) $item['id_product'],
@@ -437,8 +466,9 @@ class Order
 					'product_name' => $item['product_name'],
 					'variation_label' => (string) ($item['variation_label'] ?? ''),
 					'price' => (float) $item['price'],
-					'qty' => (int) $item['qty'],
+					'qty' => $lineQty,
 					'total' => (float) $item['line_total'],
+					'line_meta' => json_encode($lineMeta, JSON_UNESCAPED_UNICODE),
 				]);
 
 				if (!$ok) {
@@ -448,6 +478,17 @@ class Order
 
 			$db->commit();
 			Cart::clear();
+
+			if (class_exists('ProductLog', false)) {
+				foreach ($cart['items'] as $item) {
+					ProductLog::logSold(
+						(int) ($item['id_product'] ?? 0),
+						(float) ($item['qty'] ?? 0),
+						(int) $idOrder,
+						(string) $reference
+					);
+				}
+			}
 
 			if (class_exists('Marketplace', false)) {
 				foreach ($cart['items'] as $item) {
@@ -625,6 +666,7 @@ class Order
 
 	private static function hydrateCustomerOrder(array $order, int $idUser): array
 	{
+		self::ensureSchema();
 		$idOrder = (int) $order['id_order'];
 
 		if (self::isPaymentAccepted((int) $order['status']) && class_exists('VirtualProduct', false)) {
@@ -650,7 +692,12 @@ class Order
 		$order['payment_discount'] = (float) ($order['payment_discount'] ?? 0);
 		$order['payment_discount_formatted'] = Tools::displayPrice($order['payment_discount']);
 		$order['payment_discount_label'] = (string) ($order['payment_discount_label'] ?? '');
+		$order['manual_discount'] = (float) ($order['manual_discount'] ?? 0);
+		$order['manual_discount_formatted'] = Tools::displayPrice($order['manual_discount']);
+		$order['manual_discount_type'] = (string) ($order['manual_discount_type'] ?? '');
+		$order['manual_discount_value'] = (float) ($order['manual_discount_value'] ?? 0);
 		$order['date_formatted'] = Tools::formatDate3($order['date_add']);
+		$order = self::enrichInvoiceFields($order);
 		$order['items'] = DB::execute(
 			'SELECT od.*, p.barcode, p.stock_code, p.vat, p.product_type, p.virtual_kind
 			FROM order_detail od
@@ -663,6 +710,7 @@ class Order
 		foreach ($order['items'] as &$item) {
 			$item['price_formatted'] = Tools::displayPrice($item['price']);
 			$item['total_formatted'] = Tools::displayPrice($item['total']);
+			SaleUnit::enrichOrderItem($item);
 			VirtualProduct::enrichOrderItem($item, $idUser, (int) $order['status']);
 		}
 		unset($item);
@@ -1057,6 +1105,8 @@ class Order
 
 	public static function getByIdAdmin(int $idOrder): ?array
 	{
+		self::ensureSchema();
+
 		$order = DB::getRowSafe('orders', 'id_order = ?', [$idOrder]);
 
 		if (!$order) {
@@ -1075,7 +1125,12 @@ class Order
 		$order['payment_discount'] = (float) ($order['payment_discount'] ?? 0);
 		$order['payment_discount_formatted'] = Tools::displayPrice($order['payment_discount']);
 		$order['payment_discount_label'] = (string) ($order['payment_discount_label'] ?? '');
+		$order['manual_discount'] = (float) ($order['manual_discount'] ?? 0);
+		$order['manual_discount_formatted'] = Tools::displayPrice($order['manual_discount']);
+		$order['manual_discount_type'] = (string) ($order['manual_discount_type'] ?? '');
+		$order['manual_discount_value'] = (float) ($order['manual_discount_value'] ?? 0);
 		$order['date_formatted'] = Tools::formatDate3($order['date_add']);
+		$order = self::enrichInvoiceFields($order);
 		$order['items'] = DB::execute(
 			'SELECT od.*, p.barcode, p.stock_code, p.vat, p.product_type, p.virtual_kind, p.virtual_file_name
 			FROM order_detail od
@@ -1088,11 +1143,667 @@ class Order
 		foreach ($order['items'] as &$item) {
 			$item['price_formatted'] = Tools::displayPrice($item['price']);
 			$item['total_formatted'] = Tools::displayPrice($item['total']);
+			SaleUnit::enrichOrderItem($item);
 			VirtualProduct::enrichAdminOrderItem($item);
 		}
 		unset($item);
 
 		return $order;
+	}
+
+	public static function invoiceDir(): string
+	{
+		return dirname(__DIR__) . '/img/invoices';
+	}
+
+	public static function ensureInvoiceDir(): void
+	{
+		$dir = self::invoiceDir();
+
+		if (!is_dir($dir)) {
+			@mkdir($dir, 0755, true);
+		}
+
+		$index = $dir . '/index.php';
+
+		if (!is_file($index)) {
+			@file_put_contents($index, "<?php\nhttp_response_code(403);\n");
+		}
+	}
+
+	public static function isAllowedInvoiceFilename(string $filename): bool
+	{
+		return (bool) preg_match('/^invoice-[a-f0-9]+\.(jpg|jpeg|png|webp|pdf)$/i', $filename);
+	}
+
+	public static function getInvoiceServeUrl(int $idOrder): string
+	{
+		global $domain;
+
+		if ($idOrder <= 0) {
+			return '';
+		}
+
+		return rtrim((string) $domain, '/') . '/api/invoice.php?id_order=' . $idOrder;
+	}
+
+	/**
+	 * @param array<string, mixed> $order
+	 * @return array<string, mixed>
+	 */
+	public static function enrichInvoiceFields(array $order): array
+	{
+		$type = trim((string) ($order['invoice_type'] ?? ''));
+		$file = trim((string) ($order['invoice_file'] ?? ''));
+		$url = trim((string) ($order['invoice_url'] ?? ''));
+		$name = trim((string) ($order['invoice_name'] ?? ''));
+		$idOrder = (int) ($order['id_order'] ?? 0);
+
+		$order['invoice_type'] = $type;
+		$order['invoice_file'] = $file;
+		$order['invoice_url'] = $url;
+		$order['invoice_name'] = $name;
+		$order['has_invoice'] = ($type === 'file' && $file !== '') || ($type === 'url' && $url !== '');
+		$order['invoice_label'] = $name !== '' ? $name : translate('Invoice');
+		$order['invoice_view_url'] = '';
+
+		if ($type === 'url' && $url !== '') {
+			$order['invoice_view_url'] = $url;
+		} elseif ($type === 'file' && $file !== '' && $idOrder > 0) {
+			$order['invoice_view_url'] = self::getInvoiceServeUrl($idOrder);
+		}
+
+		return $order;
+	}
+
+	/**
+	 * @param array<string, mixed> $order
+	 * @return array{type:string,url:string,name:string}|null
+	 */
+	public static function formatInvoiceForApi(array $order): ?array
+	{
+		$order = self::enrichInvoiceFields($order);
+
+		if (empty($order['has_invoice'])) {
+			return null;
+		}
+
+		return [
+			'type' => (string) $order['invoice_type'],
+			'url' => (string) $order['invoice_view_url'],
+			'name' => (string) $order['invoice_label'],
+		];
+	}
+
+	/**
+	 * @param array<string, mixed>|null $file
+	 */
+	public static function setInvoiceFromAdmin(int $idOrder, ?array $file, string $url, string $name = ''): array
+	{
+		self::ensureSchema();
+
+		$order = DB::getRowSafe('orders', 'id_order = ?', [$idOrder]);
+
+		if (!$order) {
+			return self::fail(adminT('Order not found'));
+		}
+
+		$name = mb_substr(trim(strip_tags($name)), 0, 128);
+		$url = trim($url);
+		$hasUpload = is_array($file)
+			&& (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
+
+		if ($hasUpload) {
+			$stored = self::storeInvoiceFile($file);
+
+			if (empty($stored['success'])) {
+				return self::fail((string) ($stored['message'] ?? adminT('Could not upload attachment')));
+			}
+
+			self::deleteInvoiceFile((string) ($order['invoice_file'] ?? ''));
+
+			$updated = DB::update(
+				'orders',
+				[
+					'invoice_type' => 'file',
+					'invoice_file' => (string) $stored['filename'],
+					'invoice_url' => '',
+					'invoice_name' => $name,
+				],
+				'id_order = :id_order',
+				['id_order' => $idOrder]
+			);
+
+			if ($updated === false) {
+				return self::fail(adminT('Could not save invoice'));
+			}
+
+			return self::ok(adminT('Invoice saved'));
+		}
+
+		if ($url !== '') {
+			if (!filter_var($url, FILTER_VALIDATE_URL) || !preg_match('#^https?://#i', $url)) {
+				return self::fail(adminT('Please enter a valid invoice URL'));
+			}
+
+			self::deleteInvoiceFile((string) ($order['invoice_file'] ?? ''));
+
+			$updated = DB::update(
+				'orders',
+				[
+					'invoice_type' => 'url',
+					'invoice_file' => '',
+					'invoice_url' => mb_substr($url, 0, 512),
+					'invoice_name' => $name,
+				],
+				'id_order = :id_order',
+				['id_order' => $idOrder]
+			);
+
+			if ($updated === false) {
+				return self::fail(adminT('Could not save invoice'));
+			}
+
+			return self::ok(adminT('Invoice saved'));
+		}
+
+		return self::fail(adminT('Upload a file or enter an invoice URL'));
+	}
+
+	public static function setInvoiceUrl(int $idOrder, string $url, string $name = ''): array
+	{
+		self::ensureSchema();
+
+		$order = DB::getRowSafe('orders', 'id_order = ?', [$idOrder]);
+
+		if (!$order) {
+			return self::fail('Sipariş bulunamadı');
+		}
+
+		$url = trim($url);
+		$name = mb_substr(trim(strip_tags($name)), 0, 128);
+
+		if ($url === '' || !filter_var($url, FILTER_VALIDATE_URL) || !preg_match('#^https?://#i', $url)) {
+			return self::fail('Geçerli bir fatura URL girin');
+		}
+
+		self::deleteInvoiceFile((string) ($order['invoice_file'] ?? ''));
+
+		$updated = DB::update(
+			'orders',
+			[
+				'invoice_type' => 'url',
+				'invoice_file' => '',
+				'invoice_url' => mb_substr($url, 0, 512),
+				'invoice_name' => $name,
+			],
+			'id_order = :id_order',
+			['id_order' => $idOrder]
+		);
+
+		if ($updated === false) {
+			return self::fail('Fatura kaydedilemedi');
+		}
+
+		return self::ok('Fatura kaydedildi');
+	}
+
+	public static function clearInvoice(int $idOrder): array
+	{
+		self::ensureSchema();
+
+		$order = DB::getRowSafe('orders', 'id_order = ?', [$idOrder]);
+
+		if (!$order) {
+			return self::fail('Sipariş bulunamadı');
+		}
+
+		self::deleteInvoiceFile((string) ($order['invoice_file'] ?? ''));
+
+		$updated = DB::update(
+			'orders',
+			[
+				'invoice_type' => '',
+				'invoice_file' => '',
+				'invoice_url' => '',
+				'invoice_name' => '',
+			],
+			'id_order = :id_order',
+			['id_order' => $idOrder]
+		);
+
+		if ($updated === false) {
+			return self::fail('Fatura silinemedi');
+		}
+
+		return self::ok('Fatura silindi');
+	}
+
+	public static function canAccessInvoice(int $idOrder, int $idUser, bool $isAdmin): bool
+	{
+		self::ensureSchema();
+
+		$order = DB::getRowSafe('orders', 'id_order = ?', [$idOrder]);
+
+		if (!$order) {
+			return false;
+		}
+
+		$order = self::enrichInvoiceFields($order);
+
+		if (empty($order['has_invoice']) || (string) $order['invoice_type'] !== 'file') {
+			return false;
+		}
+
+		if ($isAdmin) {
+			return true;
+		}
+
+		return $idUser > 0 && (int) ($order['id_user'] ?? 0) === $idUser;
+	}
+
+	public static function serveInvoiceFile(int $idOrder): void
+	{
+		self::ensureSchema();
+
+		$order = DB::getRowSafe('orders', 'id_order = ?', [$idOrder]);
+
+		if (!$order) {
+			http_response_code(404);
+			exit;
+		}
+
+		$filename = trim((string) ($order['invoice_file'] ?? ''));
+
+		if (!self::isAllowedInvoiceFilename($filename)) {
+			http_response_code(404);
+			exit;
+		}
+
+		$path = self::invoiceDir() . '/' . $filename;
+
+		if (!is_file($path)) {
+			http_response_code(404);
+			exit;
+		}
+
+		$ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+		$types = [
+			'jpg' => 'image/jpeg',
+			'jpeg' => 'image/jpeg',
+			'png' => 'image/png',
+			'webp' => 'image/webp',
+			'pdf' => 'application/pdf',
+		];
+		$downloadName = trim((string) ($order['invoice_name'] ?? ''));
+
+		if ($downloadName === '') {
+			$downloadName = 'invoice-' . (string) ($order['reference'] ?? $idOrder);
+		}
+
+		$safeName = preg_replace('/[^\w.\-]+/u', '-', $downloadName) ?: 'invoice';
+		$safeName .= '.' . $ext;
+
+		header('Content-Type: ' . ($types[$ext] ?? 'application/octet-stream'));
+		header('Content-Length: ' . (string) filesize($path));
+		header('Content-Disposition: inline; filename="' . $safeName . '"');
+		header('X-Content-Type-Options: nosniff');
+		readfile($path);
+		exit;
+	}
+
+	/**
+	 * @param array<string, mixed> $file
+	 * @return array{success:bool,message?:string,filename?:string}
+	 */
+	private static function storeInvoiceFile(array $file): array
+	{
+		self::ensureInvoiceDir();
+
+		if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+			return self::fail(adminT('Could not upload attachment'));
+		}
+
+		if ((int) ($file['size'] ?? 0) > 10485760) {
+			return self::fail(adminT('Attachment too large'));
+		}
+
+		$tmp = (string) ($file['tmp_name'] ?? '');
+
+		if ($tmp === '' || !is_uploaded_file($tmp)) {
+			return self::fail(adminT('Could not upload attachment'));
+		}
+
+		$binary = file_get_contents($tmp);
+
+		if (!is_string($binary) || $binary === '') {
+			return self::fail(adminT('Could not upload attachment'));
+		}
+
+		$ext = '';
+		$info = @getimagesizefromstring($binary);
+
+		if ($info && in_array((int) $info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)) {
+			$map = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'];
+			$ext = $map[(int) $info[2]] ?? '';
+		} elseif (strncmp($binary, '%PDF', 4) === 0) {
+			$ext = 'pdf';
+		}
+
+		if ($ext === '') {
+			return self::fail(adminT('Invalid attachment type'));
+		}
+
+		$filename = 'invoice-' . bin2hex(random_bytes(12)) . '.' . $ext;
+		$path = self::invoiceDir() . '/' . $filename;
+
+		if (@file_put_contents($path, $binary) === false) {
+			return self::fail(adminT('Could not upload attachment'));
+		}
+
+		return ['success' => true, 'filename' => $filename];
+	}
+
+	private static function deleteInvoiceFile(string $filename): void
+	{
+		$filename = basename(trim($filename));
+
+		if (!self::isAllowedInvoiceFilename($filename)) {
+			return;
+		}
+
+		$path = self::invoiceDir() . '/' . $filename;
+
+		if (is_file($path)) {
+			@unlink($path);
+		}
+	}
+
+	/**
+	 * Admin: ürün satırları, adres, kargo ücreti ve manuel iskonto güncelle.
+	 *
+	 * @param array<string, mixed> $data
+	 * @return array{success:bool,message:string,old_total?:float,new_total?:float,difference?:float}
+	 */
+	public static function updateByAdmin(int $idOrder, array $data): array
+	{
+		self::ensureSchema();
+
+		$order = self::getByIdAdmin($idOrder);
+
+		if (!$order) {
+			return self::fail('Sipariş bulunamadı');
+		}
+
+		$status = (int) ($order['status'] ?? 0);
+
+		if (in_array($status, [self::STATUS_CANCELLED, self::STATUS_RETURNED], true)) {
+			return self::fail('İptal veya iade edilmiş sipariş düzenlenemez');
+		}
+
+		$oldTotal = round((float) ($order['total'] ?? 0), 2);
+		$rawItems = is_array($data['items'] ?? null) ? $data['items'] : [];
+		$lines = [];
+
+		foreach ($rawItems as $raw) {
+			if (!is_array($raw)) {
+				continue;
+			}
+
+			if (!empty($raw['remove'])) {
+				continue;
+			}
+
+			$idProduct = (int) ($raw['id_product'] ?? 0);
+			$idVariation = (int) ($raw['id_variation'] ?? 0);
+			$qty = round((float) str_replace(',', '.', (string) ($raw['qty'] ?? 0)), 3);
+
+			if ($idProduct <= 0 || $qty <= 0) {
+				continue;
+			}
+
+			$product = Product::getByIdAdmin($idProduct);
+
+			if (!$product) {
+				return self::fail('Ürün bulunamadı: #' . $idProduct);
+			}
+
+			$hasPriceOverride = array_key_exists('price', $raw) && trim((string) $raw['price']) !== '';
+			$unitPrice = $hasPriceOverride
+				? (float) str_replace(',', '.', (string) $raw['price'])
+				: (float) ($product['price'] ?? 0);
+
+			$unitPrice = max(0, round($unitPrice, 2));
+			$name = trim((string) ($raw['product_name'] ?? ''));
+
+			if ($name === '') {
+				$name = (string) ($product['product_name'] ?? ('Ürün #' . $idProduct));
+			}
+
+			$variationLabel = trim((string) ($raw['variation_label'] ?? ''));
+
+			if ($idVariation > 0 && class_exists('ProductVariation', false)) {
+				$variation = ProductVariation::getById($idVariation);
+
+				if ($variation) {
+					if ($variationLabel === '') {
+						$variationLabel = ProductVariation::formatLabel($variation);
+					}
+
+					if (!$hasPriceOverride) {
+						$unitPrice = ProductVariation::getEffectivePrice($variation, (float) ($product['price'] ?? 0));
+						$unitPrice = max(0, round($unitPrice, 2));
+					}
+				}
+			}
+
+			$lines[] = [
+				'id_product' => $idProduct,
+				'id_variation' => $idVariation,
+				'product_name' => mb_substr($name, 0, 128),
+				'variation_label' => mb_substr($variationLabel, 0, 255),
+				'price' => $unitPrice,
+				'qty' => $qty,
+				'total' => round($unitPrice * $qty, 2),
+				'line_meta' => null,
+			];
+		}
+
+		if ($lines === []) {
+			return self::fail('Siparişte en az bir ürün olmalıdır');
+		}
+
+		$oldQtyMap = [];
+
+		foreach ($order['items'] as $item) {
+			$key = (int) $item['id_product'] . ':' . (int) ($item['id_variation'] ?? 0);
+			$oldQtyMap[$key] = ($oldQtyMap[$key] ?? 0) + (float) ($item['qty'] ?? 0);
+		}
+
+		$newQtyMap = [];
+
+		foreach ($lines as $line) {
+			$key = $line['id_product'] . ':' . $line['id_variation'];
+			$newQtyMap[$key] = ($newQtyMap[$key] ?? 0) + (float) $line['qty'];
+		}
+
+		$allKeys = array_unique(array_merge(array_keys($oldQtyMap), array_keys($newQtyMap)));
+		$stockMoves = [];
+
+		foreach ($allKeys as $key) {
+			$oldQty = round((float) ($oldQtyMap[$key] ?? 0), 3);
+			$newQty = round((float) ($newQtyMap[$key] ?? 0), 3);
+			$delta = round($newQty - $oldQty, 3);
+
+			if ($delta == 0.0) {
+				continue;
+			}
+
+			[$idProduct, $idVariation] = array_map('intval', explode(':', $key, 2));
+
+			if ($delta > 0) {
+				if (!Product::decreaseStock($idProduct, $delta, $idVariation)) {
+					foreach (array_reverse($stockMoves) as $move) {
+						if ($move['delta'] > 0) {
+							Product::increaseStock($move['id_product'], $move['delta'], $move['id_variation']);
+						} else {
+							Product::decreaseStock($move['id_product'], abs($move['delta']), $move['id_variation']);
+						}
+					}
+
+					return self::fail('Stok yetersiz: ürün #' . $idProduct);
+				}
+			} else {
+				Product::increaseStock($idProduct, abs($delta), $idVariation);
+			}
+
+			$stockMoves[] = [
+				'id_product' => $idProduct,
+				'id_variation' => $idVariation,
+				'delta' => $delta,
+			];
+		}
+
+		$subtotal = 0.0;
+
+		foreach ($lines as $line) {
+			$subtotal += (float) $line['total'];
+		}
+
+		$subtotal = round($subtotal, 2);
+		$couponDiscount = max(0, round((float) ($order['coupon_discount'] ?? 0), 2));
+		$promotionDiscount = max(0, round((float) ($order['promotion_discount'] ?? 0), 2));
+		$paymentDiscount = max(0, round((float) ($order['payment_discount'] ?? 0), 2));
+		$shipping = max(0, round((float) str_replace(',', '.', (string) ($data['shipping'] ?? $order['shipping'] ?? 0)), 2));
+
+		$discountType = strtolower(trim((string) ($data['manual_discount_type'] ?? '')));
+		$discountValue = max(0, round((float) str_replace(',', '.', (string) ($data['manual_discount_value'] ?? 0)), 2));
+
+		if (!in_array($discountType, ['fixed', 'percent'], true) || $discountValue <= 0) {
+			$discountType = '';
+			$discountValue = 0.0;
+			$manualDiscount = 0.0;
+		} elseif ($discountType === 'percent') {
+			$discountValue = min(100, $discountValue);
+			$manualDiscount = round($subtotal * ($discountValue / 100), 2);
+		} else {
+			$manualDiscount = min($subtotal, $discountValue);
+		}
+
+		$discounted = max(
+			0,
+			round($subtotal - $couponDiscount - $promotionDiscount - $paymentDiscount - $manualDiscount, 2)
+		);
+		$newTotal = round($discounted + $shipping, 2);
+
+		$row = [
+			'customer_name' => mb_substr(trim(strip_tags((string) ($data['customer_name'] ?? $order['customer_name']))), 0, 128),
+			'customer_phone' => mb_substr(trim(strip_tags((string) ($data['customer_phone'] ?? $order['customer_phone']))), 0, 20),
+			'customer_email' => mb_substr(trim(strip_tags((string) ($data['customer_email'] ?? $order['customer_email'] ?? ''))), 0, 128),
+			'company_name' => mb_substr(trim(strip_tags((string) ($data['company_name'] ?? $order['company_name'] ?? ''))), 0, 128),
+			'tax_office' => mb_substr(trim(strip_tags((string) ($data['tax_office'] ?? $order['tax_office'] ?? ''))), 0, 64),
+			'tax_number' => mb_substr(trim(strip_tags((string) ($data['tax_number'] ?? $order['tax_number'] ?? ''))), 0, 20),
+			'address_city' => mb_substr(trim(strip_tags((string) ($data['address_city'] ?? $order['address_city']))), 0, 64),
+			'address_district' => mb_substr(trim(strip_tags((string) ($data['address_district'] ?? $order['address_district']))), 0, 64),
+			'address_text' => trim(strip_tags((string) ($data['address_text'] ?? $order['address_text']))),
+			'note' => trim(strip_tags((string) ($data['note'] ?? $order['note'] ?? ''))),
+			'shipping' => $shipping,
+			'subtotal' => $subtotal,
+			'manual_discount' => $manualDiscount,
+			'manual_discount_type' => $discountType,
+			'manual_discount_value' => $discountValue,
+			'total' => $newTotal,
+		];
+
+		if ($row['customer_name'] === '' || $row['address_city'] === '' || $row['address_text'] === '') {
+			return self::fail('Müşteri adı ve adres zorunludur');
+		}
+
+		global $db;
+
+		try {
+			$db->beginTransaction();
+
+			$ok = DB::update('orders', $row, 'id_order = :id_order', ['id_order' => $idOrder]);
+
+			if ($ok === false) {
+				throw new RuntimeException('Sipariş güncellenemedi');
+			}
+
+			DB::execute('DELETE FROM order_detail WHERE id_order = ?', [$idOrder]);
+
+			foreach ($lines as $line) {
+				$inserted = DB::insert('order_detail', [
+					'id_order' => $idOrder,
+					'id_product' => $line['id_product'],
+					'id_variation' => $line['id_variation'],
+					'product_name' => $line['product_name'],
+					'variation_label' => $line['variation_label'],
+					'price' => $line['price'],
+					'qty' => $line['qty'],
+					'total' => $line['total'],
+					'line_meta' => $line['line_meta'],
+				]);
+
+				if (!$inserted) {
+					throw new RuntimeException('Sipariş satırı kaydedilemedi');
+				}
+			}
+
+			$db->commit();
+		} catch (Throwable $e) {
+			if ($db->inTransaction()) {
+				$db->rollBack();
+			}
+
+			foreach (array_reverse($stockMoves) as $move) {
+				if ($move['delta'] > 0) {
+					Product::increaseStock($move['id_product'], $move['delta'], $move['id_variation']);
+				} else {
+					Product::decreaseStock($move['id_product'], abs($move['delta']), $move['id_variation']);
+				}
+			}
+
+			return self::fail($e->getMessage());
+		}
+
+		if (class_exists('ProductLog', false)) {
+			foreach ($stockMoves as $move) {
+				if ($move['delta'] > 0) {
+					ProductLog::logSold(
+						$move['id_product'],
+						$move['delta'],
+						$idOrder,
+						(string) ($order['reference'] ?? '')
+					);
+				} else {
+					ProductLog::logStockRestored($move['id_product'], abs($move['delta']), $idOrder);
+				}
+			}
+		}
+
+		$difference = round($newTotal - $oldTotal, 2);
+		$updated = self::getByIdAdmin($idOrder);
+
+		if ($updated && class_exists('Module', false)) {
+			Module::runHook('order.updated', [$updated, $status, ['content_edit' => true]]);
+		}
+
+		$msg = 'Sipariş güncellendi';
+
+		if ($difference > 0) {
+			$msg .= ' — ek fark: ' . Tools::displayPrice($difference);
+		} elseif ($difference < 0) {
+			$msg .= ' — iade / düşüş: ' . Tools::displayPrice(abs($difference));
+		}
+
+		return [
+			'success' => true,
+			'message' => $msg,
+			'old_total' => $oldTotal,
+			'new_total' => $newTotal,
+			'difference' => $difference,
+		];
 	}
 
 	public static function setStatusQuiet(int $idOrder, int $status): bool
@@ -1212,12 +1923,24 @@ class Order
 	public static function restoreStock(int $idOrder): void
 	{
 		$items = DB::execute(
-			'SELECT id_product, qty FROM order_detail WHERE id_order = ?',
+			'SELECT id_product, id_variation, qty FROM order_detail WHERE id_order = ?',
 			[$idOrder]
 		) ?: [];
 
 		foreach ($items as $item) {
-			Product::increaseStock((int) $item['id_product'], (int) $item['qty']);
+			Product::increaseStock(
+				(int) $item['id_product'],
+				(float) $item['qty'],
+				(int) ($item['id_variation'] ?? 0)
+			);
+
+			if (class_exists('ProductLog', false)) {
+				ProductLog::logStockRestored(
+					(int) $item['id_product'],
+					(float) $item['qty'],
+					$idOrder
+				);
+			}
 		}
 	}
 

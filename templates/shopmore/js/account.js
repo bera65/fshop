@@ -11,15 +11,23 @@
 	}
 
 	function showToast(message, type) {
+		if (typeof window.showToast === 'function' && window.showToast !== showToast) {
+			window.showToast(message, type === 'error' ? 'danger' : (type || 'success'));
+			return;
+		}
 		var $toast = $('#tostAlert');
 		if (!$toast.length) {
 			alert(message);
 			return;
 		}
-		$toast.removeClass('text-bg-success text-bg-danger text-bg-info');
-		$toast.addClass(type === 'error' ? 'text-bg-danger' : 'text-bg-success');
-		$toast.find('.toast-body').text(message);
-		var toast = bootstrap.Toast.getOrCreateInstance($toast[0]);
+		var kind = (type === 'error' || type === 'danger') ? 'danger' : 'success';
+		var title = $toast.attr('data-title-' + kind) || (kind === 'danger' ? 'Error!' : 'Success!');
+		$toast
+			.removeClass('is-success is-danger is-warning is-info text-bg-success text-bg-danger text-bg-info')
+			.addClass('is-' + kind);
+		$toast.find('.sm-toast__title').text(title);
+		$toast.find('.sm-toast__message, .toast-body').text(message);
+		var toast = bootstrap.Toast.getOrCreateInstance($toast[0], { delay: 3500 });
 		toast.show();
 	}
 

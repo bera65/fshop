@@ -59,65 +59,7 @@ class ProductSyncService
 			}
 		}
 
-		$orders = \DB::execute("SHOW TABLES LIKE 'trendyol_orders'");
-
-		if (empty($orders)) {
-			\DB::execute(
-				"CREATE TABLE `trendyol_orders` (
-					`id` int(11) NOT NULL AUTO_INCREMENT,
-					`order_number` varchar(64) NOT NULL,
-					`shipment_package_id` varchar(64) NOT NULL DEFAULT '',
-					`status` varchar(64) NOT NULL DEFAULT '',
-					`customer_name` varchar(255) NOT NULL DEFAULT '',
-					`total_price` decimal(20,2) NOT NULL DEFAULT 0.00,
-					`cargo_tracking_number` varchar(128) NOT NULL DEFAULT '',
-					`cargo_provider` varchar(128) NOT NULL DEFAULT '',
-					`lines_json` mediumtext NULL,
-					`raw_json` mediumtext NULL,
-					`stock_deducted` tinyint(1) NOT NULL DEFAULT 0,
-					`order_date` datetime NULL,
-					`last_sync_at` datetime NOT NULL,
-					PRIMARY KEY (`id`),
-					UNIQUE KEY `order_package` (`order_number`, `shipment_package_id`),
-					KEY `status` (`status`),
-					KEY `order_date` (`order_date`)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-			);
-		} else {
-			$col = \DB::execute("SHOW COLUMNS FROM `trendyol_orders` LIKE 'stock_deducted'");
-
-			if (empty($col)) {
-				\DB::execute(
-					"ALTER TABLE `trendyol_orders`
-					 ADD COLUMN `stock_deducted` tinyint(1) NOT NULL DEFAULT 0 AFTER `raw_json`"
-				);
-			}
-		}
-
-		$questions = \DB::execute("SHOW TABLES LIKE 'trendyol_questions'");
-
-		if (empty($questions)) {
-			\DB::execute(
-				"CREATE TABLE `trendyol_questions` (
-					`id` int(11) NOT NULL AUTO_INCREMENT,
-					`question_id` bigint(20) NOT NULL,
-					`product_name` varchar(255) NOT NULL DEFAULT '',
-					`barcode` varchar(64) NOT NULL DEFAULT '',
-					`question_text` text NULL,
-					`answer_text` text NULL,
-					`status` varchar(64) NOT NULL DEFAULT '',
-					`answered` tinyint(1) NOT NULL DEFAULT 0,
-					`customer_id` varchar(64) NOT NULL DEFAULT '',
-					`raw_json` mediumtext NULL,
-					`question_date` datetime NULL,
-					`last_sync_at` datetime NOT NULL,
-					PRIMARY KEY (`id`),
-					UNIQUE KEY `question_id` (`question_id`),
-					KEY `answered` (`answered`),
-					KEY `status` (`status`)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
-			);
-		}
+		\MarketplaceTables::ensureSchema();
 	}
 
 	public static function isConfigured(): bool
@@ -520,6 +462,8 @@ class ProductSyncService
 
 		$stock = max(0, \Product::getStock($product));
 		$sku = trim((string) ($product['stock_code'] ?? ''));
+		$oldMapQty = (float) ($mapping['quantity'] ?? 0);
+		$oldSale = (float) ($mapping['sale_price'] ?? 0);
 
 		$result = self::api()->updateStockPrice($barcode, $listPrice, $salePrice, $stock, $sku !== '' ? $sku : null);
 		$now = date('Y-m-d H:i:s');
@@ -553,6 +497,16 @@ class ProductSyncService
 			'last_error' => '',
 			'last_sync_at' => $now,
 		]);
+
+		$ref = $sku !== '' ? $sku : $barcode;
+
+		if (abs($oldMapQty - (float) $stock) >= 0.0001) {
+			\MarketplaceLog::stockChange('trendyol', $ref, $oldMapQty, $stock, 'PHANTOM_STOCK_CHANGE', $idProduct);
+		}
+
+		if ($oldSale > 0 && abs($oldSale - (float) $salePrice) >= 0.0001) {
+			\MarketplaceLog::priceUpdate('trendyol', $ref, $oldSale, (float) $salePrice, $idProduct);
+		}
 
 		// Trendyol fiyat/stok güncellemelerini asenkron işler. Burada hemen tekrar
 		// sorgulamak eski fiyatı döndürebildiği için kullanıcının girdiği değer yerelde korunur.

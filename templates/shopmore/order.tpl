@@ -20,7 +20,7 @@
 
 						<div class="fw-semibold">{$item.product_name|escape}</div>
 
-						<div class="small text-muted">{$item.qty} {'pcs'|translate} x {$item.price_formatted}</div>
+						<div class="small text-muted">{if $item.measure_label|default:''}{$item.measure_label|escape}{elseif $item.qty_label|default:''}{$item.qty_label|escape}{else}{$item.qty} {'pcs'|translate}{/if} x {$item.price_formatted}</div>
 
 					</div>
 
@@ -72,6 +72,11 @@
 
 				<p class="mb-0 d-flex justify-content-between fs-5 fw-bold"><span>{'Total'|translate}</span><span>{$order.total_formatted}</span></p>
 
+				{if $order.has_invoice|default:false && $order.invoice_view_url|default:''}
+				<hr>
+				<a href="{$order.invoice_view_url|escape}" target="_blank" rel="noopener" class="prime-btn prime-btn--outline prime-btn--sm w-100">{$order.invoice_label|default:'Invoice'|translate|escape}</a>
+				{/if}
+
 			</div>
 
 		</div>
@@ -82,7 +87,7 @@
 
 	<div class="mt-4 d-flex flex-wrap gap-2">
 
-		<a href="{$domain}orders" class="prime-btn prime-btn--outline prime-btn--sm">ã {'Back to orders'|translate}</a>
+		<a href="{$domain}orders" class="prime-btn prime-btn--outline prime-btn--sm">ù {'Back to orders'|translate}</a>
 
 		{if $canReturnRequest}
 		<a href="{$domain}return-request?id_order={$order.id_order}" class="prime-btn prime-btn--primary prime-btn--sm">{'Request return'|translate}</a>

@@ -11,7 +11,7 @@ class WebApi
 
 		switch ($route['resource']) {
 			case 'orders':
-				self::handleOrders($method, $route['id']);
+				self::handleOrders($method, $route['id'], $route['sub']);
 				break;
 			case 'products':
 				self::handleProducts($method, $route['id'], $route['sub']);
@@ -149,24 +149,73 @@ class WebApi
 		];
 	}
 
-	private static function handleOrders(string $method, int $id): void
+	private static function handleOrders(string $method, int $id, string $sub = ''): void
 	{
 		if ($method === 'GET' && $id <= 0) {
 			ApiKey::requirePermission(ApiKey::PERM_ORDERS_READ);
 			self::listOrders();
 		}
 
-		if ($method === 'GET' && $id > 0) {
+		if ($method === 'GET' && $id > 0 && $sub === '') {
 			ApiKey::requirePermission(ApiKey::PERM_ORDERS_READ);
 			self::getOrder($id);
 		}
 
-		if (in_array($method, ['PUT', 'PATCH'], true) && $id > 0) {
+		if ($method === 'POST' && $id > 0 && $sub === 'invoice') {
+			ApiKey::requirePermission(ApiKey::PERM_ORDERS_WRITE);
+			self::setOrderInvoice($id);
+		}
+
+		if ($method === 'DELETE' && $id > 0 && $sub === 'invoice') {
+			ApiKey::requirePermission(ApiKey::PERM_ORDERS_WRITE);
+			self::deleteOrderInvoice($id);
+		}
+
+		if (in_array($method, ['PUT', 'PATCH'], true) && $id > 0 && $sub === '') {
 			ApiKey::requirePermission(ApiKey::PERM_ORDERS_WRITE);
 			self::updateOrder($id);
 		}
 
 		self::respond(405, ['success' => false, 'message' => 'Desteklenmeyen sipariş işlemi']);
+	}
+
+	private static function setOrderInvoice(int $id): void
+	{
+		$body = self::getInput();
+		$url = trim((string) ($body['url'] ?? $body['invoice_url'] ?? ''));
+		$name = trim((string) ($body['name'] ?? $body['invoice_name'] ?? ''));
+		$result = Order::setInvoiceUrl($id, $url, $name);
+
+		if (empty($result['success'])) {
+			self::respond(400, ['success' => false, 'message' => $result['message']]);
+		}
+
+		$order = Order::getByIdAdmin($id);
+		$prepared = $order ? Order::attachApiDetails([$order]) : [];
+
+		self::respond(200, [
+			'success' => true,
+			'message' => $result['message'],
+			'content' => $prepared ? self::formatTrendyolOrder($prepared[0]) : null,
+		]);
+	}
+
+	private static function deleteOrderInvoice(int $id): void
+	{
+		$result = Order::clearInvoice($id);
+
+		if (empty($result['success'])) {
+			self::respond(400, ['success' => false, 'message' => $result['message']]);
+		}
+
+		$order = Order::getByIdAdmin($id);
+		$prepared = $order ? Order::attachApiDetails([$order]) : [];
+
+		self::respond(200, [
+			'success' => true,
+			'message' => $result['message'],
+			'content' => $prepared ? self::formatTrendyolOrder($prepared[0]) : null,
+		]);
 	}
 
 	private static function handleProducts(string $method, int $id, string $sub = ''): void
@@ -869,6 +918,7 @@ class WebApi
 			'trackingNumber' => (string) ($order['tracking_number'] ?? ''),
 			'commercial' => $commercial,
 			'note' => (string) ($order['note'] ?? ''),
+			'invoice' => Order::formatInvoiceForApi($order),
 		];
 	}
 

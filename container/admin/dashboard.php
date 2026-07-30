@@ -3,12 +3,11 @@
 		exit;
 	}
 
-	require_once dirname(__DIR__, 2) . '/core/NewsFeed.php';
-
 	$stats = Admin::getDashboardStats();
 	$stats['revenue_month_formatted'] = Tools::displayPrice($stats['revenue_month']);
 	$charts = Admin::getDashboardCharts();
 	$recentOrders = Order::getDashboardRecentOrders(50);
+	$recentMarketplaceOrders = MarketplaceAdmin::getRecentMarketplaceOrders(20);
 	$lowStockProducts = Admin::getLowStockProducts(6);
 
 	$revenueTrend = 0.0;
@@ -104,6 +103,7 @@
 		'opsMax' => $opsMax,
 		'opsRings' => $opsRings,
 		'recentOrders' => $recentOrders,
+		'recentMarketplaceOrders' => $recentMarketplaceOrders,
 		'orders' => $recentOrders,
 		'statusPending' => Order::STATUS_PENDING,
 		'statusProcessing' => Order::STATUS_PROCESSING,
@@ -113,8 +113,6 @@
 		'orderStatusApiUrl' => Admin::url('order-status'),
 		'statusOptions' => Order::getStatusOptions(),
 		'adminHooks' => Module::renderAdminHooks($dashboardHooks, $dashboardContext),
-		'frisayNews' => NewsFeed::getDashboardItems(5),
-		'frisayNewsUrl' => 'https://frisay.com/rss.xml',
 	]);
 
 	AdminPage::add('dashboard', 'Dashboard');

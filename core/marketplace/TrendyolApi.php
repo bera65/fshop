@@ -41,9 +41,36 @@ class TrendyolApi
 
 	public function getOrderDetail($idOrder)
 	{
-		$endpoint = "order/sellers/{$this->supplierId}/orders?orderNumber=" . (int) $idOrder;
+		$endpoint = "order/sellers/{$this->supplierId}/orders?orderNumber=" . rawurlencode((string) $idOrder);
 
 		return $this->request('GET', $endpoint);
+	}
+
+	/**
+	 * Tedarik edememe / paket iptali
+	 *
+	 * @param array<int, array{lineId: int|string, quantity: int}> $lines
+	 * @return array<string, mixed>|null
+	 */
+	public function cancelPackageItems(string $packageId, array $lines, int $reasonId = 500): ?array
+	{
+		$packageId = trim($packageId);
+
+		if ($packageId === '' || $lines === []) {
+			return [
+				'success' => false,
+				'message' => 'Paket veya satır bilgisi eksik',
+			];
+		}
+
+		$endpoint = "order/sellers/{$this->supplierId}/shipment-packages/"
+			. rawurlencode($packageId)
+			. '/items/unsupplied';
+
+		return $this->request('PUT', $endpoint, [
+			'lines' => array_values($lines),
+			'reasonId' => $reasonId,
+		]);
 	}
 
 	public function getReturnOrders($claimItemStatus = null, $page = 0, $size = 50, $startDate = null, $endDate = null)

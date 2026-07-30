@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/config/install_gate.php';
 
-if (fshop_is_installed()) {
+if (Fshop_is_installed()) {
 	header('Location: ../');
 	exit;
 }
@@ -41,35 +41,31 @@ $defaults = [
 	'rewrite_base' => rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'] ?? '/install')), '/') . '/',
 	'admin_name' => 'Admin',
 	'admin_email' => 'admin@example.com',
-	'theme' => 'shopmore',
+	'theme' => 'blue',
 	'shop_lang' => 'tr',
 	'admin_lang' => 'tr',
 ];
 ?>
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>FriSay Installer</title>
-	<link rel="stylesheet" href="assets/install.css">
+	<title>FriSay Installation</title>
 	<link rel="stylesheet" href="../templates/admin/css/bootstrap.min.css">
-	<link rel="icon" type="image/x-icon" href="../img/favicon.ico">
+	<link rel="stylesheet" href="assets/install.css">
 </head>
 <body>
 <div class="install-wrap">
-	<div class="container mb-4 text-center">
-		<img src="../img/logo.png" alt="FriSay" width="150px" height="auto"/>
-	</div>
 	<div class="install-card">
-		<h1 class="install-title">FriSay Installer</h1>
+		<h1 class="install-title">FriSay Installation</h1>
 		<p class="install-subtitle">Step <?php echo (int) $step; ?> / 4</p>
 
 		<div class="install-steps">
 			<div class="install-step<?php echo $step === 1 ? ' is-active' : ''; ?>">Requirements</div>
 			<div class="install-step<?php echo $step === 2 ? ' is-active' : ''; ?>">Database</div>
-			<div class="install-step<?php echo $step === 3 ? ' is-active' : ''; ?>">Site &amp; Admin</div>
-			<div class="install-step<?php echo $step === 4 ? ' is-active' : ''; ?>">Complate</div>
+			<div class="install-step<?php echo $step === 3 ? ' is-active' : ''; ?>">Website &amp; Admin</div>
+			<div class="install-step<?php echo $step === 4 ? ' is-active' : ''; ?>">Completed</div>
 		</div>
 
 		<?php if ($error !== '') { ?>
@@ -87,9 +83,9 @@ $defaults = [
 		</ul>
 		<p style="margin-top:24px;">
 			<?php if ($requirements['ok']) { ?>
-			<a class="btn btn-primary" href="?step=2">Next</a>
+			<a class="btn btn-primary" href="?step=2">Continue</a>
 			<?php } else { ?>
-			<span class="check-fail">It is not possible to proceed without meeting the requirements.</span>
+			<span class="check-fail">You cannot continue until all requirements are met.</span>
 			<?php } ?>
 		</p>
 		<?php } ?>
@@ -106,15 +102,15 @@ $defaults = [
 				<input type="text" name="db_name" class="form-control" value="<?php echo htmlspecialchars((string) ($_GET['db_name'] ?? $defaults['db_name']), ENT_QUOTES, 'UTF-8'); ?>" required>
 			</div>
 			<div style="margin-bottom:12px;">
-				<label class="form-label">Database User</label>
+				<label class="form-label">Username</label>
 				<input type="text" name="db_user" class="form-control" value="<?php echo htmlspecialchars((string) ($_GET['db_user'] ?? $defaults['db_user']), ENT_QUOTES, 'UTF-8'); ?>" required>
 			</div>
 			<div style="margin-bottom:12px;">
-				<label class="form-label">Database Password</label>
+				<label class="form-label">Password</label>
 				<input type="password" name="db_pass" class="form-control" value="">
 			</div>
-			<button type="submit" class="btn btn-primary">Next</button>
-			<a href="?step=1" class="btn btn-secondary">Previus</a>
+			<button type="submit" class="btn btn-primary">Continue</button>
+			<a href="?step=1" class="btn btn-secondary">Back</a>
 		</form>
 		<?php } ?>
 
@@ -127,48 +123,51 @@ $defaults = [
 			<input type="hidden" name="db_pass" value="<?php echo htmlspecialchars((string) ($_GET['db_pass'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
 
 			<div style="margin-bottom:12px;">
-				<label class="form-label">Site Name</label>
+				<label class="form-label">Website Name</label>
 				<input type="text" name="site_name" class="form-control" value="<?php echo htmlspecialchars($defaults['site_name'], ENT_QUOTES, 'UTF-8'); ?>" required>
 			</div>
 			<div style="margin-bottom:12px;">
-				<label class="form-label">Site URL</label>
+				<label class="form-label">Website URL</label>
 				<input type="url" name="site_url" class="form-control" value="<?php echo htmlspecialchars($defaults['site_url'], ENT_QUOTES, 'UTF-8'); ?>" required>
 			</div>
 			<div style="margin-bottom:12px;">
-				<label class="form-label">RewriteBase</label>
+				<label class="form-label">Rewrite Base</label>
 				<input type="text" name="rewrite_base" class="form-control" value="<?php echo htmlspecialchars($defaults['rewrite_base'], ENT_QUOTES, 'UTF-8'); ?>" required>
 			</div>
 			<div style="margin-bottom:12px;">
-				<label class="form-label">Template</label>
+				<label class="form-label">Theme</label>
 				<select name="theme" class="form-control">
-					<option value="shopmore">Shopmore</option>
+					<option value="blue">blue</option>
+					<option value="nova">nova</option>
+					<option value="fyazilim">fyazilim</option>
+					<option value="default">default</option>
 				</select>
 			</div>
 			<div style="margin-bottom:12px;">
-				<label class="form-label">Admin Name</label>
+				<label class="form-label">Administrator Name</label>
 				<input type="text" name="admin_name" class="form-control" value="<?php echo htmlspecialchars($defaults['admin_name'], ENT_QUOTES, 'UTF-8'); ?>" required>
 			</div>
 			<div style="margin-bottom:12px;">
-				<label class="form-label">Admin E-Mail</label>
+				<label class="form-label">Administrator Email</label>
 				<input type="email" name="admin_email" class="form-control" value="<?php echo htmlspecialchars($defaults['admin_email'], ENT_QUOTES, 'UTF-8'); ?>" required>
 			</div>
 			<div style="margin-bottom:12px;">
-				<label class="form-label">Admin Password (min. 8 character)</label>
+				<label class="form-label">Administrator Password (minimum 8 characters)</label>
 				<input type="password" name="admin_password" class="form-control" required minlength="8">
 			</div>
 			<div style="margin-bottom:16px;">
-				<label><input type="checkbox" name="install_demo" value="1"> Demo veri yükle</label>
+				<label><input type="checkbox" name="install_demo" value="1"> Install demo data</label>
 			</div>
-			<button type="submit" class="btn btn-primary">Start Install</button>
-			<a href="?step=2" class="btn btn-secondary">Previus</a>
+			<button type="submit" class="btn btn-primary">Start Installation</button>
+			<a href="?step=2" class="btn btn-secondary">Back</a>
 		</form>
 		<?php } ?>
 
 		<?php if ($step === 4) { ?>
-		<div class="alert alert-success"><?php echo htmlspecialchars($success !== '' ? $success : 'Installation complete.', ENT_QUOTES, 'UTF-8'); ?></div>
-		<p>You can log in to the admin panel and install the modules.</p>
-		<p><a class="btn btn-primary" href="../admin/">Goto Admin Panel</a></p>
-		<p><small>Delete <b>/install/</b> folder.</small></p>
+		<div class="alert alert-success"><?php echo htmlspecialchars($success !== '' ? $success : 'Installation completed successfully.', ENT_QUOTES, 'UTF-8'); ?></div>
+		<p>You can now log in to the admin panel and install modules.</p>
+		<p><a class="btn btn-primary" href="../admin/">Go to Admin Panel</a></p>
+		<p><small>For security reasons, disable access to the <code>/install/</code> directory in production.</small></p>
 		<?php } ?>
 	</div>
 </div>

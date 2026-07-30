@@ -23,7 +23,7 @@ class StockAnalysis
 		}
 	}
 
-	public static function touchStockEmptyAt(int $idProduct, int $oldStock, int $newStock): void
+	public static function touchStockEmptyAt(int $idProduct, float $oldStock, float $newStock): void
 	{
 		self::ensureSchema();
 

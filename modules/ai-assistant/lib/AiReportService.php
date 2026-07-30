@@ -32,8 +32,18 @@ class AiReportService
 			return $cached;
 		}
 
-		$row = DB::execute("SHOW TABLES LIKE 'trendyol_orders'");
+		if (!class_exists('MarketplaceTables', false)) {
+			$path = dirname(__DIR__, 2) . '/core/MarketplaceTables.php';
+			if (is_file($path)) {
+				require_once $path;
+			}
+		}
 
+		if (class_exists('MarketplaceTables', false)) {
+			MarketplaceTables::ensureSchema();
+		}
+
+		$row = DB::execute("SHOW TABLES LIKE 'marketplace_orders'");
 		$cached = !empty($row);
 
 		return $cached;
@@ -311,8 +321,8 @@ class AiReportService
 			"SELECT COUNT(*) AS order_count,
 				COALESCE(SUM(total_price), 0) AS revenue,
 				COALESCE(AVG(total_price), 0) AS avg_basket
-			 FROM trendyol_orders
-			 WHERE order_date BETWEEN ? AND ?",
+			 FROM marketplace_orders
+			 WHERE platform = 'trendyol' AND order_date BETWEEN ? AND ?",
 			$params
 		);
 
@@ -320,8 +330,8 @@ class AiReportService
 
 		$byStatus = DB::execute(
 			"SELECT status, COUNT(*) AS cnt, COALESCE(SUM(total_price), 0) AS revenue
-			 FROM trendyol_orders
-			 WHERE order_date BETWEEN ? AND ?
+			 FROM marketplace_orders
+			 WHERE platform = 'trendyol' AND order_date BETWEEN ? AND ?
 			 GROUP BY status
 			 ORDER BY cnt DESC",
 			$params
@@ -329,8 +339,8 @@ class AiReportService
 
 		$daily = DB::execute(
 			"SELECT DATE(order_date) AS day, COUNT(*) AS orders, COALESCE(SUM(total_price), 0) AS revenue
-			 FROM trendyol_orders
-			 WHERE order_date BETWEEN ? AND ?
+			 FROM marketplace_orders
+			 WHERE platform = 'trendyol' AND order_date BETWEEN ? AND ?
 			 GROUP BY DATE(order_date)
 			 ORDER BY day ASC",
 			$params
@@ -350,7 +360,7 @@ class AiReportService
 			'by_payment' => [],
 			'top_products' => [],
 			'daily' => $daily,
-			'note' => 'Trendyol siparişleri trendyol_orders tablosundan okunur.',
+			'note' => 'Trendyol siparişleri marketplace_orders tablosundan okunur.',
 		];
 	}
 
@@ -615,8 +625,8 @@ class AiReportService
 
 		$allOrders = DB::execute(
 			"SELECT COUNT(*) AS total_orders, COALESCE(SUM(total_price), 0) AS total_revenue
-			 FROM trendyol_orders
-			 WHERE order_date BETWEEN ? AND ?",
+			 FROM marketplace_orders
+			 WHERE platform = 'trendyol' AND order_date BETWEEN ? AND ?",
 			$params
 		);
 
@@ -624,8 +634,8 @@ class AiReportService
 
 		$byStatus = DB::execute(
 			"SELECT status, COUNT(*) AS cnt, COALESCE(SUM(total_price), 0) AS revenue
-			 FROM trendyol_orders
-			 WHERE order_date BETWEEN ? AND ?
+			 FROM marketplace_orders
+			 WHERE platform = 'trendyol' AND order_date BETWEEN ? AND ?
 			   AND (LOWER(status) LIKE '%cancel%' OR LOWER(status) LIKE '%return%' OR LOWER(status) LIKE '%iade%')
 			 GROUP BY status
 			 ORDER BY cnt DESC",

@@ -104,6 +104,10 @@ class Schema
 		self::ensureSetting('SHOP_ACTIVE', '1');
 		self::ensureSetting('SHOP_MAINTENANCE_MESSAGE', '');
 		self::ensureSetting('SHOP_MAINTENANCE_IPS', '');
+		self::ensureSetting('SITE_VISIBILITY', 'public');
+		self::ensureSetting('MEMBER_APPROVAL', 'auto');
+		self::ensureSetting('GATE_TITLE', '');
+		self::ensureSetting('GATE_FEATURES', '');
 		self::ensureSetting('CONTACT_ADDRESS', '');
 		self::ensureSetting('CONTACT_CITY', '');
 		self::ensureSetting('CONTACT_COUNTRY', '');
@@ -169,6 +173,26 @@ class Schema
 		Address::ensureSchema();
 		Cms::ensureSchema();
 		Lang::ensureSchema();
+
+		if (!class_exists('ProductLog', false) && is_file(dirname(__DIR__) . '/core/ProductLog.php')) {
+			require_once dirname(__DIR__) . '/core/ProductLog.php';
+		}
+
+		if (class_exists('ProductLog', false)) {
+			ProductLog::ensureSchema();
+		}
+
+		if (!class_exists('MarketplaceTables', false) && is_file(dirname(__DIR__) . '/core/MarketplaceTables.php')) {
+			require_once dirname(__DIR__) . '/core/MarketplaceTables.php';
+		}
+
+		if (!class_exists('MarketplaceLog', false) && is_file(dirname(__DIR__) . '/core/MarketplaceLog.php')) {
+			require_once dirname(__DIR__) . '/core/MarketplaceLog.php';
+		}
+
+		if (class_exists('MarketplaceTables', false)) {
+			MarketplaceTables::ensureSchema();
+		}
 	}
 
 	private static function ensureSetting(string $key, string $default): void

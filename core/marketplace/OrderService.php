@@ -51,7 +51,13 @@ class OrderService
 				continue;
 			}
 
-			$stockUpdates += self::upsertPackage($pkg, $now);
+			$moved = self::upsertPackage($pkg, $now);
+
+			if ($moved < 0) {
+				continue;
+			}
+
+			$stockUpdates += $moved;
 			$count++;
 		}
 
@@ -66,8 +72,116 @@ class OrderService
 	}
 
 	/**
+	 * @return array{ok: bool, message: string, count?: int}
+	 */
+	public static function importByOrderNumber(string $orderNumber): array
+	{
+		ProductSyncService::ensureSchema();
+
+		if (!ProductSyncService::isConfigured()) {
+			return ['ok' => false, 'message' => 'Trendyol API kimlik bilgileri tanımlı değil'];
+		}
+
+		$result = ProductSyncService::api()->getOrderDetail($orderNumber);
+
+		if (ProductSyncService::isApiError($result)) {
+			return ['ok' => false, 'message' => (string) ($result['message'] ?? 'Sipariş alınamadı')];
+		}
+
+		$content = [];
+
+		if (isset($result['content']) && is_array($result['content'])) {
+			$content = $result['content'];
+		} elseif (is_array($result) && isset($result[0])) {
+			$content = $result;
+		}
+
+		if ($content === []) {
+			return ['ok' => false, 'message' => 'Sipariş bulunamadı'];
+		}
+
+		$count = 0;
+		$stockUpdates = 0;
+		$now = date('Y-m-d H:i:s');
+
+		foreach ($content as $pkg) {
+			if (!is_array($pkg)) {
+				continue;
+			}
+
+			$moved = self::upsertPackage($pkg, $now);
+
+			if ($moved < 0) {
+				return ['ok' => false, 'message' => 'İptal sipariş ' . \MarketplaceOrderOps::shopName() . '\'ta yok; içe aktarılmadı'];
+			}
+
+			$stockUpdates += $moved;
+			$count++;
+		}
+
+		return [
+			'ok' => $count > 0,
+			'message' => $count > 0
+				? ($count . ' paket içe aktarıldı/güncellendi'
+					. ($stockUpdates > 0 ? (', ' . $stockUpdates . ' stok hareketi') : ''))
+				: 'İşlenecek paket yok',
+			'count' => $count,
+		];
+	}
+
+	/**
+	 * @param array<string, mixed> $order
+	 * @param array<int, mixed> $lines
+	 * @return array{ok: bool, message: string}
+	 */
+	public static function cancelOnMarketplace(array $order, array $lines): array
+	{
+		if (!ProductSyncService::isConfigured()) {
+			return ['ok' => false, 'message' => 'Trendyol API kimlik bilgileri tanımlı değil'];
+		}
+
+		$packageId = trim((string) ($order['shipment_package_id'] ?? ''));
+
+		if ($packageId === '') {
+			return ['ok' => false, 'message' => 'Paket ID yok'];
+		}
+
+		$cancelLines = [];
+
+		foreach ($lines as $line) {
+			if (!is_array($line)) {
+				continue;
+			}
+
+			$lineId = $line['lineId'] ?? ($line['id'] ?? null);
+			$qty = max(1, (int) ($line['quantity'] ?? 1));
+
+			if ($lineId === null || $lineId === '') {
+				continue;
+			}
+
+			$cancelLines[] = [
+				'lineId' => (int) $lineId,
+				'quantity' => $qty,
+			];
+		}
+
+		if ($cancelLines === []) {
+			return ['ok' => false, 'message' => 'İptal edilecek satır bulunamadı'];
+		}
+
+		$result = ProductSyncService::api()->cancelPackageItems($packageId, $cancelLines, 500);
+
+		if (ProductSyncService::isApiError($result)) {
+			return ['ok' => false, 'message' => (string) ($result['message'] ?? 'Trendyol iptal hatası')];
+		}
+
+		return ['ok' => true, 'message' => 'Trendyol iptal edildi'];
+	}
+
+	/**
 	 * @param array<string, mixed> $pkg
-	 * @return int stock movement count
+	 * @return int stock movement count; -1 = skipped cancelled new order
 	 */
 	private static function upsertPackage(array $pkg, string $now): int
 	{
@@ -90,8 +204,15 @@ class OrderService
 		}
 
 		$status = (string) ($pkg['status'] ?? '');
+		$existing = \MarketplaceTables::findOrder('trendyol', $orderNumber, $packageId);
+		$isCancelled = self::isCancelStatus($status);
+
+		if ($isCancelled && !$existing) {
+			return -1;
+		}
+
 		$lines = $pkg['lines'] ?? [];
-		self::linkOrderProducts($lines);
+		$idProduct = self::linkOrderProducts($lines);
 		$row = [
 			'order_number' => $orderNumber,
 			'shipment_package_id' => $packageId,
@@ -99,64 +220,40 @@ class OrderService
 			'customer_name' => mb_substr($customerName, 0, 255),
 			'total_price' => (float) ($pkg['totalPrice'] ?? 0),
 			'cargo_tracking_number' => (string) ($pkg['cargoTrackingNumber'] ?? ''),
+			'cargo_tracking_link' => \MarketplaceTables::extractCargoTrackingLink($pkg),
 			'cargo_provider' => (string) ($pkg['cargoProviderName'] ?? ''),
+			'id_product' => $idProduct,
 			'lines_json' => json_encode($lines, JSON_UNESCAPED_UNICODE),
 			'raw_json' => json_encode($pkg, JSON_UNESCAPED_UNICODE),
 			'order_date' => $orderDate,
 			'last_sync_at' => $now,
 		];
 
-		$existing = \DB::getRowSafe(
-			'trendyol_orders',
-			'order_number = ? AND shipment_package_id = ?',
-			[$orderNumber, $packageId]
-		);
-
 		$stockDeducted = (int) ($existing['stock_deducted'] ?? 0);
-		$isCancelled = self::isCancelStatus($status);
 		$moved = 0;
+		$isNew = !$existing;
 
-		if ($existing) {
-			\DB::update(
-				'trendyol_orders',
-				$row,
-				'id = :where_id',
-				['where_id' => (int) $existing['id']]
-			);
-			$orderId = (int) $existing['id'];
-		} else {
-			$row['stock_deducted'] = 0;
-			\DB::insert('trendyol_orders', $row);
-			$orderId = (int) (\DB::getValue(
-				'SELECT id FROM trendyol_orders WHERE order_number = ? AND shipment_package_id = ? LIMIT 1',
-				[$orderNumber, $packageId]
-			) ?: 0);
-		}
+		$orderId = \MarketplaceTables::upsertOrder('trendyol', $row, true);
 
 		if ($orderId <= 0) {
 			return 0;
 		}
 
+		if ($isNew) {
+			\MarketplaceLog::newOrder('trendyol', $orderNumber, $lines);
+			\MarketplaceLog::checkOrderLinesMinPrice('trendyol', $orderNumber, $lines);
+		}
+
 		// Aktif sipariş → stok düş (bir kez)
 		if (!$isCancelled && $stockDeducted === 0) {
-			$moved = self::applyLineStock($lines, false);
-			\DB::update(
-				'trendyol_orders',
-				['stock_deducted' => 1, 'last_sync_at' => $now],
-				'id = :where_id',
-				['where_id' => $orderId]
-			);
+			$moved = self::applyLineStock($lines, false, $orderNumber);
+			\MarketplaceTables::updateOrderById($orderId, ['stock_deducted' => 1, 'last_sync_at' => $now]);
 		}
 
 		// İptal / iade → stok geri ekle (bir kez)
 		if ($isCancelled && $stockDeducted === 1) {
-			$moved = self::applyLineStock($lines, true);
-			\DB::update(
-				'trendyol_orders',
-				['stock_deducted' => 2, 'last_sync_at' => $now],
-				'id = :where_id',
-				['where_id' => $orderId]
-			);
+			$moved = self::applyLineStock($lines, true, $orderNumber);
+			\MarketplaceTables::updateOrderById($orderId, ['stock_deducted' => 2, 'last_sync_at' => $now]);
 		}
 
 		return $moved;
@@ -167,40 +264,48 @@ class OrderService
 		return in_array($status, self::CANCEL_STATUSES, true);
 	}
 
-	/** @param mixed $lines */
-	private static function linkOrderProducts($lines): void
+	/** @param mixed $lines @return int first matched id_product */
+	private static function linkOrderProducts(&$lines): int
 	{
 		if (!is_array($lines)) {
-			return;
+			return 0;
 		}
 
-		foreach ($lines as $line) {
+		$primary = 0;
+
+		foreach ($lines as &$line) {
 			if (!is_array($line)) {
 				continue;
 			}
 
 			$barcode = trim((string) ($line['barcode'] ?? ($line['merchantSku'] ?? '')));
+			$idProduct = 0;
 
-			if ($barcode === '') {
-				continue;
+			if ($barcode !== '') {
+				$idProduct = self::findProductIdByBarcode($barcode);
+
+				if ($idProduct > 0) {
+					$salePrice = ProductSyncService::extractOrderLineSalePrice($line);
+					$listPrice = ProductSyncService::extractOrderLineListPrice($line, $salePrice);
+					ProductSyncService::linkFromOrder($idProduct, $barcode, $salePrice, $listPrice);
+
+					if ($primary <= 0) {
+						$primary = $idProduct;
+					}
+				}
 			}
 
-			$idProduct = self::findProductIdByBarcode($barcode);
-
-			if ($idProduct <= 0) {
-				continue;
-			}
-
-			$salePrice = ProductSyncService::extractOrderLineSalePrice($line);
-			$listPrice = ProductSyncService::extractOrderLineListPrice($line, $salePrice);
-			ProductSyncService::linkFromOrder($idProduct, $barcode, $salePrice, $listPrice);
+			$line['id_product'] = $idProduct;
 		}
+		unset($line);
+
+		return $primary;
 	}
 
 	/**
 	 * @param mixed $lines
 	 */
-	private static function applyLineStock($lines, bool $restore): int
+	private static function applyLineStock($lines, bool $restore, string $orderNumber = ''): int
 	{
 		if (!is_array($lines)) {
 			return 0;
@@ -228,13 +333,38 @@ class OrderService
 				continue;
 			}
 
+			$product = \Product::getByIdAdmin($idProduct);
+			$oldStock = $product ? \Product::getStock($product) : 0;
+			$ref = trim((string) ($product['stock_code'] ?? ''));
+
+			if ($ref === '') {
+				$ref = $barcode !== '' ? $barcode : (string) $idProduct;
+			}
+
+			$ok = false;
+
 			if ($restore) {
 				\Product::increaseStock($idProduct, $qty);
+				$ok = true;
 				$moved++;
 			} else {
 				if (\Product::decreaseStock($idProduct, $qty)) {
+					$ok = true;
 					$moved++;
 				}
+			}
+
+			if ($ok) {
+				$newStock = $restore ? ($oldStock + $qty) : max(0, $oldStock - $qty);
+				\MarketplaceLog::stockChange(
+					'trendyol',
+					$ref,
+					$oldStock,
+					$newStock,
+					$restore ? ('ORDER_CANCEL [' . $orderNumber . ']') : ('ORDER [' . $orderNumber . ']'),
+					$idProduct,
+					$orderNumber
+				);
 			}
 
 			if (!isset($touched[$idProduct])) {
@@ -256,6 +386,10 @@ class OrderService
 		}
 
 		foreach ($touched as $idProduct => $data) {
+			if (!\Marketplace::allowMarketplaceStockPush()) {
+				continue;
+			}
+
 			ProductSyncService::syncAfterOrderStock(
 				(int) $idProduct,
 				(string) $data['barcode'],
@@ -263,9 +397,7 @@ class OrderService
 				$data['list_price']
 			);
 
-			if (class_exists('Marketplace')) {
-				\Marketplace::syncProductStockAcrossPlatforms((int) $idProduct, 'trendyol');
-			}
+			\Marketplace::syncProductStockAcrossPlatforms((int) $idProduct, 'trendyol');
 		}
 
 		return $moved;
@@ -307,21 +439,6 @@ class OrderService
 	/** @return array<int, array<string, mixed>> */
 	public static function getRecent(int $limit = 50): array
 	{
-		ProductSyncService::ensureSchema();
-		$limit = max(1, min(200, $limit));
-
-		$rows = \DB::execute(
-			'SELECT * FROM trendyol_orders
-			 ORDER BY COALESCE(order_date, last_sync_at) DESC, id DESC
-			 LIMIT ' . (int) $limit
-		) ?: [];
-
-		foreach ($rows as &$row) {
-			$lines = json_decode((string) ($row['lines_json'] ?? ''), true);
-			$row['lines'] = is_array($lines) ? $lines : [];
-		}
-		unset($row);
-
-		return $rows;
+		return \MarketplaceTables::getRecentOrders('trendyol', $limit);
 	}
 }

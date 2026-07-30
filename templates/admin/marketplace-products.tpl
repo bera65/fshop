@@ -38,15 +38,22 @@
 					<img src="{$row.image_url|escape}" alt="" width="48" height="48" style="object-fit:contain" class="rounded flex-shrink-0">
 					<div class="flex-grow-1 min-w-0">
 						<div class="fw-semibold text-truncate">{$row.product_name|escape}</div>
-						<div class="small text-muted">#{$row.id_product} · {$row.category_name|escape} · {'Store'|adminT} {$row.price_formatted}  <span class="cursor-pointer quick-stock-btn px-2 py-1 float-right" role="button" data-id="{$row.id_product}" data-name="{$row.product_name|escape}" data-stock="{$row.stock}" title="{'Add Stock'|adminT}" style="cursor:pointer;">
+						<div class="small text-muted">
+							#{$row.id_product}
+							{if $row.stock_code|default:'' != ''} · Stok Code: {$row.stock_code|escape}{/if}
+							{if $row.barcode|default:'' != ''} · Barkod: {$row.barcode|escape}{/if}
+							{if $row.category_name|default:'' != ''} · {$row.category_name|escape}{/if}
+							 · {'Store'|adminT} {$row.price_formatted}
+							<span class="cursor-pointer quick-stock-btn px-2 py-1 float-right" role="button" data-id="{$row.id_product}" data-name="{$row.product_name|escape}" data-stock="{$row.stock}" title="{'Add Stock'|adminT}" style="cursor:pointer;">
 							<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil-line-icon lucide-pencil-line"><path d="M13 21h8"/><path d="m15 5 4 4"/><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
-							{'Stock'|adminT} <strong class="stock-display-val">{$row.stock}</strong></span></div>
+							{'Stock'|adminT} <strong class="stock-display-val">{$row.stock}</strong></span>
+						</div>
 					</div>
 				</div>
 			</div>
 			<div class="marketplace-connections" aria-label="Pazaryeri bağlantıları">
 				{foreach $marketplacePlatforms as $platform}
-				{if $platform.key == 'trendyol'}
+				{if $platform.key == 'trendyol' && $platform.active}
 				<button type="button" class="marketplace-connection marketplace-connection--trendyol{if $row.ty_linked} is-linked{else} is-unlinked{/if}"
 					data-product-id="{$row.id_product}" data-bs-toggle="modal" data-bs-target="#mp-modal-{$row.id_product}">
 					<img class="marketplace-platform-icon" src="{$domain}templates/admin/img/trendyol.png" alt="Trendyol">
@@ -59,9 +66,35 @@
 						{/if}
 					</span>
 				</button>
-				{else}
+				{elseif $platform.key == 'hepsiburada' && $platform.active}
+				<button type="button" class="marketplace-connection marketplace-connection--hepsiburada{if $row.hb_linked} is-linked{else} is-unlinked{/if}"
+					data-product-id="{$row.id_product}" data-bs-toggle="modal" data-bs-target="#mp-modal-hb-{$row.id_product}">
+					<img class="marketplace-platform-icon" src="{$domain}templates/admin/img/hepsiburada.png" alt="Hepsiburada" onerror="this.style.display='none'">
+					<span class="marketplace-connection-body">
+						<span class="marketplace-platform-name">Hepsiburada</span>
+						{if $row.hb_linked}
+						<span class="marketplace-connection-status">{'Connected'|adminT}{if $row.hb_sale_price > 0} · {$row.hb_sale_price|escape} TL{/if}</span>
+						{else}
+						<span class="marketplace-connection-status">{'Add New'|adminT}</span>
+						{/if}
+					</span>
+				</button>
+				{elseif $platform.key == 'n11' && $platform.active}
+				<button type="button" class="marketplace-connection marketplace-connection--n11{if $row.n11_linked} is-linked{else} is-unlinked{/if}"
+					data-product-id="{$row.id_product}" data-bs-toggle="modal" data-bs-target="#mp-modal-n11-{$row.id_product}">
+					<img class="marketplace-platform-icon" src="{$domain}templates/admin/img/n11.png" alt="N11" onerror="this.style.display='none'">
+					<span class="marketplace-connection-body">
+						<span class="marketplace-platform-name">N11</span>
+						{if $row.n11_linked}
+						<span class="marketplace-connection-status">{'Connected'|adminT}{if $row.n11_sale_price > 0} · {$row.n11_sale_price|escape} TL{/if}</span>
+						{else}
+						<span class="marketplace-connection-status">{'Add New'|adminT}</span>
+						{/if}
+					</span>
+				</button>
+				{elseif !$platform.active}
 				<div class="marketplace-connection marketplace-connection--planned marketplace-connection--{$platform.key|escape}">
-					<img class="marketplace-platform-icon" src="{$domain}templates/admin/img/{$platform.key|escape}.png" alt="{$platform.label|escape}">
+					<img class="marketplace-platform-icon" src="{$domain}templates/admin/img/{$platform.key|escape}.png" alt="{$platform.label|escape}" onerror="this.style.display='none'">
 					<span class="marketplace-connection-body">
 						<span class="marketplace-platform-name">{$platform.label|escape}</span>
 						<span class="marketplace-connection-status">{'Soon'|adminT}</span>
@@ -76,6 +109,22 @@
 				<div class="modal-content">
 					<div class="modal-header"><div><h5 class="modal-title">{'Trendyol Connect'|adminT}</h5><div class="small text-muted">{$row.product_name|escape}</div></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button></div>
 					<div class="modal-body">{$item.panel_html nofilter}</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal fade" id="mp-modal-hb-{$row.id_product}" tabindex="-1" aria-hidden="true">
+			<div class="modal-dialog modal-lg modal-dialog-scrollable">
+				<div class="modal-content">
+					<div class="modal-header"><div><h5 class="modal-title">Hepsiburada Bağlantı</h5><div class="small text-muted">{$row.product_name|escape}</div></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button></div>
+					<div class="modal-body">{$item.panel_html_hb nofilter}</div>
+				</div>
+			</div>
+		</div>
+		<div class="modal fade" id="mp-modal-n11-{$row.id_product}" tabindex="-1" aria-hidden="true">
+			<div class="modal-dialog modal-lg modal-dialog-scrollable">
+				<div class="modal-content">
+					<div class="modal-header"><div><h5 class="modal-title">N11 Bağlantı</h5><div class="small text-muted">{$row.product_name|escape}</div></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button></div>
+					<div class="modal-body">{$item.panel_html_n11 nofilter}</div>
 				</div>
 			</div>
 		</div>

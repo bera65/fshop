@@ -20,10 +20,7 @@ class Notification
 		return $id ? (int) $id : null;
 	}
 
-	/**
-	 * @param array{type?:string,new_status?:int,old_status?:int} $meta
-	 */
-	public static function notifyUser(int $idUser, string $type, string $title, string $message, string $link = '', array $meta = []): void
+	public static function notifyUser(int $idUser, string $type, string $title, string $message, string $link = ''): void
 	{
 		self::create($idUser, $type, $title, $message, $link);
 
@@ -41,34 +38,12 @@ class Notification
 			Mail::send($email, $title, $body);
 		}
 
-		$meta = array_merge(['type' => $type], $meta);
-		self::dispatchWebPush($idUser, $title, $message, $link, $meta);
+		self::dispatchWebPush($idUser, $title, $message, $link);
 	}
 
-	/**
-	 * @param array{type?:string,new_status?:int,old_status?:int} $meta
-	 */
-	public static function dispatchWebPush(int $idUser, string $title, string $message, string $link = '', array $meta = []): void
+	public static function dispatchWebPush(int $idUser, string $title, string $message, string $link = ''): void
 	{
-		if ($idUser <= 0) {
-			return;
-		}
-
-		// customer-notify → OneSignal / yerel kuyruk
-		if (Module::isEnabled('customer-notify')) {
-			$cnPath = dirname(__DIR__) . '/modules/customer-notify/lib/CustomerNotifyPush.php';
-
-			if (is_file($cnPath)) {
-				require_once $cnPath;
-
-				if (class_exists('CustomerNotifyPush', false)) {
-					CustomerNotifyPush::dispatch($idUser, $title, $message, $link, $meta);
-				}
-			}
-		}
-
-		// mobil-app (eski native Web Push)
-		if (!Module::isEnabled('mobil-app')) {
+		if ($idUser <= 0 || !Module::isEnabled('mobil-app')) {
 			return;
 		}
 
@@ -162,10 +137,7 @@ class Notification
 		$idOrder = (int) ($order['id_order'] ?? 0);
 		$link = $idOrder > 0 ? 'my-account?order=' . $idOrder : 'my-account';
 
-		self::notifyUser($idUser, 'order_status', $title, $message, $link, [
-			'new_status' => $newStatus,
-			'old_status' => $oldStatus,
-		]);
+		self::notifyUser($idUser, 'order_status', $title, $message, $link);
 	}
 
 	private static function buildStatusMessage(string $reference, int $oldStatus, int $newStatus, string $payment): string

@@ -9,7 +9,7 @@
 	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 	<link rel="stylesheet" href="{$adminCssDir|default:''}bootstrap.min.css">
 	<link rel="stylesheet" href="{$adminCssDir|default:''}admin.css?v={$smarty.now}">
-	{if $pageName == 'marketplace-products' || $pageName == 'marketplace-orders' || $pageName == 'marketplace-questions' || $pageName == 'marketplace-settings'}
+	{if $pageName == 'dashboard' || $pageName == 'marketplace-products' || $pageName == 'marketplace-orders' || $pageName == 'marketplace-questions' || $pageName == 'marketplace-logs' || $pageName == 'marketplace-settings' || $pageName == 'marketplace-help'}
 	<link rel="stylesheet" href="{$adminCssDir|default:''}marketplace.css?v={$smarty.now}">
 	{/if}
 	{if $marketplaceAdminAssets.css|@count}
@@ -25,18 +25,34 @@
 	<link rel="icon" type="image/x-icon" href="{$domain}img/faviconAdmin.ico">
 </head>
 <body class="admin-body">
+<script>
+try {
+	if (localStorage.getItem('fshop.admin.sidebarCollapsed') === '1' && window.innerWidth >= 992) {
+		document.body.classList.add('admin-sidebar-collapsed');
+	}
+} catch (e) {}
+</script>
 <div class="ps-admin" id="psAdmin">
 	<aside class="sidebar" id="adminSidebar" aria-label="{'Admin Panel'|adminT}">
 		<div class="sidebar-header">
-			<a href="{$adminUrl}dashboard" class="sidebar-brand">
-				<span class="sidebar-brand__logo">
-					<img src="{$adminLogoUrl|escape}" alt="{$siteName|escape}" />
-				</span>
-				<span class="sidebar-brand__text">
-					<strong>{$siteName|escape}</strong>
-					<small>FriSay</small>
-				</span>
-			</a>
+			<div class="sidebar-header__top">
+				<a href="{$adminUrl}dashboard" class="sidebar-brand">
+					<span class="sidebar-brand__logo">
+						<img src="{$adminLogoUrl|escape}" alt="{$siteName|escape}" />
+					</span>
+					<span class="sidebar-brand__text">
+						<strong>{$siteName|escape}</strong>
+						<small>FriSay</small>
+					</span>
+				</a>
+				<button type="button" class="sidebar-collapse-btn" id="sidebarCollapseBtn" aria-label="{'Toggle menu'|adminT}" title="{'Toggle menu'|adminT}">
+					<svg class="sidebar-collapse-btn__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+						<line x1="4" y1="6" x2="20" y2="6"/>
+						<line x1="4" y1="12" x2="20" y2="12"/>
+						<line x1="4" y1="18" x2="20" y2="18"/>
+					</svg>
+				</button>
+			</div>
 		</div>
 
 		<nav class="sidebar-menu">
@@ -48,6 +64,10 @@
 			<a href="{$adminUrl}customers" class="menu-item {if $pageName == 'customers' || $pageName == 'customer'}active{/if}">
 				<span class="menu-item__icon"><i data-lucide="users"></i></span>
 				<span class="menu-item__label">{'Customers'|adminT}</span>
+			</a>
+			<a href="{$adminUrl}customer-groups" class="menu-item {if $pageName == 'customer-groups'}active{/if}">
+				<span class="menu-item__icon"><i data-lucide="users-round"></i></span>
+				<span class="menu-item__label">{'Customer groups'|adminT}</span>
 			</a>
 			<a href="{$adminUrl}messages" class="menu-item {if $pageName == 'messages' || $pageName == 'message'}active{/if}">
 				<span class="menu-item__icon"><i data-lucide="message-square"></i></span>
@@ -141,6 +161,10 @@
 				<span class="menu-item__icon"><i data-lucide="shopping-cart"></i></span>
 				<span class="menu-item__label">{'Orders'|adminT}</span>
 			</a>
+			<a href="{$adminUrl}marketplace-logs" class="menu-item {if $pageName == 'marketplace-logs'}active{/if}">
+				<span class="menu-item__icon"><i data-lucide="scroll-text"></i></span>
+				<span class="menu-item__label">Loglar</span>
+			</a>
 			<a href="{$adminUrl}marketplace-questions" class="menu-item {if $pageName == 'marketplace-questions'}active{/if}">
 				<span class="menu-item__icon"><i data-lucide="message-circle-question"></i></span>
 				<span class="menu-item__label">{'Questions'|adminT}</span>
@@ -187,14 +211,18 @@
 			</a>
 			<a href="{$adminUrl}api" class="menu-item {if $pageName == 'api'}active{/if}">
 				<span class="menu-item__icon"><i data-lucide="link-2"></i></span>
-				<span class="menu-item__label">API</span>
+				<span class="menu-item__label">{'API'|adminT}</span>
+			</a>
+			<a href="{$adminUrl}support" class="menu-item {if $pageName == 'support'}active{/if}">
+				<span class="menu-item__icon"><i data-lucide="life-buoy"></i></span>
+				<span class="menu-item__label">{'Support'|adminT}</span>
 			</a>
 		</nav>
 
 		<div class="sidebar-footer">
-			<a href="{$domain}" class="sidebar-footer__link" target="_blank" rel="noopener">
+			<a href="{$domain}" class="sidebar-footer__link" target="_blank" rel="noopener" title="{'View Store'|adminT}">
 				<i data-lucide="external-link"></i>
-				{'View Store'|adminT}
+				<span class="sidebar-footer__label">{'View Store'|adminT}</span>
 			</a>
 		</div>
 	</aside>

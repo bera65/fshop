@@ -397,7 +397,7 @@ input:focus {box-shadow:none !important;}
 .alisverisRehberi .item {height:80px}
 .img-responsive {width:90%;height:auto}
 .productTitle {font-size:24px;min-height:60px;height:auto}
-.productCenter {min-height:100px;height:auto;width:100%;display:block;margin-bottom:15px}
+.productCenter {min-height:100px;height:auto;width:100%;display:block;margin-bottom:15px;clear:both}
 .sitePrice div {border-bottom:1px solid #eee;padding-bottom:10px;margin-bottom:10px}
 .sitePrice p {margin:0px;padding:0px;font-size:13px}
 .sitePrice .timeAgo {font-size:13px}
@@ -1590,7 +1590,5 @@ font-weight: 700;
 	background: #1a1a1a;
 	color: #fff;
 }
-.toast {position: fixed;text-align:center;bottom: 8px;left: 50%;transform: translateX(-50%);background: #000;color:#fff;z-index: 9999;opacity: 0.95;}
-.toast.success {background: #017d7b;}
-.toast.danger {background: #d2212f;}
+/* legacy toast overrides replaced by .sm-toast in shopmore.css */
 .lang-switcher-pills > a {padding: 10px;display: inline-block;border: 1px solid #ccc;margin: 16px;background:#fff}

@@ -80,17 +80,13 @@ class QuestionService
 			return ['ok' => false, 'message' => (string) ($result['message'] ?? 'Cevap gönderilemedi')];
 		}
 
-		$existing = \DB::getRowSafe('trendyol_questions', 'question_id = ?', [$questionId]);
 		$now = date('Y-m-d H:i:s');
-
-		if ($existing) {
-			\DB::update('trendyol_questions', [
-				'answer_text' => $text,
-				'answered' => 1,
-				'status' => 'ANSWERED',
-				'last_sync_at' => $now,
-			], 'question_id = :where_id', ['where_id' => $questionId]);
-		}
+		\MarketplaceTables::updateQuestion('trendyol', (string) $questionId, [
+			'answer_text' => $text,
+			'answered' => 1,
+			'status' => 'ANSWERED',
+			'last_sync_at' => $now,
+		]);
 
 		return ['ok' => true, 'message' => 'Cevap gönderildi'];
 	}
@@ -125,10 +121,24 @@ class QuestionService
 			$questionDate = date('Y-m-d H:i:s', (int) round(((int) $ts) / 1000));
 		}
 
-		$row = [
-			'question_id' => $questionId,
-			'product_name' => mb_substr((string) ($q['productName'] ?? ''), 0, 255),
-			'barcode' => (string) ($q['barcode'] ?? ''),
+		$barcode = (string) ($q['barcode'] ?? '');
+		$idProduct = 0;
+
+		if ($barcode !== '') {
+			$map = \DB::getRowSafe('trendyol_products', 'barcode = ?', [$barcode]);
+			if ($map) {
+				$idProduct = (int) ($map['id_product'] ?? 0);
+			}
+			if ($idProduct <= 0) {
+				$idProduct = (int) (\DB::getValue('SELECT id_product FROM products WHERE barcode = ? LIMIT 1', [$barcode]) ?: 0);
+			}
+		}
+
+		\MarketplaceTables::upsertQuestion('trendyol', [
+			'question_id' => (string) $questionId,
+			'product_name' => (string) ($q['productName'] ?? ''),
+			'barcode' => $barcode,
+			'id_product' => $idProduct,
 			'question_text' => (string) ($q['text'] ?? ($q['question'] ?? '')),
 			'answer_text' => $answerText,
 			'status' => $status,
@@ -137,36 +147,12 @@ class QuestionService
 			'raw_json' => json_encode($q, JSON_UNESCAPED_UNICODE),
 			'question_date' => $questionDate,
 			'last_sync_at' => $now,
-		];
-
-		$existing = \DB::getRowSafe('trendyol_questions', 'question_id = ?', [$questionId]);
-
-		if ($existing) {
-			\DB::update(
-				'trendyol_questions',
-				$row,
-				'id = :where_id',
-				['where_id' => (int) $existing['id']]
-			);
-		} else {
-			\DB::insert('trendyol_questions', $row);
-		}
+		]);
 	}
 
 	/** @return array<int, array<string, mixed>> */
 	public static function getRecent(int $limit = 50, bool $unansweredOnly = false): array
 	{
-		ProductSyncService::ensureSchema();
-		$limit = max(1, min(200, $limit));
-
-		$sql = 'SELECT * FROM trendyol_questions';
-
-		if ($unansweredOnly) {
-			$sql .= ' WHERE answered = 0';
-		}
-
-		$sql .= ' ORDER BY COALESCE(question_date, last_sync_at) DESC, id DESC LIMIT ' . (int) $limit;
-
-		return \DB::execute($sql) ?: [];
+		return \MarketplaceTables::getRecentQuestions('trendyol', $limit, $unansweredOnly);
 	}
 }

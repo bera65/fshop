@@ -173,7 +173,7 @@
 				{foreach $order.items as $item}
 				<tr>
 					<td>{$item.product_name|escape}</td>
-					<td>{$item.qty}</td>
+					<td>{if $item.qty_label|default:''}{$item.qty_label|escape}{else}{$item.qty}{/if}{if $item.measure_label|default:''}<div style="font-size:11px;color:#666;">{$item.measure_label|escape}</div>{/if}</td>
 					<td>{$item.price_formatted}</td>
 					<td>{$item.total_formatted}</td>
 				</tr>

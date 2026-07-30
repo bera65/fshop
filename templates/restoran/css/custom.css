@@ -1,0 +1,23 @@
+/**
+ * Tema özelleştirme — Admin > Temalar ekranından düzenlenir.
+ */
+:root {
+	--theme-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	--theme-container-max: 1320px;
+	--theme-container-padding: 0 12px;
+}
+
+body, .prime-body {
+	font-family: var(--theme-font-family);
+}
+
+.custom-container,
+.page > .container,
+.page .container.custom-container {
+	max-width: var(--theme-container-max);
+	padding-left: var(--theme-container-padding);
+	padding-right: var(--theme-container-padding);
+	margin-left: auto;
+	margin-right: auto;
+	width: 100%;
+}

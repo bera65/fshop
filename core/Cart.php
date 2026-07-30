@@ -16,28 +16,42 @@ class Cart
 		}
 	}
 
-	/** @param array<string, string> $options */
-	public static function cartKey(int $idProduct, int $idVariation = 0, array $options = []): string
+	/**
+	 * @param array<string, string> $options
+	 * @param array<string, mixed>|null $measure
+	 */
+	public static function cartKey(int $idProduct, int $idVariation = 0, array $options = [], ?array $measure = null): string
 	{
 		$base = $idVariation > 0 ? $idProduct . ':' . $idVariation : (string) $idProduct;
 		$options = ProductOption::normalizeSelections($options);
+		$measurePart = SaleUnit::measureKeyPart($measure);
+		$parts = [];
 
-		if ($options === []) {
+		if ($options !== []) {
+			$parts[] = substr(md5(json_encode($options, JSON_UNESCAPED_UNICODE)), 0, 12);
+		}
+
+		if ($measurePart !== '') {
+			$parts[] = 'm' . $measurePart;
+		}
+
+		if ($parts === []) {
 			return $base;
 		}
 
-		return $base . '::' . substr(md5(json_encode($options, JSON_UNESCAPED_UNICODE)), 0, 12);
+		return $base . '::' . implode('_', $parts);
 	}
 
-	/** @return array{id_product: int, id_variation: int, options: array<string, string>} */
+	/** @return array{id_product: int, id_variation: int, options: array<string, string>, measure: array} */
 	public static function parseCartKey(string $key): array
 	{
-		$options = [];
+		$meta = self::getLineMeta($key);
+		$options = is_array($meta['options'] ?? null) ? $meta['options'] : [];
+		$measure = is_array($meta['measure'] ?? null) ? $meta['measure'] : [];
 		$baseKey = $key;
 
 		if (strpos($key, '::') !== false) {
 			[$baseKey] = explode('::', $key, 2);
-			$options = self::getLineMeta($key)['options'] ?? [];
 		}
 
 		if (strpos($baseKey, ':') !== false) {
@@ -47,6 +61,7 @@ class Cart
 				'id_product' => (int) ($parts[0] ?? 0),
 				'id_variation' => (int) ($parts[1] ?? 0),
 				'options' => $options,
+				'measure' => $measure,
 			];
 		}
 
@@ -54,6 +69,7 @@ class Cart
 			'id_product' => (int) $baseKey,
 			'id_variation' => 0,
 			'options' => $options,
+			'measure' => $measure,
 		];
 	}
 
@@ -77,27 +93,44 @@ class Cart
 		unset($_SESSION[self::META_KEY][$cartKey]);
 	}
 
-	private static function getLineQty(string $cartKey): int
+	private static function getLineQty(string $cartKey): float
 	{
 		$value = $_SESSION[self::SESSION_KEY][$cartKey] ?? 0;
 
-		return max(0, (int) $value);
+		return max(0.0, round((float) $value, 3));
 	}
 
-	public static function resolveCartKey(int $idProduct, int $idVariation = 0, array $options = [], string $cartKey = ''): string
-	{
+	/**
+	 * @param array<string, string> $options
+	 * @param array<string, mixed>|null $measure
+	 */
+	public static function resolveCartKey(
+		int $idProduct,
+		int $idVariation = 0,
+		array $options = [],
+		string $cartKey = '',
+		?array $measure = null
+	): string {
 		$cartKey = trim($cartKey);
 
 		if ($cartKey !== '') {
 			return $cartKey;
 		}
 
-		return self::cartKey($idProduct, $idVariation, $options);
+		return self::cartKey($idProduct, $idVariation, $options, $measure);
 	}
 
-	/** @param array<string, string> $options */
-	public static function add(int $idProduct, int $qty = 1, int $idVariation = 0, array $options = []): array
-	{
+	/**
+	 * @param array<string, string> $options
+	 * @param array<string, mixed>|null $measure
+	 */
+	public static function add(
+		int $idProduct,
+		float $qty = 1,
+		int $idVariation = 0,
+		array $options = [],
+		?array $measure = null
+	): array {
 		self::init();
 
 		$product = Product::getById($idProduct);
@@ -106,7 +139,7 @@ class Cart
 		}
 
 		if (Product::isPackProduct($product)) {
-			return self::addPack($idProduct, $qty, $product);
+			return self::addPack($idProduct, (int) max(1, round($qty)), $product);
 		}
 
 		$idVariation = max(0, $idVariation);
@@ -132,18 +165,42 @@ class Cart
 			return self::fail(translate('Out of stock'));
 		}
 
-		$qty = max(1, $qty);
-		$key = self::cartKey($idProduct, $idVariation, $options);
+		$measureData = null;
+		if (SaleUnit::isM2($product)) {
+			$measureData = is_array($measure) ? SaleUnit::normalizeMeasure($measure, $product) : null;
+			$area = SaleUnit::areaFromMeasure($measureData);
+
+			if ($area <= 0) {
+				return self::fail(translate('Please enter width and length'));
+			}
+
+			$qty = SaleUnit::normalizeQty($area, $product);
+			$measureData = array_merge($measureData ?: ['sale_unit' => SaleUnit::M2], [
+				'sale_unit' => SaleUnit::M2,
+			]);
+		} else {
+			$qty = SaleUnit::normalizeQty($qty, $product);
+			$measureData = null;
+		}
+
+		if ($qty <= 0) {
+			return self::fail(translate('Invalid quantity'));
+		}
+
+		$key = self::cartKey($idProduct, $idVariation, $options, $measureData);
 		$current = self::getLineQty($key);
-		$maxAllowed = $stock - $current;
+		$maxAllowed = round($stock - $current, 3);
 
 		if ($maxAllowed <= 0) {
 			return self::fail(translate('You have reached the maximum number of products'));
 		}
 
 		$added = min($qty, $maxAllowed);
-		$_SESSION[self::SESSION_KEY][$key] = $current + $added;
-		self::setLineMeta($key, ['options' => $options]);
+		$_SESSION[self::SESSION_KEY][$key] = round($current + $added, 3);
+		self::setLineMeta($key, [
+			'options' => $options,
+			'measure' => $measureData ?: [],
+		]);
 		self::notifyChanged();
 
 		return self::ok(translate('Added to cart'));
@@ -187,6 +244,10 @@ class Cart
 				return self::fail('Varyasyonlu ürün sete eklenemez: ' . ($child['product_name'] ?? ''));
 			}
 
+			if (SaleUnit::isM2($child)) {
+				return self::fail('Metrekare ürün sete eklenemez: ' . ($child['product_name'] ?? ''));
+			}
+
 			$key = self::cartKey($idChild, 0, []);
 			$current = self::getLineQty($key);
 			$stock = Product::getStock($child, 0);
@@ -199,7 +260,7 @@ class Cart
 		foreach ($items as $item) {
 			$idChild = (int) $item['id_product'];
 			$need = max(1, (int) $item['qty']) * $qty;
-			$result = self::add($idChild, $need, 0, []);
+			$result = self::add($idChild, (float) $need, 0, []);
 
 			if (empty($result['success'])) {
 				return $result;
@@ -209,11 +270,13 @@ class Cart
 		return self::ok(translate('Added to cart'));
 	}
 
-	public static function update(int $idProduct, int $qty, int $idVariation = 0, string $cartKey = ''): array
+	public static function update(int $idProduct, float $qty, int $idVariation = 0, string $cartKey = ''): array
 	{
 		self::init();
 
 		$key = self::resolveCartKey($idProduct, $idVariation, [], $cartKey);
+		$meta = self::getLineMeta($key);
+		$measure = is_array($meta['measure'] ?? null) ? $meta['measure'] : [];
 
 		if ($qty <= 0) {
 			return self::remove($idProduct, $idVariation, $key);
@@ -250,8 +313,23 @@ class Cart
 			return self::fail(translate('Out of stock'));
 		}
 
-		$newQty = min($stock, max(1, $qty));
+		$newQty = SaleUnit::normalizeQty($qty, $product);
+		$newQty = min($stock, $newQty);
+
+		if (SaleUnit::isM2($product)) {
+			// Qty change without re-measuring: keep unit, drop fixed W×L so label shows area only.
+			$measure = [
+				'sale_unit' => SaleUnit::M2,
+			];
+		} else {
+			$measure = [];
+		}
+
 		$_SESSION[self::SESSION_KEY][$key] = $newQty;
+		self::setLineMeta($key, [
+			'options' => is_array($meta['options'] ?? null) ? $meta['options'] : [],
+			'measure' => $measure,
+		]);
 		self::notifyChanged();
 
 		return self::ok(translate('Cart Updated'));
@@ -284,13 +362,14 @@ class Cart
 
 		$items = [];
 		$total = 0.0;
-		$count = 0;
+		$count = 0.0;
 
 		foreach ($_SESSION[self::SESSION_KEY] as $cartKey => $qty) {
 			$parsed = self::parseCartKey((string) $cartKey);
 			$idProduct = (int) $parsed['id_product'];
 			$idVariation = (int) $parsed['id_variation'];
 			$options = is_array($parsed['options'] ?? null) ? $parsed['options'] : [];
+			$measure = is_array($parsed['measure'] ?? null) ? $parsed['measure'] : [];
 			$product = Product::getById($idProduct);
 
 			if (!$product) {
@@ -303,6 +382,8 @@ class Cart
 			$unitPrice = (float) $product['price'];
 			$variationLabel = '';
 			$optionsLabel = ProductOption::formatLabel($options);
+			$saleUnit = SaleUnit::normalize((string) ($product['sale_unit'] ?? SaleUnit::PIECE));
+			$measureLabel = SaleUnit::formatMeasureLabel($measure, (float) $qty);
 
 			if ($idVariation > 0) {
 				$variation = ProductVariation::getById($idVariation);
@@ -313,12 +394,23 @@ class Cart
 					continue;
 				}
 
-				$unitPrice = ProductVariation::getEffectivePrice($variation, (float) $product['price']);
+				$hasAbsolutePrice = isset($variation['price'])
+					&& $variation['price'] !== null
+					&& $variation['price'] !== '';
+
+				if ($hasAbsolutePrice) {
+					$unitPrice = class_exists('GroupPricing', false)
+						? GroupPricing::apply((float) $variation['price'])
+						: max(0.0, (float) $variation['price']);
+				} else {
+					$unitPrice = (float) $product['price'];
+				}
+
 				$variationLabel = ProductVariation::formatLabel($variation);
 			}
 
 			$stock = Product::getStock($product, $idVariation);
-			$qty = max(1, (int) $qty);
+			$qty = SaleUnit::normalizeQty((float) $qty, $product);
 
 			if ($stock <= 0) {
 				unset($_SESSION[self::SESSION_KEY][$cartKey]);
@@ -342,12 +434,17 @@ class Cart
 				$labels[] = $optionsLabel;
 			}
 
+			if ($measureLabel !== '') {
+				$labels[] = $measureLabel;
+			}
+
 			if ($labels !== []) {
 				$productName .= ' (' . implode(' | ', $labels) . ')';
 			}
 
 			$lineTotal = $unitPrice * $qty;
-			$fullLabel = trim($variationLabel . ($variationLabel !== '' && $optionsLabel !== '' ? ' | ' : '') . $optionsLabel);
+			$fullLabel = implode(' | ', array_filter([$variationLabel, $optionsLabel, $measureLabel]));
+			$priceSuffix = SaleUnit::priceSuffix($saleUnit);
 
 			$items[] = [
 				'cart_key' => (string) $cartKey,
@@ -356,10 +453,15 @@ class Cart
 				'id_variation' => $idVariation,
 				'options' => $options,
 				'options_label' => $optionsLabel,
+				'measure' => $measure,
+				'measure_label' => $measureLabel,
+				'sale_unit' => $saleUnit,
+				'qty_step' => SaleUnit::getStep($product),
+				'qty_label' => SaleUnit::formatQty($qty, $saleUnit),
 				'variation_label' => $fullLabel,
 				'product_name' => $productName,
 				'price' => $unitPrice,
-				'price_formatted' => Tools::displayPrice($unitPrice),
+				'price_formatted' => Tools::displayPrice($unitPrice) . $priceSuffix,
 				'qty' => $qty,
 				'stock' => $stock,
 				'max_qty' => $stock,
@@ -370,7 +472,7 @@ class Cart
 			];
 
 			$total += $lineTotal;
-			$count += $qty;
+			$count += $saleUnit === SaleUnit::M2 ? 1.0 : $qty;
 		}
 
 		$shippingAmount = 0.0;

@@ -22,8 +22,10 @@ if (!hash_equals($_SESSION['csrf_token'] ?? '', (string) $token)) {
 $action = Tools::getValue('action');
 $idProduct = (int) Tools::getValue('id_product');
 $idVariation = (int) Tools::getValue('id_variation');
-$qty = (int) Tools::getValue('qty', 1);
+$qty = (float) str_replace(',', '.', (string) Tools::getValue('qty', '1'));
 $cartKey = trim((string) Tools::getValue('cart_key'));
+$width = (float) str_replace(',', '.', (string) Tools::getValue('width', '0'));
+$length = (float) str_replace(',', '.', (string) Tools::getValue('length', '0'));
 $optionsRaw = Tools::getValue('options');
 $options = [];
 
@@ -34,9 +36,18 @@ if (is_string($optionsRaw) && $optionsRaw !== '') {
 	$options = $optionsRaw;
 }
 
+$measure = null;
+if ($width > 0 && $length > 0) {
+	$measure = [
+		'sale_unit' => SaleUnit::M2,
+		'width_m' => $width,
+		'length_m' => $length,
+	];
+}
+
 switch ($action) {
 	case 'add':
-		echo json_encode(Cart::add($idProduct, $qty, $idVariation, $options));
+		echo json_encode(Cart::add($idProduct, $qty, $idVariation, $options, $measure));
 		break;
 	case 'update':
 		echo json_encode(Cart::update($idProduct, $qty, $idVariation, $cartKey));

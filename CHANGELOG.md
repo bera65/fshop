@@ -5,14 +5,123 @@ Version numbers follow [Semantic Versioning](https://semver.org/).
 
 | Durum | Sürüm |
 |--------|--------|
-| **Yayında (canlı)** | **2.4.1** |
-| **Geliştirme / bir sonraki yayın** | **2.5.0** (henüz yayınlanmadı) |
+| **Yayında (canlı)** | **2.5.4** |
+| **Geliştirme / bir sonraki yayın** | **2.5.5** (henüz yayınlanmadı) |
 | **İleride** | 3.0.0 |
 
-2.4.1’den bu yana yapılan tüm değişiklikler **2.5.0** altında toplanır. 2.5.0 yayınlandıktan sonra yeni işler 2.5.x (yama) veya 2.6.0 (küçük özellik) olarak devam eder; **3.0.0** ayrı bir büyük sürüm planıdır.
+2.5.4 yayımlandı. Yeni düzeltme ve küçük iyileştirmeler **2.5.5** altında toplanır. Daha büyük yeni işler 2.6.0 veya 3.0.0 altında planlanır.
 
 ---
-## [2.5.0] — Unreleased
+## [2.5.4] — 2026-07-30
+
+### Added
+
+#### Marketplace orders — import & actions
+- **Sipariş Import** — filter bar button: choose platform + order number; create or update via API
+- **Row ⋮ menu** — refresh status, cancel on marketplace, delete from local list (print icon kept; old detail icon removed)
+- **Cancel confirm** — irreversible warning; stock choice: restore / set to 0 / leave unchanged; stock changes pushed to all linked marketplaces
+- **`cargo_tracking_link`** — store Trendyol/N11 `cargoTrackingLink` and HB `trackingUrl`; track button opens the real URL when present
+- **Cron `send=0`** — undocumented: order sync deducts FShop stock only (no stock/price push to marketplaces)
+
+### Changed
+
+#### Marketplace orders — sync & status
+- **Hepsiburada fetch** — uses `/packages/.../shipped`, `/delivered`, `/undelivered`, open packages, and `/orders/.../cancelled` with pagination
+- **N11 fetch** — includes Cancelled / UnDelivered / Returned / UnSupplied
+- **Status labels** — Shipped / InTransit / Received → Kargoda; Delivered → Teslim; Cancelled / Returned / UnDelivered mapped correctly
+- **Upsert** — match by order number when package id drifts; always update status + cargo; empty fields do not wipe existing values
+- **Cancelled import skip** — cancelled/returned packages not in FShop are not inserted (all three platforms)
+- **List date** — shows order date (`order_date` / raw), not sync/import time
+- **Product/SKU filter** — searches item SKU / stock code as well as name
+- **UI copy** — user-facing “FShop” strings use `SITE_NAME`
+
+#### Shopmore product page
+- **Sticky gallery** — product images stay sticky beside the purchase card on desktop (`≥992px`) until the showcase section ends
+
+### Fixed
+
+- Shopmore product options / add-to-cart (corrupted `product.js`, missing option inputs, cart payload)
+
+### Changed
+
+- **Site version** — `FShop::VERSION` 2.5.4 (admin footer)
+
+---
+## [2.5.3] — 2026-07-28
+
+### Added
+
+#### Order invoice
+- **Admin** — upload PDF/JPG/PNG/WEBP or paste an external URL on the order detail page; view / delete
+- **Customer account** — Invoice link on order detail (owner only); files served via `api/invoice.php`
+- **Web API** — `POST /api/v1/orders/{id}/invoice` (URL only), `DELETE .../invoice`; `invoice` field on order GET
+
+#### Customer groups
+- Table `customer_groups` with Default group (`0%`); `users.id_group`
+- Admin CRUD under Customers → Customer groups; assign group on customer edit
+- **GroupPricing** — logged-in members get catalog/cart unit prices reduced by group `%` on all products (guests / Default = full price)
+
+#### Admin product editor
+- Left vertical tabs: **General** (name, description/SEO, category/brand), **Product details** (type, status, label, variations, virtual, options, SKU/barcode/desi), **Price & stock**, **Images**, **Log**
+- **Product activity log** (`product_logs`) — created/updated, price & stock changes, sales and stock restores
+
+#### Admin order editing
+- Edit order contents: add/remove products, change qty/unit price, update address, set shipping fee
+- Manual order discount: fixed amount or percent
+- After save, show previous vs new total and the difference to collect or refund
+
+### Changed
+
+- **Site version** — `FShop::VERSION` 2.5.3 (admin footer)
+
+---
+## [2.5.2] — 2026-07-28
+
+### Added
+
+#### Sale by square meter (m²)
+- **Sale unit on products** — admin: Adet or m² (`sale_unit`); for m², price and stock are per square meter; optional min quantity and step (default 0.01)
+- **Storefront En × Boy calculator** (Shopmore) — customer enters width and length in metres; live area and line total; add-to-cart sends dimensions
+- **Decimal cart / stock / order qty** — session cart, `products.stock`, `order_detail.qty` support decimals; `order_detail.line_meta` stores `width_m`, `length_m`, `area_m2`
+- **Labels** — cart, checkout, account and admin order lines show e.g. `2 × 3,5 m = 7 m²`; catalog price suffix `/ m²`
+
+### Changed
+
+- **Site version** — `FShop::VERSION` 2.5.2 (admin footer)
+
+---
+## [2.5.1] — 2026-07-28
+
+### Added
+
+#### Marketplace — Hepsiburada & N11 integration
+- **Hepsiburada** — API ayarları (merchant ID, key, pass); ürün eşleme / panel; sipariş ve soru senkronu; soru cevaplama; fiyat / stok güncelleme; cron
+- **N11** — API key / secret ayarları; ürün eşleme / panel; sipariş ve soru senkronu; soru cevaplama; fiyat / stok güncelleme; cron
+- **Unified admin** — pazaryeri seçici ile siparişler, sorular, ayarlar ve ürün panelleri (Trendyol + Hepsiburada + N11)
+
+#### Marketplace — unified orders, questions & activity log
+- **Single order table** — `marketplace_orders` replaces per-platform `trendyol_orders` / `hepsiburada_orders` / `n11_orders`; `platform` + unique `(platform, order_number, shipment_package_id)`; cron upsert (insert or update status/lines)
+- **Single questions table** — `marketplace_questions` replaces per-platform question tables; same upsert pattern on sync
+- **`id_product` on rows** — matched local product stored on order/question; line JSON enriched with `id_product` when linked
+- **Schema** — tables in `install/schema.sql` and created/migrated via `MarketplaceTables::ensureSchema()` (legacy tables copied then dropped)
+- **Marketplace logs** — `marketplace_logs` + admin page `/{ADMIN_URI}/marketplace-logs`: new order, stock change (`ORDER […]`, `PHANTOM_STOCK_CHANGE`, `STOCK_UPDATE`), below-min-price (vs product `cost`), price update
+- **Products list** — marketplace catalog rows show stock code and barcode under the product name
+
+#### Storefront — add-to-cart success modal (Shopmore)
+- **Clean success modal** — after add-to-cart: empty header + close, product thumb/name/price, cart count, **Go to cart** (`/cart`) and **Continue shopping**; site `--sm-primary` colors, centered (not full-bleed on mobile)
+- **Cart drawer** — empty/full cart panel restyled to the same simple white card look; old colorful dual-modal stack removed
+
+#### Members-only gate & Google login approval
+- **Google OAuth callback** allowed when `SITE_VISIBILITY=members_only` (`google-login-callback` guest route)
+- **`Customer::authWithGoogle`** respects **Member approval** (`MEMBER_APPROVAL=manual` → inactive account + pending message; existing pending accounts get approval error)
+- **Flash messages** on login/register after Google redirect (same copy as normal registration)
+
+### Changed
+
+- **Site version** — `FShop::VERSION` 2.5.1 (admin footer)
+
+---
+## [2.5.0] — 2026-07-25
 
 ### Added
 
@@ -144,27 +253,11 @@ Version numbers follow [Semantic Versioning](https://semver.org/).
 - **Install wizard restored** — `install/index.php`, `schema.sql`, `seed_demo.sql`, `tools/verify-install.php`
 - **GitHub Actions** — `.github/workflows/verify-install.yml` runs install verification on push/PR
 
-#### Built-in Marketplace (Pazaryeri) — core
-- **Core Pazaryeri menu** — Products, Orders, Q&A, and Settings under admin (no Trendyol module required for day-to-day use)
-- **Trendyol as first platform** — product sync, price/stock updates, order import, questions; Hepsiburada / N11 shown as “coming soon” tabs
-- **Code layout** — `core/Marketplace.php`, `core/MarketplaceAdmin.php`, `core/marketplace/*`, `api/marketplace.php`, admin templates `marketplace-*.tpl`
-- **Trendyol settings simplified** — API credentials only (Merchant ID, API Key, Secret); **FiyatTrend** token on its own settings tab
-- **Per-product mapping** — brand, category, and attributes chosen on the product / Pazaryeri panel (no global default category/brand or category-map UI)
-- **Order import → auto-link** — when importing orders, matching FShop products without a Trendyol link get linked (barcode + order price) and appear under Pazaryeri → Products
-- **Legacy module** — `modules/trendyol` kept as a deprecated stub that redirects to core Pazaryeri URLs
-
-#### Customer browser notifications (`customer-notify` + OneSignal)
-- **Web push via OneSignal** — order status and admin broadcasts can reach the customer’s browser even when the site tab is closed
-- **Consent banner** — logged-in customers see a Yes/No prompt; `OneSignal.login(userId)` binds `external_id` for targeted push
-- **Admin** — “Bildirim Gönder” broadcast, history, and **Tarayıcı Bildirimi** settings (modes: shipped only / all status + broadcasts / broadcast only; App ID, Safari Web ID, REST API Key; test push)
-- **Local queue fallback** — if OneSignal REST is not configured, pending pushes can still be delivered while the customer is on the site (poll)
-- **Core wiring** — `Notification::dispatchWebPush()` calls `CustomerNotifyPush` when the module is enabled (order status + admin send), not only the old `mobil-app` Web Push path
-
 ### Changed
 
 - **Site version** — `FShop::VERSION` 2.5.0 (admin footer)
-- **Marketplace** — Trendyol product/order/Q&A flows moved from module UI into core Pazaryeri; settings no longer store cargo company, delivery defaults, or category map as primary config
-- **Customer notifications** — browser push is driven by `customer-notify` + OneSignal; in-app `user_notifications` and e-mail behaviour unchanged
+- **Marketplace orders UI** — single marketplace selector + date range + unified “Siparişleri Çek” action; order list redesigned as compact cards instead of three separate tables
+- **Marketplace help** — cron links moved from order page panels to the help tab
 - **AI Assistant module** — dashboard side panel removed; reports and settings on the module page; admin APIs fixed to load `Admin.php`
 - **Translations page** — English as source language; target language picker; paginated editing and missing-translation filter
 - **Module front assets** — CSS/JS load only when declared in `$frontStylesheets` / `$frontScripts` or via `head.assets` hook; empty array no longer auto-loads every file in `assets/css/` (avoids loading admin-only styles on the storefront)
@@ -179,9 +272,6 @@ Version numbers follow [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
-- **Marketplace API** — `Admin.php` loaded from `api/marketplace.php` with the correct project root (subdir installs like `/new/` no longer resolve one level above the shop)
-- **OneSignal** — double `init` (“SDK already initialized”) no longer aborts `login(external_id)`; nested API `errors` arrays no longer trigger “Array to string conversion”
-- **Browser push delivery** — order status changes and “Bildirim Gönder” now reach OneSignal via `Notification::dispatchWebPush()` (previously only the Test Push button called OneSignal directly)
 - AI report APIs — missing `Admin.php` include for `Admin::isLoggedIn()` (“Could not connect to server” error)
 - Carrier add/edit — Smarty translation placeholder breaking `{literal}` JS block (`cargos.tpl`)
 - **Mobile App (PWA) icons** — uploaded PNG icons from admin are served correctly; `manifest.php` / `pwa-icon.php` read `mobil_app_settings` paths instead of always generating the blue “F” placeholder
@@ -200,7 +290,7 @@ Version numbers follow [Semantic Versioning](https://semver.org/).
 - **Restoran theme** — category page catalog filters (sidebar + mobile offcanvas) aligned with core `CatalogFilter`
 
 ---
-## [2.4.1] — 2026-07-18 (current production release)
+## [2.4.1] — 2026-07-18
 
 ### Security
 
@@ -456,6 +546,9 @@ Version numbers follow [Semantic Versioning](https://semver.org/).
 
 ---
 
+[2.5.3]: https://github.com/bera65/fshop/compare/v2.5.2...HEAD
+[2.5.2]: https://github.com/bera65/fshop/compare/v2.5.1...v2.5.2
+[2.5.1]: https://github.com/bera65/fshop/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/bera65/fshop/compare/v2.4.1...v2.5.0
 [2.4.1]: https://github.com/bera65/fshop/compare/v2.4.0...v2.4.1
 [2.4.0]: https://github.com/bera65/fshop/compare/v2.3.0...v2.4.0

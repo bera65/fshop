@@ -4,7 +4,6 @@ if (!defined('IN_SCRIPT')) {
 	exit;
 }
 
-
 header('Content-Type: application/json; charset=utf-8');
 
 if (!Admin::isLoggedIn()) {
@@ -12,14 +11,29 @@ if (!Admin::isLoggedIn()) {
 	exit;
 }
 
-
-$questionId = (int) Tools::getValue('question_id', 0);
+$platform = strtolower(trim((string) Tools::getValue('platform', 'trendyol')));
 $text = (string) Tools::getValue('answer_text', Tools::getValue('text', ''));
 
-$result = Trendyol\QuestionService::answer($questionId, $text);
+if ($platform === 'hepsiburada') {
+	$result = Hepsiburada\QuestionService::answer(
+		(string) Tools::getValue('question_id', ''),
+		$text
+	);
+} elseif ($platform === 'n11') {
+	$result = N11\QuestionService::answer(
+		(int) Tools::getValue('question_id', 0),
+		$text
+	);
+} else {
+	$result = Trendyol\QuestionService::answer(
+		(int) Tools::getValue('question_id', 0),
+		$text
+	);
+}
 
 echo json_encode([
 	'success' => $result['ok'],
 	'message' => $result['message'],
+	'platform' => $platform,
 ], JSON_UNESCAPED_UNICODE);
 exit;

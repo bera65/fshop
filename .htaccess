@@ -25,7 +25,7 @@
 </IfModule>
 
 RewriteEngine On
-RewriteBase /fshop/
+RewriteBase /frisay/
 
 # PWA — dynamic manifest & service worker (mobil-app module)
 RewriteRule ^manifest\.json$ manifest.php [L]
@@ -47,6 +47,9 @@ RewriteRule ^ - [L]
 
 # 4b. Sitemap
 RewriteRule ^sitemap\.xml$ sitemap.php [L]
+
+# 4b1. LLMs.txt
+RewriteRule ^llms\.txt$ index.php?container=llms [L,QSA]
 
 # 4b2. RSS haber beslemesi
 RewriteRule ^rss\.xml$ rss.php [L]

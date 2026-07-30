@@ -29,6 +29,10 @@ img/products/*
 img/returns/*
 !img/returns/index.php
 
+# Sipariş faturaları
+img/invoices/*
+!img/invoices/index.php
+
 # Dijital ürün dosyaları
 storage/digital/*
 !storage/digital/index.php

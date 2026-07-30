@@ -43,6 +43,8 @@
 	require_once dirname(__FILE__) . '/../core/AdminNotification.php';
 	require_once dirname(__FILE__) . '/../core/Contact.php';
 	require_once dirname(__FILE__) . '/../core/Product.php';
+	require_once dirname(__FILE__) . '/../core/ProductLog.php';
+	require_once dirname(__FILE__) . '/../core/SaleUnit.php';
 	require_once dirname(__FILE__) . '/../core/ProductVariation.php';
 	require_once dirname(__FILE__) . '/../core/ProductOption.php';
 	require_once dirname(__FILE__) . '/../core/VirtualProduct.php';
@@ -53,6 +55,8 @@
 	require_once dirname(__FILE__) . '/../core/Currency.php';
 	require_once dirname(__FILE__) . '/../core/Tax.php';
 	require_once dirname(__FILE__) . '/../core/Customer.php';
+	require_once dirname(__FILE__) . '/../core/CustomerGroup.php';
+	require_once dirname(__FILE__) . '/../core/GroupPricing.php';
 	require_once dirname(__FILE__) . '/../core/Address.php';
 	require_once dirname(__FILE__) . '/../core/Pagination.php';
 	require_once dirname(__FILE__) . '/../core/ModuleBase.php';

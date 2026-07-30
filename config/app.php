@@ -137,7 +137,7 @@ class App
 			'Content-Security-Policy: '
 			. "default-src 'self'; "
 			. "base-uri 'self'; "
-			. "form-action 'self'; "
+			. "form-action 'self' https:; "
 			. "frame-ancestors 'self'; "
 			. "img-src 'self' data: https: blob:; "
 			. "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; "

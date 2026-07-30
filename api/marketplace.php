@@ -19,10 +19,12 @@ $actions = [
 	'attributes' => 'attributes.php',
 	'fetch-orders' => 'fetch-orders.php',
 	'fetch-questions' => 'fetch-questions.php',
+		'export-orders' => 'export-orders.php',
 	'answer-question' => 'answer-question.php',
 	'import-product' => 'import-product.php',
 	'link-existing' => 'link-existing.php',
 	'update-stock' => 'update-stock.php',
+	'order-action' => 'order-action.php',
 ];
 
 if ($action === '' || !isset($actions[$action])) {

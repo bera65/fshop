@@ -79,7 +79,7 @@
 			<div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
 				<div>
 					<div class="fw-semibold">{$item.product_name|escape}</div>
-					<div class="small text-muted">{$item.qty} x {$item.price_formatted}</div>
+					<div class="small text-muted">{if $item.measure_label|default:''}{$item.measure_label|escape}{elseif $item.qty_label|default:''}{$item.qty_label|escape}{else}{$item.qty}{/if} x {$item.price_formatted}</div>
 				</div>
 				<div class="d-flex align-items-center gap-2">
 					<strong>{$item.total_formatted}</strong>
@@ -113,6 +113,12 @@
 			<div class="d-flex justify-content-between text-success">
 				<span>{if $selectedOrder.payment_discount_label}{$selectedOrder.payment_discount_label|escape}{else}{'Discount'|translate}{/if}</span>
 				<span>-{$selectedOrder.payment_discount_formatted}</span>
+			</div>
+			{/if}
+			{if $selectedOrder.manual_discount|default:0 > 0}
+			<div class="d-flex justify-content-between text-success">
+				<span>{'Discount'|translate}</span>
+				<span>-{$selectedOrder.manual_discount_formatted}</span>
 			</div>
 			{/if}
 			<div class="d-flex justify-content-between"><span>{'Cargo'|translate}</span><span>{$selectedOrder.shipping_formatted}</span></div>
@@ -151,6 +157,10 @@
 
 		{if $selectedOrder.cancel_request && $selectedOrder.cancel_request.admin_receipt_url}
 		<a href="{$selectedOrder.cancel_request.admin_receipt_url|escape}" target="_blank" class="prime-btn prime-btn--outline prime-btn--sm">{'Cancel receipt'|translate}</a>
+		{/if}
+
+		{if $selectedOrder.has_invoice|default:false && $selectedOrder.invoice_view_url|default:''}
+		<a href="{$selectedOrder.invoice_view_url|escape}" target="_blank" rel="noopener" class="prime-btn prime-btn--outline prime-btn--sm">{$selectedOrder.invoice_label|default:'Invoice'|translate|escape}</a>
 		{/if}
 	</div>
 

@@ -34,6 +34,16 @@
 
 	];
 
+	if (!empty($_SESSION['auth_flash_notice'])) {
+		$authNotice = (string) $_SESSION['auth_flash_notice'];
+		unset($_SESSION['auth_flash_notice']);
+	}
+
+	if (!empty($_SESSION['auth_flash_error'])) {
+		$authError = (string) $_SESSION['auth_flash_error'];
+		unset($_SESSION['auth_flash_error']);
+	}
+
 
 
 	if (!empty($_SESSION['auth_redirect'])) {
@@ -144,6 +154,8 @@
 		'formData' => $formData,
 
 		'authMode' => 'login',
+
+		'authAsideExists' => is_file(dirname(__DIR__, 2) . '/img/auth-aside.jpg'),
 
 		'breadcrumb' => [
 

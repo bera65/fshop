@@ -123,17 +123,62 @@ class VirtualProduct
 
 	public static function getAvailableLicenses(int $idProduct): array
 	{
-		self::ensureSchema();
-
-		$rows = DB::execute(
+		return DB::execute(
 			"SELECT id_license, license_key
 			 FROM product_license_keys
 			 WHERE id_product = ? AND status = 'available'
 			 ORDER BY id_license ASC",
 			[$idProduct]
-		);
+		) ?: [];
+	}
 
-		return $rows ?: [];
+	public static function getAllLicenses(int $idProduct): array
+	{
+		return DB::execute(
+			"SELECT id_license, license_key, status
+			 FROM product_license_keys
+			 WHERE id_product = ?
+			 ORDER BY id_license ASC",
+			[$idProduct]
+		) ?: [];
+	}
+
+	public static function deleteLicenseKey(int $idLicense): bool
+	{
+		$row = DB::getRowSafe('product_license_keys', 'id_license = ?', [$idLicense]);
+		if (!$row) {
+			return false;
+		}
+
+		$ok = DB::execute('DELETE FROM product_license_keys WHERE id_license = ?', [$idLicense]);
+		if ($ok) {
+			self::syncLicenseStock((int) $row['id_product']);
+		}
+		return $ok;
+	}
+
+	public static function updateLicenseKey(int $idLicense, string $newKey): bool
+	{
+		$newKey = mb_substr(trim($newKey), 0, 512);
+		if ($newKey === '') {
+			return false;
+		}
+		
+		$row = DB::getRowSafe('product_license_keys', 'id_license = ?', [$idLicense]);
+		if (!$row) {
+			return false;
+		}
+		
+		// Check duplicates
+		$exists = (int) DB::getValue(
+			'SELECT COUNT(*) FROM product_license_keys WHERE id_product = ? AND license_key = ? AND id_license != ?',
+			[(int)$row['id_product'], $newKey, $idLicense]
+		);
+		if ($exists > 0) {
+			return false;
+		}
+
+		return DB::update('product_license_keys', ['license_key' => $newKey], 'id_license = :id', ['id' => $idLicense]);
 	}
 
 	public static function getAssignedLicensesForOrderDetail(int $idOrderDetail, ?string $virtualDelivery = null): array
@@ -511,6 +556,14 @@ class VirtualProduct
 		$item['delivery_lines'] = $item['virtual_delivery'] !== ''
 			? preg_split('/\R+/', $item['virtual_delivery']) ?: []
 			: [];
+		
+		if ($item['virtual_kind'] === 'license') {
+			$dbLicenses = self::getAssignedLicensesForOrderDetail((int) ($item['id_order_detail'] ?? 0), $item['virtual_delivery']);
+			$item['delivery_lines'] = array_map(function($lic) {
+				return is_array($lic) ? $lic['license_key'] : $lic;
+			}, $dbLicenses);
+		}
+
 		$item['has_download'] = trim((string) ($item['download_token'] ?? '')) !== '';
 		$item['download_url'] = $item['has_download']
 			? self::getDownloadUrl((string) $item['download_token'])

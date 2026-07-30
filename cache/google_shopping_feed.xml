@@ -1,46 +1,63 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">
   <channel>
-    <title><![CDATA[FShop Mağaza Ürün Feed'i]]></title>
-    <link><![CDATA[http://localhost/fshop/]]></link>
-    <description><![CDATA[FShop Mağaza Google Shopping Ürün Kataloğu]]></description>
+    <title><![CDATA[E-Oksijen Ürün Feed'i]]></title>
+    <link><![CDATA[https://eoksijen.com/new/]]></link>
+    <description><![CDATA[E-Oksijen Google Shopping Ürün Kataloğu]]></description>
     <item xmlns:g="http://base.google.com/ns/1.0">
-      <g:id xmlns:g="http://base.google.com/ns/1.0">1</g:id>
-      <title><![CDATA[SolNutrof Total 30 Kapsül]]></title>
-      <link><![CDATA[http://localhost/fshop/vitamin-takviye/solnutrof-total-30-kapsul-1]]></link>
-      <description><![CDATA[Göz sağlığı için gelişmiş formül.]]></description>
-      <g:image_link xmlns:g="http://base.google.com/ns/1.0">http://localhost/fshop/templates/default/img/favicon.png</g:image_link>
+      <g:id xmlns:g="http://base.google.com/ns/1.0">103</g:id>
+      <title><![CDATA[Biotin 5000 Mcg 60 Kapsül]]></title>
+      <link><![CDATA[https://eoksijen.com/new/vitamin/biotin-5000-mcg-60-kapsul-103]]></link>
+      <description><![CDATA[Kapsül formu, günlük vitamin ihtiyacınızı pratik ve kolay bir şekilde karşılar Multivitamin içeriği ile vücudunuzun genel sağlığını destekler ve enerji seviyenizi artırır]]></description>
+      <g:image_link xmlns:g="http://base.google.com/ns/1.0">https://eoksijen.com/new/img/products/193.jpg</g:image_link>
       <g:availability xmlns:g="http://base.google.com/ns/1.0">in_stock</g:availability>
-      <g:price xmlns:g="http://base.google.com/ns/1.0">899.00 TRY</g:price>
-      <g:sale_price xmlns:g="http://base.google.com/ns/1.0">899.00 TRY</g:sale_price>
-      <g:price xmlns:g="http://base.google.com/ns/1.0">1099.00 TRY</g:price>
+      <g:price xmlns:g="http://base.google.com/ns/1.0">370.00 TRY</g:price>
       <g:condition xmlns:g="http://base.google.com/ns/1.0">new</g:condition>
-      <g:brand xmlns:g="http://base.google.com/ns/1.0">Nutrof</g:brand>
-      <g:gtin xmlns:g="http://base.google.com/ns/1.0">8690000000011</g:gtin>
-      <g:mpn xmlns:g="http://base.google.com/ns/1.0">SOLNUTROF30</g:mpn>
-      <g:product_type xmlns:g="http://base.google.com/ns/1.0">Vitamin &amp;amp; Takviye</g:product_type>
-      <g:quantity_to_sell_on_google xmlns:g="http://base.google.com/ns/1.0">120</g:quantity_to_sell_on_google>
+      <g:brand xmlns:g="http://base.google.com/ns/1.0">Ocean</g:brand>
+      <g:gtin xmlns:g="http://base.google.com/ns/1.0">8697595872765</g:gtin>
+      <g:mpn xmlns:g="http://base.google.com/ns/1.0">1867</g:mpn>
+      <g:product_type xmlns:g="http://base.google.com/ns/1.0">Vitamin</g:product_type>
+      <g:quantity_to_sell_on_google xmlns:g="http://base.google.com/ns/1.0">99</g:quantity_to_sell_on_google>
       <g:shipping xmlns:g="http://base.google.com/ns/1.0">
         <g:country>TR</g:country>
         <g:service>Standart Kargo</g:service>
         <g:price>0.00 TRY</g:price>
       </g:shipping>
-      <g:custom_label_1 xmlns:g="http://base.google.com/ns/1.0">indirimli</g:custom_label_1>
     </item>
     <item xmlns:g="http://base.google.com/ns/1.0">
-      <g:id xmlns:g="http://base.google.com/ns/1.0">2</g:id>
-      <title><![CDATA[Nutrof Cilt Bakım Serumu 30 ml]]></title>
-      <link><![CDATA[http://localhost/fshop/kozmetik/nutrof-cilt-bakim-serumu-2]]></link>
-      <description><![CDATA[Nem dengesi ve parlak görünüm için serum.]]></description>
-      <g:image_link xmlns:g="http://base.google.com/ns/1.0">http://localhost/fshop/templates/default/img/favicon.png</g:image_link>
+      <g:id xmlns:g="http://base.google.com/ns/1.0">105</g:id>
+      <title><![CDATA[Panplus Gold Şampuan]]></title>
+      <link><![CDATA[https://eoksijen.com/new/vitamin/panplus-gold-sampuan-200-ml-105]]></link>
+      <description><![CDATA[Saçlarınıza altın gibi bir parlaklık kazandıran Panplus Gold Şampuan, 200 ml.]]></description>
+      <g:image_link xmlns:g="http://base.google.com/ns/1.0">https://eoksijen.com/new/img/products/207.jpg</g:image_link>
       <g:availability xmlns:g="http://base.google.com/ns/1.0">in_stock</g:availability>
-      <g:price xmlns:g="http://base.google.com/ns/1.0">549.00 TRY</g:price>
+      <g:price xmlns:g="http://base.google.com/ns/1.0">962.04 TRY</g:price>
       <g:condition xmlns:g="http://base.google.com/ns/1.0">new</g:condition>
-      <g:brand xmlns:g="http://base.google.com/ns/1.0">Nutrof</g:brand>
-      <g:gtin xmlns:g="http://base.google.com/ns/1.0">8690000000028</g:gtin>
-      <g:mpn xmlns:g="http://base.google.com/ns/1.0">NUTSERUM30</g:mpn>
+      <g:brand xmlns:g="http://base.google.com/ns/1.0">Assos</g:brand>
+      <g:gtin xmlns:g="http://base.google.com/ns/1.0">8699708260209</g:gtin>
+      <g:mpn xmlns:g="http://base.google.com/ns/1.0">1405</g:mpn>
+      <g:product_type xmlns:g="http://base.google.com/ns/1.0">Vitamin</g:product_type>
+      <g:quantity_to_sell_on_google xmlns:g="http://base.google.com/ns/1.0">5</g:quantity_to_sell_on_google>
+      <g:shipping xmlns:g="http://base.google.com/ns/1.0">
+        <g:country>TR</g:country>
+        <g:service>Standart Kargo</g:service>
+        <g:price>0.00 TRY</g:price>
+      </g:shipping>
+    </item>
+    <item xmlns:g="http://base.google.com/ns/1.0">
+      <g:id xmlns:g="http://base.google.com/ns/1.0">106</g:id>
+      <title><![CDATA[Cerave Hyalüronik Asit Yüz Kremi]]></title>
+      <link><![CDATA[https://eoksijen.com/new/kozmetik/cerave-hyaluronik-asit-yuz-kremi-106]]></link>
+      <description><![CDATA[Cildinizi 24 saat nemlendirerek yumuşacık hissettiren Cerave hyalüronik asit içerikli yüz nemlendirici krem]]></description>
+      <g:image_link xmlns:g="http://base.google.com/ns/1.0">https://eoksijen.com/new/img/products/208.jpg</g:image_link>
+      <g:availability xmlns:g="http://base.google.com/ns/1.0">in_stock</g:availability>
+      <g:price xmlns:g="http://base.google.com/ns/1.0">1029.97 TRY</g:price>
+      <g:condition xmlns:g="http://base.google.com/ns/1.0">new</g:condition>
+      <g:brand xmlns:g="http://base.google.com/ns/1.0">CeraVe</g:brand>
+      <g:gtin xmlns:g="http://base.google.com/ns/1.0">3337875952903</g:gtin>
+      <g:mpn xmlns:g="http://base.google.com/ns/1.0">2645</g:mpn>
       <g:product_type xmlns:g="http://base.google.com/ns/1.0">Kozmetik</g:product_type>
-      <g:quantity_to_sell_on_google xmlns:g="http://base.google.com/ns/1.0">85</g:quantity_to_sell_on_google>
+      <g:quantity_to_sell_on_google xmlns:g="http://base.google.com/ns/1.0">1</g:quantity_to_sell_on_google>
       <g:shipping xmlns:g="http://base.google.com/ns/1.0">
         <g:country>TR</g:country>
         <g:service>Standart Kargo</g:service>
@@ -48,42 +65,19 @@
       </g:shipping>
     </item>
     <item xmlns:g="http://base.google.com/ns/1.0">
-      <g:id xmlns:g="http://base.google.com/ns/1.0">3</g:id>
-      <title><![CDATA[Kablosuz Kulaklık Pro X]]></title>
-      <link><![CDATA[http://localhost/fshop/elektronik/kablosuz-kulaklik-pro-x-3]]></link>
-      <description><![CDATA[Aktif gürültü engelleme özellikli kulaklık.]]></description>
-      <g:image_link xmlns:g="http://base.google.com/ns/1.0">http://localhost/fshop/templates/default/img/favicon.png</g:image_link>
+      <g:id xmlns:g="http://base.google.com/ns/1.0">107</g:id>
+      <title><![CDATA[Magnezyum Complex 60 Tablet]]></title>
+      <link><![CDATA[https://eoksijen.com/new/vitamin-takviyesi/magnezyum-complex-bisglisinat-malat-sitrat-taurat-b6-p5p-vitamini-60-tablet-107]]></link>
+      <description><![CDATA[Ocean Magnezyum Complex, 11 yaş ve üzeri için günlük 1-2 tablet önerilen magnezyum takviyesi.]]></description>
+      <g:image_link xmlns:g="http://base.google.com/ns/1.0">https://eoksijen.com/new/img/products/215.jpg</g:image_link>
       <g:availability xmlns:g="http://base.google.com/ns/1.0">in_stock</g:availability>
-      <g:price xmlns:g="http://base.google.com/ns/1.0">2314.23 TRY</g:price>
-      <g:sale_price xmlns:g="http://base.google.com/ns/1.0">2314.23 TRY</g:sale_price>
-      <g:price xmlns:g="http://base.google.com/ns/1.0">2777.17 TRY</g:price>
+      <g:price xmlns:g="http://base.google.com/ns/1.0">1.00 TRY</g:price>
       <g:condition xmlns:g="http://base.google.com/ns/1.0">new</g:condition>
-      <g:brand xmlns:g="http://base.google.com/ns/1.0">TechnoMark</g:brand>
-      <g:gtin xmlns:g="http://base.google.com/ns/1.0">8690000000035</g:gtin>
-      <g:mpn xmlns:g="http://base.google.com/ns/1.0">TECH-HP-49</g:mpn>
-      <g:product_type xmlns:g="http://base.google.com/ns/1.0">Elektronik</g:product_type>
-      <g:quantity_to_sell_on_google xmlns:g="http://base.google.com/ns/1.0">40</g:quantity_to_sell_on_google>
-      <g:shipping xmlns:g="http://base.google.com/ns/1.0">
-        <g:country>TR</g:country>
-        <g:service>Standart Kargo</g:service>
-        <g:price>0.00 TRY</g:price>
-      </g:shipping>
-      <g:custom_label_1 xmlns:g="http://base.google.com/ns/1.0">indirimli</g:custom_label_1>
-    </item>
-    <item xmlns:g="http://base.google.com/ns/1.0">
-      <g:id xmlns:g="http://base.google.com/ns/1.0">4</g:id>
-      <title><![CDATA[Akıllı Saat Lite]]></title>
-      <link><![CDATA[http://localhost/fshop/elektronik/akilli-saat-lite-4]]></link>
-      <description><![CDATA[Adım, nabız ve uyku takibi.]]></description>
-      <g:image_link xmlns:g="http://base.google.com/ns/1.0">http://localhost/fshop/templates/default/img/favicon.png</g:image_link>
-      <g:availability xmlns:g="http://base.google.com/ns/1.0">in_stock</g:availability>
-      <g:price xmlns:g="http://base.google.com/ns/1.0">4248.69 TRY</g:price>
-      <g:condition xmlns:g="http://base.google.com/ns/1.0">new</g:condition>
-      <g:brand xmlns:g="http://base.google.com/ns/1.0">TechnoMark</g:brand>
-      <g:gtin xmlns:g="http://base.google.com/ns/1.0">8690000000042</g:gtin>
-      <g:mpn xmlns:g="http://base.google.com/ns/1.0">TECH-WATCH79</g:mpn>
-      <g:product_type xmlns:g="http://base.google.com/ns/1.0">Elektronik</g:product_type>
-      <g:quantity_to_sell_on_google xmlns:g="http://base.google.com/ns/1.0">25</g:quantity_to_sell_on_google>
+      <g:brand xmlns:g="http://base.google.com/ns/1.0">Orzax</g:brand>
+      <g:gtin xmlns:g="http://base.google.com/ns/1.0">850081345541</g:gtin>
+      <g:mpn xmlns:g="http://base.google.com/ns/1.0">2642</g:mpn>
+      <g:product_type xmlns:g="http://base.google.com/ns/1.0">Vitamin Takviyesi</g:product_type>
+      <g:quantity_to_sell_on_google xmlns:g="http://base.google.com/ns/1.0">10</g:quantity_to_sell_on_google>
       <g:shipping xmlns:g="http://base.google.com/ns/1.0">
         <g:country>TR</g:country>
         <g:service>Standart Kargo</g:service>
@@ -91,27 +85,84 @@
       </g:shipping>
     </item>
     <item xmlns:g="http://base.google.com/ns/1.0">
-      <g:id xmlns:g="http://base.google.com/ns/1.0">5</g:id>
-      <title><![CDATA[Multivitamin Complex 60 Tablet]]></title>
-      <link><![CDATA[http://localhost/fshop/vitamin-takviye/multivitamin-complex-60-5]]></link>
-      <description><![CDATA[Günlük vitamin ve mineral desteği.]]></description>
-      <g:image_link xmlns:g="http://base.google.com/ns/1.0">http://localhost/fshop/templates/default/img/favicon.png</g:image_link>
+      <g:id xmlns:g="http://base.google.com/ns/1.0">109</g:id>
+      <title><![CDATA[Astaksantin 30 Kapsül - Ocean]]></title>
+      <link><![CDATA[https://eoksijen.com/new/vitamin-takviyesi/astaksantin-30-kapsul-109]]></link>
+      <description><![CDATA[Astaksantin takviyesi olan Ocean Astaksantin 30 Kapsül, antioksidan özellikleriyle dikkat çeker.]]></description>
+      <g:image_link xmlns:g="http://base.google.com/ns/1.0">https://eoksijen.com/new/img/products/223.jpg</g:image_link>
       <g:availability xmlns:g="http://base.google.com/ns/1.0">in_stock</g:availability>
-      <g:price xmlns:g="http://base.google.com/ns/1.0">329.00 TRY</g:price>
-      <g:sale_price xmlns:g="http://base.google.com/ns/1.0">329.00 TRY</g:sale_price>
-      <g:price xmlns:g="http://base.google.com/ns/1.0">399.00 TRY</g:price>
+      <g:price xmlns:g="http://base.google.com/ns/1.0">682.59 TRY</g:price>
       <g:condition xmlns:g="http://base.google.com/ns/1.0">new</g:condition>
-      <g:brand xmlns:g="http://base.google.com/ns/1.0">FShop Demo</g:brand>
-      <g:gtin xmlns:g="http://base.google.com/ns/1.0">8690000000059</g:gtin>
-      <g:mpn xmlns:g="http://base.google.com/ns/1.0">DEMO-MULTI60</g:mpn>
-      <g:product_type xmlns:g="http://base.google.com/ns/1.0">Vitamin &amp;amp; Takviye</g:product_type>
-      <g:quantity_to_sell_on_google xmlns:g="http://base.google.com/ns/1.0">200</g:quantity_to_sell_on_google>
+      <g:brand xmlns:g="http://base.google.com/ns/1.0">Orzax</g:brand>
+      <g:gtin xmlns:g="http://base.google.com/ns/1.0">850081345688</g:gtin>
+      <g:mpn xmlns:g="http://base.google.com/ns/1.0">297</g:mpn>
+      <g:product_type xmlns:g="http://base.google.com/ns/1.0">Vitamin Takviyesi</g:product_type>
+      <g:quantity_to_sell_on_google xmlns:g="http://base.google.com/ns/1.0">30</g:quantity_to_sell_on_google>
       <g:shipping xmlns:g="http://base.google.com/ns/1.0">
         <g:country>TR</g:country>
         <g:service>Standart Kargo</g:service>
         <g:price>0.00 TRY</g:price>
       </g:shipping>
-      <g:custom_label_1 xmlns:g="http://base.google.com/ns/1.0">indirimli</g:custom_label_1>
+    </item>
+    <item xmlns:g="http://base.google.com/ns/1.0">
+      <g:id xmlns:g="http://base.google.com/ns/1.0">110</g:id>
+      <title><![CDATA[Sma Optipro Probiyotik 1 Bebek Sütü 800 gr 0-6 Ay]]></title>
+      <link><![CDATA[https://eoksijen.com/new/ana-sayfa/sma-optipro-probiyotik-1-bebek-sutu-800-gr-0-6-ay-110]]></link>
+      <description><![CDATA[Nestle'nin anne sütü üzerine yaptığı araştırmalara dayanarak geliştirilmiş protein teknolojisi OPTIPRO®, çocuğunuzun ihtiyaçlarına uygun miktard]]></description>
+      <g:image_link xmlns:g="http://base.google.com/ns/1.0">https://eoksijen.com/new/img/products/224.jpg</g:image_link>
+      <g:availability xmlns:g="http://base.google.com/ns/1.0">in_stock</g:availability>
+      <g:price xmlns:g="http://base.google.com/ns/1.0">500.00 TRY</g:price>
+      <g:condition xmlns:g="http://base.google.com/ns/1.0">new</g:condition>
+      <g:brand xmlns:g="http://base.google.com/ns/1.0">SMA</g:brand>
+      <g:gtin xmlns:g="http://base.google.com/ns/1.0">20000005040795</g:gtin>
+      <g:mpn xmlns:g="http://base.google.com/ns/1.0">05040795</g:mpn>
+      <g:product_type xmlns:g="http://base.google.com/ns/1.0">Ana Sayfa</g:product_type>
+      <g:quantity_to_sell_on_google xmlns:g="http://base.google.com/ns/1.0">5</g:quantity_to_sell_on_google>
+      <g:shipping xmlns:g="http://base.google.com/ns/1.0">
+        <g:country>TR</g:country>
+        <g:service>Standart Kargo</g:service>
+        <g:price>0.00 TRY</g:price>
+      </g:shipping>
+    </item>
+    <item xmlns:g="http://base.google.com/ns/1.0">
+      <g:id xmlns:g="http://base.google.com/ns/1.0">111</g:id>
+      <title><![CDATA[Resvega 60 Kapsül 3 adet]]></title>
+      <link><![CDATA[https://eoksijen.com/new/vitamin-takviyesi/resvega-60-kapsul-3-adet-111]]></link>
+      <description><![CDATA[Resvega, Resveratrol, Lutein & Zeaksantin, Omega 3 yağ asitleri, önemli vitaminler ve minerallerin kombinasyonunu içeren bir formüldür. Bir kutuda 60 adet bulunur ve günde 2 kapsül alınır. İçeriğindeki DHA normal görme yetisinin korunmasına]]></description>
+      <g:image_link xmlns:g="http://base.google.com/ns/1.0">https://eoksijen.com/new/img/products/225.jpg</g:image_link>
+      <g:availability xmlns:g="http://base.google.com/ns/1.0">in_stock</g:availability>
+      <g:price xmlns:g="http://base.google.com/ns/1.0">2000.00 TRY</g:price>
+      <g:condition xmlns:g="http://base.google.com/ns/1.0">new</g:condition>
+      <g:brand xmlns:g="http://base.google.com/ns/1.0">Thea</g:brand>
+      <g:gtin xmlns:g="http://base.google.com/ns/1.0">36620420052823</g:gtin>
+      <g:mpn xmlns:g="http://base.google.com/ns/1.0">S3022</g:mpn>
+      <g:product_type xmlns:g="http://base.google.com/ns/1.0">Vitamin Takviyesi</g:product_type>
+      <g:quantity_to_sell_on_google xmlns:g="http://base.google.com/ns/1.0">68</g:quantity_to_sell_on_google>
+      <g:shipping xmlns:g="http://base.google.com/ns/1.0">
+        <g:country>TR</g:country>
+        <g:service>Standart Kargo</g:service>
+        <g:price>0.00 TRY</g:price>
+      </g:shipping>
+    </item>
+    <item xmlns:g="http://base.google.com/ns/1.0">
+      <g:id xmlns:g="http://base.google.com/ns/1.0">112</g:id>
+      <title><![CDATA[Xiaomi Redmi Note 14 5G 8GB 256GB (Xiaomi Türkiye Garantili)]]></title>
+      <link><![CDATA[https://eoksijen.com/new/android-telefonlar/xiaomi-redmi-note-14-5g-8gb-256gb-xiaomi-turkiye-garantili-112]]></link>
+      <description><![CDATA[Ön Kamera Çözünürlüğü 20 MP Kamera Çözünürlüğü 108 MP + 8 MP + 2 MP]]></description>
+      <g:image_link xmlns:g="http://base.google.com/ns/1.0">https://eoksijen.com/new/img/products/226.jpg</g:image_link>
+      <g:availability xmlns:g="http://base.google.com/ns/1.0">in_stock</g:availability>
+      <g:price xmlns:g="http://base.google.com/ns/1.0">18900.00 TRY</g:price>
+      <g:condition xmlns:g="http://base.google.com/ns/1.0">new</g:condition>
+      <g:brand xmlns:g="http://base.google.com/ns/1.0">Xionami</g:brand>
+      <g:gtin xmlns:g="http://base.google.com/ns/1.0">81824</g:gtin>
+      <g:mpn xmlns:g="http://base.google.com/ns/1.0">REDMI14-YESIL</g:mpn>
+      <g:product_type xmlns:g="http://base.google.com/ns/1.0">Android Telefonlar</g:product_type>
+      <g:quantity_to_sell_on_google xmlns:g="http://base.google.com/ns/1.0">5</g:quantity_to_sell_on_google>
+      <g:shipping xmlns:g="http://base.google.com/ns/1.0">
+        <g:country>TR</g:country>
+        <g:service>Standart Kargo</g:service>
+        <g:price>0.00 TRY</g:price>
+      </g:shipping>
     </item>
   </channel>
 </rss>

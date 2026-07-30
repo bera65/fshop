@@ -79,7 +79,7 @@
 
 					{foreach $cart.items as $item}
 
-					<article class="prime-cart-card cart-item" data-id="{$item.id_product}" data-variation="{$item.id_variation|default:0}" data-max-qty="{$item.max_qty|default:$item.stock|default:99}">
+					<article class="prime-cart-card cart-item" data-id="{$item.id_product}" data-variation="{$item.id_variation|default:0}" data-cart-key="{$item.cart_key|default:''|escape}" data-max-qty="{$item.max_qty|default:$item.stock|default:99}" data-qty-step="{$item.qty_step|default:1}">
 
 						<a href="{$item.url}" class="prime-cart-card__thumb cart-item-image">
 
@@ -103,15 +103,15 @@
 
 								<div class="prime-cart-qty">
 
-									<button type="button" class="cart-qty-btn" data-action="decrease" data-id="{$item.id_product}" data-variation="{$item.id_variation|default:0}" aria-label="Azalt">−</button>
+									<button type="button" class="cart-qty-btn" data-action="decrease" data-id="{$item.id_product}" data-variation="{$item.id_variation|default:0}" data-cart-key="{$item.cart_key|default:''|escape}" aria-label="Azalt">−</button>
 
-									<span class="cart-qty-value">{$item.qty}</span>
+									<span class="cart-qty-value">{if $item.sale_unit|default:'piece' == 'm2'}{$item.qty|string_format:"%.3f"|regex_replace:'/\.?0+$/':''}{else}{$item.qty}{/if}</span>
 
-									<button type="button" class="cart-qty-btn" data-action="increase" data-id="{$item.id_product}" data-variation="{$item.id_variation|default:0}" aria-label="Artır">+</button>
+									<button type="button" class="cart-qty-btn" data-action="increase" data-id="{$item.id_product}" data-variation="{$item.id_variation|default:0}" data-cart-key="{$item.cart_key|default:''|escape}" aria-label="Artır">+</button>
 
 								</div>
 
-								<button type="button" class="prime-cart-card__remove cart-remove-btn" data-id="{$item.id_product}" data-variation="{$item.id_variation|default:0}">{'Delete'|translate}</button>
+								<button type="button" class="prime-cart-card__remove cart-remove-btn" data-id="{$item.id_product}" data-variation="{$item.id_variation|default:0}" data-cart-key="{$item.cart_key|default:''|escape}">{'Delete'|translate}</button>
 
 							</div>
 

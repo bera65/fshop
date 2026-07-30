@@ -1,0 +1,19 @@
+/**
+ * Tema renkleri — Restoran (turuncu)
+ */
+:root {
+	--brand-primary: #ff5a00;
+	--brand-primary-dark: #e65100;
+	--brand-accent: #ff5a00;
+	--brand-accent-light: #fff0e6;
+	--surface: #ffffff;
+	--surface-soft: #f8f9fa;
+	--border-color: #ebebeb;
+	--text-primary: #1a1a1a;
+	--text-secondary: #767676;
+	--primary-color: #ff5a00;
+	--bs-primary: #ff5a00;
+	--bs-primary-rgb: 255, 90, 0;
+	--bs-link-color: #ff5a00;
+	--bs-link-hover-color: #e65100;
+}

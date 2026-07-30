@@ -23,37 +23,37 @@ class Installer
 			[
 				'label' => 'PHP 7.4+',
 				'ok' => version_compare(PHP_VERSION, '7.4.0', '>='),
-				'hint' => 'Mevcut: ' . PHP_VERSION,
+				'hint' => 'You: ' . PHP_VERSION,
 			],
 			[
 				'label' => 'PDO MySQL',
 				'ok' => extension_loaded('pdo_mysql'),
-				'hint' => 'pdo_mysql eklentisi gerekli',
+				'hint' => 'The pdo_mysql extension is required.',
 			],
 			[
 				'label' => 'mbstring',
 				'ok' => extension_loaded('mbstring'),
-				'hint' => 'mbstring eklentisi gerekli',
+				'hint' => 'The mbstring extension is required.',
 			],
 			[
 				'label' => 'GD',
 				'ok' => extension_loaded('gd'),
-				'hint' => 'Ürün görseli işleme için GD gerekli',
+				'hint' => 'GD is required for product image processing.',
 			],
 			[
-				'label' => 'config/ yazılabilir',
+				'label' => 'config/ writable',
 				'ok' => is_writable(self::rootPath() . '/config'),
-				'hint' => 'env.php ve kurulum kilidi oluşturulmalı',
+				'hint' => 'env.php and the installation lock must be created',
 			],
 			[
-				'label' => 'cache/ yazılabilir',
+				'label' => 'cache/ writable',
 				'ok' => is_writable(self::rootPath() . '/cache'),
-				'hint' => 'Smarty önbelleği için gerekli',
+				'hint' => 'Required for Smarty cache',
 			],
 			[
-				'label' => 'img/products/ yazılabilir',
+				'label' => 'img/products/ writable',
 				'ok' => is_dir(self::rootPath() . '/img/products') && is_writable(self::rootPath() . '/img/products'),
-				'hint' => 'Ürün görselleri için gerekli',
+				'hint' => 'Product images are required',
 			],
 		];
 
@@ -75,59 +75,59 @@ class Installer
 			$pdo = self::pdo($config, false);
 			$pdo->query('SELECT 1');
 
-			return ['success' => true, 'message' => 'Veritabanı bağlantısı başarılı'];
+			return ['success' => true, 'message' => 'Database connection successful'];
 		} catch (Throwable $e) {
-			return ['success' => false, 'message' => 'Bağlantı hatası: ' . $e->getMessage()];
+			return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
 		}
 	}
 
 	public static function install(array $data): array
 	{
 		if (self::isInstalled()) {
-			return ['success' => false, 'message' => 'Sistem zaten kurulu'];
+			return ['success' => false, 'message' => 'The system is already installed'];
 		}
 
 		$dbHost = trim((string) ($data['db_host'] ?? 'localhost'));
 		$dbName = trim((string) ($data['db_name'] ?? ''));
 		$dbUser = trim((string) ($data['db_user'] ?? ''));
 		$dbPass = (string) ($data['db_pass'] ?? '');
-		$siteName = trim((string) ($data['site_name'] ?? 'FShop'));
+		$siteName = trim((string) ($data['site_name'] ?? 'FriSay'));
 		$siteUrl = rtrim(trim((string) ($data['site_url'] ?? '')), '/') . '/';
 		$rewriteBase = trim((string) ($data['rewrite_base'] ?? '/'));
-		$adminName = trim((string) ($data['admin_name'] ?? 'Site Yöneticisi'));
+		$adminName = trim((string) ($data['admin_name'] ?? 'Admin'));
 		$adminEmail = trim((string) ($data['admin_email'] ?? ''));
 		$adminPass = (string) ($data['admin_password'] ?? '');
 		$withDemo = !empty($data['install_demo']);
-		$shopLang = strtolower(trim((string) ($data['shop_lang'] ?? 'tr')));
-		$adminLang = strtolower(trim((string) ($data['admin_lang'] ?? 'tr')));
+		$shopLang = strtolower(trim((string) ($data['shop_lang'] ?? 'en')));
+		$adminLang = strtolower(trim((string) ($data['admin_lang'] ?? 'en')));
 		$theme = trim((string) ($data['theme'] ?? 'blue'));
 
 		if (!in_array($shopLang, ['tr', 'en'], true)) {
-			$shopLang = 'tr';
+			$shopLang = 'en';
 		}
 
 		if (!in_array($adminLang, ['tr', 'en'], true)) {
-			$adminLang = 'tr';
+			$adminLang = 'en';
 		}
 
-		if (!in_array($theme, ['default', 'blue', 'nova', 'prime'], true)) {
-			$theme = 'blue';
+		if (!in_array($theme, ['shopmore'], true)) {
+			$theme = 'shopmore';
 		}
 
 		if ($dbName === '' || $dbUser === '') {
-			return ['success' => false, 'message' => 'Veritabanı adı ve kullanıcı zorunludur'];
+			return ['success' => false, 'message' => 'Database name and user are required.'];
 		}
 
 		if ($siteUrl === '/' || !filter_var($siteUrl, FILTER_VALIDATE_URL)) {
-			return ['success' => false, 'message' => 'Geçerli bir site adresi girin (http/https ile)'];
+			return ['success' => false, 'message' => 'Enter a valid site address (including https)'];
 		}
 
 		if ($adminEmail === '' || !filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
-			return ['success' => false, 'message' => 'Geçerli bir admin e-postası girin'];
+			return ['success' => false, 'message' => 'Enter a valid admin email address.'];
 		}
 
 		if (strlen($adminPass) < 8) {
-			return ['success' => false, 'message' => 'Admin şifresi en az 8 karakter olmalı'];
+			return ['success' => false, 'message' => 'The admin password must be at least 8 characters long.'];
 		}
 
 		if ($rewriteBase === '') {
@@ -228,13 +228,13 @@ class Installer
 
 			return [
 				'success' => true,
-				'message' => 'Kurulum tamamlandı',
+				'message' => 'Installation complete.',
 				'admin_email' => $adminEmail,
 				'shop_token' => $shopToken,
 				'cron_url' => rtrim($siteUrl, '/') . str_replace('//', '/', $folder . 'api/cron.php?action=currency&token=' . $shopToken),
 			];
 		} catch (Throwable $e) {
-			return ['success' => false, 'message' => 'Kurulum hatası: ' . $e->getMessage()];
+			return ['success' => false, 'message' => 'Error: ' . $e->getMessage()];
 		}
 	}
 
@@ -261,7 +261,7 @@ class Installer
 	private static function runSqlFile(PDO $pdo, string $path): void
 	{
 		if (!is_file($path)) {
-			throw new RuntimeException('SQL dosyası bulunamadı: ' . $path);
+			throw new RuntimeException('SQL file not found: ' . $path);
 		}
 
 		self::executeSqlStatements($pdo, (string) file_get_contents($path));
@@ -316,7 +316,7 @@ class Installer
 		$content = "<?php\nreturn " . $export . ";\n";
 
 		if (file_put_contents($path, $content) === false) {
-			throw new RuntimeException('config/env.php yazılamadı');
+			throw new RuntimeException('config/env.php could not be written');
 		}
 	}
 

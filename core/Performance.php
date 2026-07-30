@@ -192,6 +192,15 @@ class Performance
 				'notifications.css',
 				'cart-modal.css',
 			],
+			'theme4' => [
+				'colors.css',
+				'custom.css',
+				'style.css',
+				'shopmore.css',
+				'pages.css',
+				'notifications.css',
+				'cart-modal.css',
+			],
 			'restoran' => [
 				'bootstrap.min.css',
 				'colors.css',

@@ -576,6 +576,109 @@
 				loadAttributesForPanel(panel, catId.value);
 			}
 		});
+
+		bindHbN11PanelActions();
+	}
+
+	function bindHbN11PanelActions() {
+		document.querySelectorAll('.hb-price-btn, .n11-price-btn').forEach(function (btn) {
+			if (btn.dataset.mpBound) return;
+			btn.dataset.mpBound = '1';
+			btn.addEventListener('click', function () {
+				var platform = btn.getAttribute('data-platform') || 'hepsiburada';
+				var panel = btn.closest(platform === 'n11' ? '.n11-product-panel' : '.hb-product-panel');
+				var saleSel = platform === 'n11' ? '.n11-sale-price-input' : '.hb-sale-price-input';
+				var listSel = platform === 'n11' ? '.n11-list-price-input' : '.hb-list-price-input';
+				var msgSel = platform === 'n11' ? '.n11-action-msg' : '.hb-action-msg';
+				var body = {
+					id_product: btn.getAttribute('data-id'),
+					platform: platform
+				};
+				var sale = panel && panel.querySelector(saleSel);
+				var list = panel && panel.querySelector(listSel);
+				if (sale && sale.value !== '') body.sale_price = sale.value;
+				if (list && list.value !== '') body.list_price = list.value;
+				btn.disabled = true;
+				var msg = panel && panel.querySelector(msgSel);
+				if (msg) { msg.textContent = 'Fiyat güncelleniyor…'; msg.className = msgSel.replace('.', '') + ' small d-block mt-3 text-muted'; }
+				post(btn.getAttribute('data-url'), body)
+					.then(function (res) {
+						if (msg) {
+							msg.textContent = res.message || '';
+							msg.className = (msgSel.replace('.', '') + ' small d-block mt-3 ') + (res.success ? 'text-success' : 'text-danger');
+						}
+						if (res.success) setTimeout(function () { location.reload(); }, 700);
+					})
+					.catch(function () {
+						if (msg) { msg.textContent = 'İstek başarısız'; msg.className = msgSel.replace('.', '') + ' small d-block mt-3 text-danger'; }
+					})
+					.finally(function () { btn.disabled = false; });
+			});
+		});
+
+		document.querySelectorAll('.hb-unlink-btn, .n11-unlink-btn').forEach(function (btn) {
+			if (btn.dataset.mpBound) return;
+			btn.dataset.mpBound = '1';
+			btn.addEventListener('click', function () {
+				var platform = btn.getAttribute('data-platform') || 'hepsiburada';
+				var label = platform === 'n11' ? 'N11' : 'Hepsiburada';
+				if (!window.confirm(label + ' bağlantısı silinecek. Devam edilsin mi?')) return;
+				var panel = btn.closest(platform === 'n11' ? '.n11-product-panel' : '.hb-product-panel');
+				var msgSel = platform === 'n11' ? '.n11-action-msg' : '.hb-action-msg';
+				var msg = panel && panel.querySelector(msgSel);
+				btn.disabled = true;
+				post(btn.getAttribute('data-url'), {
+					id_product: btn.getAttribute('data-id'),
+					platform: platform
+				})
+					.then(function (res) {
+						if (msg) {
+							msg.textContent = res.message || '';
+							msg.className = (msgSel.replace('.', '') + ' small d-block mt-3 ') + (res.success ? 'text-success' : 'text-danger');
+						}
+						if (res.success) setTimeout(function () { location.reload(); }, 700);
+					})
+					.catch(function () {
+						if (msg) { msg.textContent = 'İstek başarısız'; msg.className = msgSel.replace('.', '') + ' small d-block mt-3 text-danger'; }
+					})
+					.finally(function () { btn.disabled = false; });
+			});
+		});
+
+		document.querySelectorAll('.hb-link-existing-btn, .n11-link-existing-btn').forEach(function (btn) {
+			if (btn.dataset.mpBound) return;
+			btn.dataset.mpBound = '1';
+			btn.addEventListener('click', function () {
+				var platform = btn.getAttribute('data-platform') || 'hepsiburada';
+				var panel = btn.closest(platform === 'n11' ? '.n11-product-panel' : '.hb-product-panel');
+				var inputSel = platform === 'n11' ? '.n11-stock-code-input' : '.hb-merchant-sku-input';
+				var msgSel = platform === 'n11' ? '.n11-action-msg' : '.hb-action-msg';
+				var input = panel && panel.querySelector(inputSel);
+				var code = input ? input.value.trim() : '';
+				var msg = panel && panel.querySelector(msgSel);
+				var body = {
+					id_product: btn.getAttribute('data-id'),
+					platform: platform,
+					barcode: code,
+					merchant_sku: code,
+					stock_code: code
+				};
+				btn.disabled = true;
+				if (msg) { msg.textContent = 'Eşleştiriliyor…'; msg.className = msgSel.replace('.', '') + ' small d-block mt-3 text-muted'; }
+				post(btn.getAttribute('data-url'), body)
+					.then(function (res) {
+						if (msg) {
+							msg.textContent = res.message || '';
+							msg.className = (msgSel.replace('.', '') + ' small d-block mt-3 ') + (res.success ? 'text-success' : 'text-danger');
+						}
+						if (res.success) setTimeout(function () { location.reload(); }, 700);
+					})
+					.catch(function () {
+						if (msg) { msg.textContent = 'İstek başarısız'; msg.className = msgSel.replace('.', '') + ' small d-block mt-3 text-danger'; }
+					})
+					.finally(function () { btn.disabled = false; });
+			});
+		});
 	}
 
 	if (document.readyState === 'loading') {

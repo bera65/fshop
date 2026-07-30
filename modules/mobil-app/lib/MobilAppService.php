@@ -24,7 +24,7 @@ class MobilAppService
 				`orientation` varchar(32) NOT NULL DEFAULT \'portrait-primary\',
 				`menu_enabled` tinyint(1) NOT NULL DEFAULT 1,
 				`menu_label` varchar(128) NOT NULL DEFAULT \'Uygulamayı yükle\',
-				`menu_hint_ios` varchar(255) NOT NULL DEFAULT \'Safari\'de Paylaş > Ana Ekrana Ekle\',
+				`menu_hint_ios` varchar(255) NOT NULL DEFAULT \'Safari\'\'de Paylaş > Ana Ekrana Ekle\',
 				`icon_192` varchar(255) NOT NULL DEFAULT \'\',
 				`icon_512` varchar(255) NOT NULL DEFAULT \'\',
 				`icon_apple` varchar(255) NOT NULL DEFAULT \'\',

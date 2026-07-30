@@ -110,6 +110,24 @@ class Product
 			);
 		}
 
+		$saleUnit = DB::execute("SHOW COLUMNS FROM `products` LIKE 'sale_unit'");
+		if (empty($saleUnit)) {
+			DB::execute(
+				"ALTER TABLE `products`
+				 ADD COLUMN `sale_unit` varchar(8) NOT NULL DEFAULT 'piece' AFTER `stock`,
+				 ADD COLUMN `sale_qty_min` decimal(12,3) NOT NULL DEFAULT 1.000 AFTER `sale_unit`,
+				 ADD COLUMN `sale_qty_step` decimal(12,3) NOT NULL DEFAULT 1.000 AFTER `sale_qty_min`"
+			);
+		}
+
+		$stockCol = DB::execute("SHOW COLUMNS FROM `products` LIKE 'stock'");
+		$stockType = strtolower((string) ($stockCol[0]['Type'] ?? ''));
+		if ($stockType !== '' && strpos($stockType, 'decimal') === false) {
+			DB::execute(
+				'ALTER TABLE `products` MODIFY COLUMN `stock` decimal(12,3) NOT NULL DEFAULT 100.000'
+			);
+		}
+
 		VirtualProduct::ensureSchema();
 		ProductVariation::ensureSchema();
 
@@ -193,7 +211,7 @@ class Product
 		return '';
 	}
 
-	public static function getStock(array $product, int $idVariation = 0): int
+	public static function getStock(array $product, int $idVariation = 0): float
 	{
 		$idProduct = (int) ($product['id_product'] ?? 0);
 
@@ -201,49 +219,53 @@ class Product
 			$svc = self::productSetServiceClass();
 
 			if ($svc === null || !class_exists('Module', false) || !Module::isEnabled('product-set')) {
-				return 0;
+				return 0.0;
 			}
 
-			return max(0, (int) $svc::getAvailableStock($idProduct));
+			return max(0.0, (float) $svc::getAvailableStock($idProduct));
 		}
 
 		if ($idVariation > 0) {
 			$variation = ProductVariation::getById($idVariation);
 
 			if (!$variation || (int) $variation['id_product'] !== $idProduct || (int) $variation['active'] !== 1) {
-				return 0;
+				return 0.0;
 			}
 
-			return max(0, (int) $variation['stock']);
+			return max(0.0, (float) $variation['stock']);
 		}
 
 		if ($idProduct > 0 && ProductVariation::hasVariations($idProduct)) {
-			return ProductVariation::getTotalStock($idProduct);
+			return (float) ProductVariation::getTotalStock($idProduct);
 		}
 
 		if (VirtualProduct::isVirtualProduct($product)) {
 			$kind = VirtualProduct::getKind($product);
 
 			if ($kind === 'license') {
-				return VirtualProduct::countAvailableLicenses((int) ($product['id_product'] ?? 0));
+				return (float) VirtualProduct::countAvailableLicenses((int) ($product['id_product'] ?? 0));
 			}
 
-			$stock = (int) ($product['stock'] ?? 0);
+			$stock = (float) ($product['stock'] ?? 0);
 
-			return $stock > 0 ? $stock : 999999;
+			return $stock > 0 ? $stock : 999999.0;
 		}
 
-		return max(0, (int) ($product['stock'] ?? 0));
+		return max(0.0, (float) ($product['stock'] ?? 0));
 	}
 
-	public static function isInStock(array $product, int $qty = 1, int $idVariation = 0): bool
+	public static function isInStock(array $product, float $qty = 1, int $idVariation = 0): bool
 	{
-		return self::getStock($product, $idVariation) >= max(1, $qty);
+		$need = max(0.001, $qty);
+
+		return self::getStock($product, $idVariation) + 0.0001 >= $need;
 	}
 
-	public static function decreaseStock(int $idProduct, int $qty, int $idVariation = 0): bool
+	public static function decreaseStock(int $idProduct, float $qty, int $idVariation = 0): bool
 	{
 		global $db;
+
+		$qty = round($qty, 3);
 
 		if ($qty <= 0) {
 			return false;
@@ -271,7 +293,7 @@ class Product
 				return VirtualProduct::countAvailableLicenses($idProduct) >= $qty;
 			}
 
-			$stock = (int) ($product['stock'] ?? 0);
+			$stock = (float) ($product['stock'] ?? 0);
 			if ($stock <= 0) {
 				return true;
 			}
@@ -285,8 +307,10 @@ class Product
 		return $stmt->rowCount() > 0;
 	}
 
-	public static function increaseStock(int $idProduct, int $qty, int $idVariation = 0): void
+	public static function increaseStock(int $idProduct, float $qty, int $idVariation = 0): void
 	{
+		$qty = round($qty, 3);
+
 		if ($qty <= 0) {
 			return;
 		}
@@ -424,13 +448,14 @@ class Product
 			'old_price_formatted' => (string) ($product['old_price_formatted'] ?? ''),
 			'has_discount' => !empty($product['has_discount']),
 			'in_stock' => !empty($product['in_stock']),
-			'stock' => (int) ($product['stock'] ?? 0),
+			'stock' => (float) ($product['stock'] ?? 0),
 			'category_name' => (string) ($product['category_name'] ?? ''),
 			'has_variations' => !empty($variationData['has_variations']),
 			'variation_groups' => $variationData['groups'],
 			'variation_items' => $variationData['items'],
 			'has_options' => !empty($optionData['has_options']),
 			'option_groups' => $optionData['groups'],
+			'sale_unit' => SaleUnit::normalize((string) ($product['sale_unit'] ?? SaleUnit::PIECE)),
 		];
 	}
 
@@ -445,6 +470,11 @@ class Product
 		$row['is_virtual'] = VirtualProduct::isVirtualProduct($row);
 		$row['virtual_kind'] = VirtualProduct::getKind($row);
 		$row['virtual_kind_label'] = VirtualProduct::getKindLabel($row['virtual_kind']);
+		$row['sale_unit'] = SaleUnit::normalize((string) ($row['sale_unit'] ?? SaleUnit::PIECE));
+		$row['sale_qty_min'] = SaleUnit::getMin($row);
+		$row['sale_qty_step'] = SaleUnit::getStep($row);
+		$row['is_m2'] = SaleUnit::isM2($row);
+		$row['price_unit_suffix'] = SaleUnit::priceSuffix($row['sale_unit']);
 
 		if (!empty($row['is_pack'])) {
 			$svc = self::productSetServiceClass();
@@ -456,22 +486,25 @@ class Product
 				$row['old_price'] = (float) $pricing['old_price'];
 				$row['pack_components_total'] = (float) $pricing['components_total'];
 				$row['pack_has_override'] = !empty($pricing['has_override']);
-				$row['stock'] = (int) $svc::getAvailableStock($idPack);
+				$row['stock'] = (float) $svc::getAvailableStock($idPack);
 			} else {
 				$row['price'] = 0.0;
-				$row['stock'] = 0;
+				$row['stock'] = 0.0;
 			}
 		} else {
-			$row['stock'] = (int) ($row['stock'] ?? 0);
+			$row['stock'] = (float) ($row['stock'] ?? 0);
 		}
 
 		$row['in_stock'] = self::isInStock($row);
-		$row['price_formatted'] = Tools::displayPrice((float) $row['price']);
+		$row['price'] = class_exists('GroupPricing', false)
+			? GroupPricing::apply((float) $row['price'])
+			: (float) $row['price'];
+		$row['price_formatted'] = Tools::displayPrice((float) $row['price']) . $row['price_unit_suffix'];
 		$row['old_price'] = (float) ($row['old_price'] ?? 0);
 		$row['has_discount'] = $row['old_price'] > (float) $row['price'];
 
 		if ($row['has_discount']) {
-			$row['old_price_formatted'] = Tools::displayPrice($row['old_price']);
+			$row['old_price_formatted'] = Tools::displayPrice($row['old_price']) . $row['price_unit_suffix'];
 		}
 
 		$listExcerpt = trim(strip_tags((string) ($row['short_description'] ?? '')));
@@ -1157,7 +1190,7 @@ class Product
 		$cost 				= (float) str_replace(',', '.', (string) ($data['cost'] ?? 0));
 		$oldPrice 			= (float) str_replace(',', '.', (string) ($data['old_price'] ?? 0));
 		$vat 				= Tax::sanitizeRate((float) str_replace(',', '.', (string) ($data['vat'] ?? Tax::getDefaultRate())));
-		$stock 				= (int) ($data['stock'] ?? 0);
+		$stock 				= (float) str_replace(',', '.', (string) ($data['stock'] ?? 0));
 		$active 			= isset($data['active']) ? (int) $data['active'] : 0;
 		$productVideo 		= mb_substr(trim((string) ($data['product_video'] ?? '')), 0, 256);
 		$shopCurrency 		= Currency::getShopCurrency();
@@ -1168,6 +1201,20 @@ class Product
 		if (!in_array($productType, ['physical', 'virtual', 'pack'], true)) {
 			$productType = 'physical';
 		}
+		$saleUnit = SaleUnit::normalize((string) ($data['sale_unit'] ?? SaleUnit::PIECE));
+		if ($productType !== 'physical') {
+			$saleUnit = SaleUnit::PIECE;
+		}
+		$saleQtyMin = (float) str_replace(',', '.', (string) ($data['sale_qty_min'] ?? ($saleUnit === SaleUnit::M2 ? '0.01' : '1')));
+		$saleQtyStep = (float) str_replace(',', '.', (string) ($data['sale_qty_step'] ?? ($saleUnit === SaleUnit::M2 ? '0.01' : '1')));
+		if ($saleQtyMin <= 0) {
+			$saleQtyMin = $saleUnit === SaleUnit::M2 ? 0.01 : 1.0;
+		}
+		if ($saleQtyStep <= 0) {
+			$saleQtyStep = $saleUnit === SaleUnit::M2 ? 0.01 : 1.0;
+		}
+		$saleQtyMin = round($saleQtyMin, 3);
+		$saleQtyStep = round($saleQtyStep, 3);
 		$virtualKind = trim((string) ($data['virtual_kind'] ?? ''));
 		$allowedKinds = ['download', 'license', 'text'];
 
@@ -1200,6 +1247,7 @@ class Product
 			$data['variations'] = [];
 			$data['has_variations'] = '0';
 		}
+		$existing = null;
 		if ($id > 0) {
 			$existing = self::getByIdAdmin($id);
 
@@ -1290,7 +1338,10 @@ class Product
 			'doviz_old_price'	=> max(0, $oldPrice),
 			'old_price' 		=> max(0, $oldPrice),
 			'vat' 				=> max(0, $vat),
-			'stock' 			=> $productType === 'pack' ? 0 : max(0, $stock),
+			'stock' 			=> $productType === 'pack' ? 0 : max(0, round($stock, 3)),
+			'sale_unit' 		=> $saleUnit,
+			'sale_qty_min' 		=> $saleQtyMin,
+			'sale_qty_step' 	=> $saleQtyStep,
 			'cargo_day' 		=> $cargoDay,
 			'label' 			=> $label,
 			'product_video' 	=> $productVideo,
@@ -1304,7 +1355,7 @@ class Product
 		];
 
 		if ($id > 0) {
-			$oldStock = isset($existing) ? (int) ($existing['stock'] ?? 0) : 0;
+			$oldStock = isset($existing) ? (float) ($existing['stock'] ?? 0) : 0;
 			$ok = DB::update('products', $row, 'id_product = :where_id', ['where_id' => $id]);
 
 			if ($ok === false) {
@@ -1312,7 +1363,7 @@ class Product
 			}
 
 			if (class_exists('StockAnalysis', false)) {
-				StockAnalysis::touchStockEmptyAt($id, $oldStock, (int) $row['stock']);
+				StockAnalysis::touchStockEmptyAt($id, $oldStock, (float) $row['stock']);
 			}
 
 			$langError = self::saveLangRows($id, $langData);
@@ -1342,6 +1393,10 @@ class Product
 			}
 
 			self::fireUpdatedHook($id, false);
+
+			if (class_exists('ProductLog', false)) {
+				ProductLog::logSaveDiff($existing ?? null, $row, $id, false);
+			}
 
 			return ['success' => true, 'message' => 'Ürün güncellendi', 'id' => $id];
 		}
@@ -1388,6 +1443,10 @@ class Product
 		}
 
 		self::fireUpdatedHook($newId, true);
+
+		if (class_exists('ProductLog', false)) {
+			ProductLog::logSaveDiff(null, $row, $newId, true);
+		}
 
 		return ['success' => true, 'message' => 'Ürün eklendi', 'id' => $newId];
 	}
@@ -1700,7 +1759,7 @@ class Product
 		$row = [];
 
 		if (array_key_exists('stock', $data)) {
-			$row['stock'] = max(0, (int) $data['stock']);
+			$row['stock'] = max(0, round((float) str_replace(',', '.', (string) $data['stock']), 3));
 		}
 
 		if (array_key_exists('active', $data)) {
@@ -1739,7 +1798,7 @@ class Product
 		$ok = DB::update('products', $row, 'id_product = :where_id', ['where_id' => $id]);
 
 		if ($ok !== false && array_key_exists('stock', $row) && class_exists('StockAnalysis', false)) {
-			StockAnalysis::touchStockEmptyAt($id, (int) ($product['stock'] ?? 0), (int) $row['stock']);
+			StockAnalysis::touchStockEmptyAt($id, (float) ($product['stock'] ?? 0), (float) $row['stock']);
 		}
 
 		if ($ok !== false && array_key_exists('stock', $row)) {

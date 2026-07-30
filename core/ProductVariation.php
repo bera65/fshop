@@ -23,13 +23,21 @@ class ProductVariation
 					`barcode` varchar(64) NOT NULL DEFAULT '',
 					`options_json` varchar(1024) NOT NULL DEFAULT '{}',
 					`price` decimal(20,2) DEFAULT NULL,
-					`stock` int(11) NOT NULL DEFAULT 0,
+					`stock` decimal(12,3) NOT NULL DEFAULT 0.000,
 					`active` tinyint(1) NOT NULL DEFAULT 1,
 					PRIMARY KEY (`id_variation`),
 					KEY `id_product` (`id_product`),
 					UNIQUE KEY `product_sku` (`id_product`, `sku`)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
 			);
+		} else {
+			$stockCol = DB::execute("SHOW COLUMNS FROM `product_variations` LIKE 'stock'");
+			$stockType = strtolower((string) ($stockCol[0]['Type'] ?? ''));
+			if ($stockType !== '' && strpos($stockType, 'decimal') === false) {
+				DB::execute(
+					'ALTER TABLE `product_variations` MODIFY COLUMN `stock` decimal(12,3) NOT NULL DEFAULT 0.000'
+				);
+			}
 		}
 
 		$col = DB::execute("SHOW COLUMNS FROM `order_detail` LIKE 'id_variation'");
@@ -413,7 +421,8 @@ class ProductVariation
 			$sku = trim((string) ($item['sku'] ?? $item['stock_code'] ?? ''));
 			$barcode = trim((string) ($item['barcode'] ?? ''));
 			$options = self::normalizeOptions($item['options'] ?? $item['attributes'] ?? []);
-			$stock = max(0, (int) ($item['stock'] ?? 0));
+			$stock = max(0, (float) str_replace(',', '.', (string) ($item['stock'] ?? 0)));
+			$stock = round($stock, 3);
 			$active = !isset($item['active']) || filter_var($item['active'], FILTER_VALIDATE_BOOLEAN);
 			$price = null;
 
@@ -491,9 +500,11 @@ class ProductVariation
 		DB::execute('DELETE FROM product_variations WHERE id_product = ?', [$idProduct]);
 	}
 
-	public static function decreaseStock(int $idVariation, int $qty, int $idProduct = 0): bool
+	public static function decreaseStock(int $idVariation, float $qty, int $idProduct = 0): bool
 	{
 		self::ensureSchema();
+
+		$qty = round($qty, 3);
 
 		if ($idVariation <= 0 || $qty <= 0) {
 			return false;
@@ -524,9 +535,11 @@ class ProductVariation
 		return true;
 	}
 
-	public static function increaseStock(int $idVariation, int $qty, int $idProduct = 0): void
+	public static function increaseStock(int $idVariation, float $qty, int $idProduct = 0): void
 	{
 		self::ensureSchema();
+
+		$qty = round($qty, 3);
 
 		if ($idVariation <= 0 || $qty <= 0) {
 			return;

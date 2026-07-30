@@ -54,6 +54,24 @@
 		? (float) Module::getPaymentDiscount('bank_transfer', 100)['percent']
 		: (float) (Settings::get('BANKWIRE_DISCOUNT_PERCENT') ?: Settings::get('HAVALE') ?: 0);
 
+	$favoriteCount = (int) DB::getValue(
+		'SELECT COUNT(*) FROM favorites WHERE id_product = ?',
+		[$idProduct]
+	);
+
+	if (!empty(DB::execute("SHOW TABLES LIKE 'product_reviews'"))) {
+		$reviewStat = DB::execute(
+			'SELECT AVG(rating) AS avg_rating, COUNT(*) AS review_count
+			 FROM product_reviews WHERE active = 1 AND id_product = ?',
+			[$idProduct]
+		);
+		if (!empty($reviewStat[0]['review_count'])) {
+			$product['rating'] = round((float) $reviewStat[0]['avg_rating'], 1);
+			$product['rating_label'] = number_format($product['rating'], 1, ',', '');
+			$product['review_count'] = (int) $reviewStat[0]['review_count'];
+		}
+	}
+
 	$smarty->assign([
 		'product' 			=> $product,
 		'productUrl'		=> Product::getLink($product),
@@ -67,8 +85,11 @@
 		'imageUrl' 			=> $images[0]['url'],
 		'images' 			=> $images,
 		'inStock' 			=> $product['in_stock'],
-		'stock' 			=> (int) $product['stock'],
+		'stock' 			=> (float) $product['stock'],
 		'stockCode' 		=> $product['stock_code'],
+		'saleUnit' 			=> (string) ($product['sale_unit'] ?? 'piece'),
+		'saleQtyMin' 		=> (float) ($product['sale_qty_min'] ?? 1),
+		'saleQtyStep' 		=> (float) ($product['sale_qty_step'] ?? 1),
 		'productVideoEmbed' => Product::getYoutubeEmbedUrl((string) ($product['product_video'] ?? '')),
 		'productLabel' 		=> trim((string) ($product['label'] ?? '')),
 		'cargoDay'			=> $productCargoDay > 0 ? $productCargoDay : $globalCargoDay,
@@ -76,6 +97,7 @@
 		'cargoPrice' 		=> $cargoHints['shipping_fee'],
 		'havale'			=> $havalePercent,
 		'isFavorite' 		=> Favorite::isFavorite($idProduct),
+		'favoriteCount' 	=> $favoriteCount,
 		'relatedProducts'	=> $relatedData['products'],
 		'relatedProductsTitle' => $relatedData['title'],
 		'hasVariations'     => !empty($variationData['has_variations']),

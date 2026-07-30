@@ -4,7 +4,6 @@ if (!defined('IN_SCRIPT')) {
 	exit;
 }
 
-
 header('Content-Type: application/json; charset=utf-8');
 
 if (!Admin::isLoggedIn()) {
@@ -12,8 +11,8 @@ if (!Admin::isLoggedIn()) {
 	exit;
 }
 
-
 $idProduct = (int) Tools::getValue('id_product', 0);
+$platform = strtolower(trim((string) Tools::getValue('platform', 'trendyol')));
 
 if ($idProduct <= 0) {
 	echo json_encode(['success' => false, 'message' => 'Ürün ID gerekli'], JSON_UNESCAPED_UNICODE);
@@ -33,11 +32,21 @@ if ($listRaw !== null && $listRaw !== '') {
 	$listOverride = (float) str_replace(',', '.', (string) $listRaw);
 }
 
-$result = Trendyol\ProductSyncService::updatePriceStock($idProduct, $saleOverride, $listOverride);
+if ($platform === 'hepsiburada') {
+	$result = Hepsiburada\ProductSyncService::updatePriceStock($idProduct, $saleOverride, $listOverride);
+	$mapping = $result['mapping'] ?? Hepsiburada\ProductSyncService::findMapping($idProduct);
+} elseif ($platform === 'n11') {
+	$result = N11\ProductSyncService::updatePriceStock($idProduct, $saleOverride, $listOverride);
+	$mapping = $result['mapping'] ?? N11\ProductSyncService::findMapping($idProduct);
+} else {
+	$result = Trendyol\ProductSyncService::updatePriceStock($idProduct, $saleOverride, $listOverride);
+	$mapping = $result['mapping'] ?? Trendyol\ProductSyncService::findMapping($idProduct);
+}
 
 echo json_encode([
 	'success' => $result['ok'],
 	'message' => $result['message'],
-	'mapping' => $result['mapping'] ?? Trendyol\ProductSyncService::findMapping($idProduct),
+	'mapping' => $mapping,
+	'platform' => $platform,
 ], JSON_UNESCAPED_UNICODE);
 exit;

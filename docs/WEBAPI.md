@@ -251,6 +251,7 @@ curl -s -X PATCH -H "X-API-Key: API_KEY" -H "Content-Type: application/json" \
 | `trackingNumber` | Kargo takip numarası |
 
 Liste ve detay yanıtında `cargoCompany` ve `trackingNumber` alanları döner.
+Detayda ayrıca `invoice` alanı olabilir: `{ "type": "url"|"file", "url": "...", "name": "..." }` veya fatura yoksa `null`.
 
 Başarılı yanıt:
 
@@ -260,6 +261,39 @@ Başarılı yanıt:
   "message": "Sipariş güncellendi",
   "content": { "... güncel sipariş ..." }
 }
+```
+
+### POST — Sipariş faturası (yalnızca URL)
+
+```
+POST /api/v1/orders/{id}/invoice
+Content-Type: application/json
+```
+
+```json
+{
+  "url": "https://example.com/fatura.pdf",
+  "name": "Fatura"
+}
+```
+
+`name` isteğe bağlıdır. Dosya yükleme Web API üzerinden desteklenmez.
+
+```bash
+curl -s -X POST -H "X-API-Key: API_KEY" -H "Content-Type: application/json" \
+  -d "{\"url\":\"https://example.com/fatura.pdf\",\"name\":\"Fatura\"}" \
+  "http://localhost/fshop/api/v1/orders/15/invoice"
+```
+
+### DELETE — Sipariş faturasını kaldır
+
+```
+DELETE /api/v1/orders/{id}/invoice
+```
+
+```bash
+curl -s -X DELETE -H "X-API-Key: API_KEY" \
+  "http://localhost/fshop/api/v1/orders/15/invoice"
 ```
 
 ---

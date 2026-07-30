@@ -72,23 +72,36 @@ class Customer
 			return self::fail('Bu e-posta adresi zaten kayıtlı');
 		}
 
+		$isActive = self::shouldActivateNewMember() ? 1 : 0;
+		self::ensureSchema();
+		$idGroup = class_exists('CustomerGroup', false) ? CustomerGroup::getDefaultId() : 0;
+
 		$id = DB::insert('users', [
 			'user_full_name' => $fullName,
 			'phone' => $phone,
 			'email' => $email,
 			'password' => self::hashPassword($password),
-			'active' => 1,
+			'active' => $isActive,
+			'id_group' => $idGroup,
 		]);
 
 		if (!$id) {
 			return self::fail('Kayıt oluşturulamadı');
 		}
 
-		self::loginSession((int) $id, true);
-		Notification::welcome((int) $id, $fullName);
-		Mail::sendWelcome($email, $fullName);
+		if ($isActive) {
+			self::loginSession((int) $id, true);
+			Notification::welcome((int) $id, $fullName);
+			Mail::sendWelcome($email, $fullName);
 
-		return self::ok('Kayıt başarılı');
+			return self::ok(translate('Registration successful'));
+		}
+
+		return [
+			'success' => true,
+			'message' => translate('Your registration was received. You can sign in after admin approval.'),
+			'user' => null,
+		];
 	}
 
 	public static function login(string $login, string $password, bool $remember = true): array
@@ -102,8 +115,11 @@ class Customer
 
 		$user = null;
 
+		$userAll = null;
+
 		if ($login !== '' && filter_var($login, FILTER_VALIDATE_EMAIL)) {
 			$email = strtolower($login);
+			$userAll = DB::getRowSafe('users', 'email = ?', [$email]);
 			$user = DB::getRowSafe('users', 'email = ? AND active = 1', [$email]);
 		} else {
 			$phone = self::normalizePhone($login);
@@ -114,7 +130,13 @@ class Customer
 				return self::fail('E-posta / telefon veya şifre hatalı');
 			}
 
+			$userAll = DB::getRowSafe('users', 'phone = ?', [$phone]);
 			$user = DB::getRowSafe('users', 'phone = ? AND active = 1', [$phone]);
+		}
+
+		if ($userAll && !$user && self::verifyPassword($password, $userAll['password'])) {
+			RateLimit::clear(RateLimit::SCOPE_CUSTOMER_LOGIN, $rateKey);
+			return self::fail(translate('Your account is pending admin approval or is inactive.'));
 		}
 
 		if (!$user || !self::verifyPassword($password, $user['password'])) {
@@ -136,6 +158,10 @@ class Customer
 		session_regenerate_id(true);
 		$_SESSION['id_user'] = $idUser;
 
+		if (class_exists('GroupPricing', false)) {
+			GroupPricing::resetCache();
+		}
+
 		if ($remember) {
 			Cookie::issueRememberToken($idUser);
 		}
@@ -152,6 +178,11 @@ class Customer
 
 		Cookie::clearRememberCookie();
 		unset($_SESSION['id_user']);
+
+		if (class_exists('GroupPricing', false)) {
+			GroupPricing::resetCache();
+		}
+
 		session_regenerate_id(true);
 	}
 
@@ -379,6 +410,7 @@ class Customer
 
 	public static function getByIdAdmin(int $idUser): ?array
 	{
+		self::ensureSchema();
 		$user = DB::getRowSafe('users', 'id_user = ?', [$idUser]);
 
 		if (!$user) {
@@ -387,9 +419,100 @@ class Customer
 
 		unset($user['password'], $user['login_code']);
 		$user['date_formatted'] = Tools::formatDate3($user['date_add']);
+		$user['id_group'] = (int) ($user['id_group'] ?? 0);
 		$user['orders'] = Order::getUserOrders($idUser);
 
 		return $user;
+	}
+
+	public static function updateByAdmin(int $idUser, string $fullName, string $phone, string $email = '', int $idGroup = 0): array
+	{
+		if ($idUser <= 0) {
+			return self::fail('Geçersiz müşteri');
+		}
+
+		self::ensureSchema();
+		$user = DB::getRowSafe('users', 'id_user = ?', [$idUser]);
+
+		if (!$user) {
+			return self::fail('Müşteri bulunamadı');
+		}
+
+		$fullName = trim($fullName);
+		$phone = self::normalizePhone($phone);
+		$email = trim(strtolower($email));
+
+		if (!Validate::isName($fullName)) {
+			return self::fail('Geçerli bir ad soyad girin');
+		}
+
+		if (!self::isValidPhone($phone)) {
+			return self::fail('Geçerli bir telefon numarası girin (05xx xxx xx xx)');
+		}
+
+		if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+			return self::fail('Geçerli bir e-posta adresi girin');
+		}
+
+		if ($phone !== (string) ($user['phone'] ?? '')) {
+			$exists = DB::getValue(
+				'SELECT id_user FROM users WHERE phone = ? AND id_user != ? LIMIT 1',
+				[$phone, $idUser]
+			);
+
+			if ($exists) {
+				return self::fail('Bu telefon numarası başka bir hesapta kayıtlı');
+			}
+		}
+
+		if ($email !== '' && $email !== (string) ($user['email'] ?? '')) {
+			$emailExists = DB::getValue(
+				'SELECT id_user FROM users WHERE email = ? AND id_user != ? LIMIT 1',
+				[$email, $idUser]
+			);
+
+			if ($emailExists) {
+				return self::fail('Bu e-posta adresi başka bir hesapta kayıtlı');
+			}
+		}
+
+		if ($idGroup <= 0 && class_exists('CustomerGroup', false)) {
+			$idGroup = CustomerGroup::getDefaultId();
+		}
+
+		if ($idGroup > 0 && class_exists('CustomerGroup', false)) {
+			$group = CustomerGroup::getById($idGroup);
+
+			if (!$group || empty($group['active'])) {
+				return self::fail('Geçersiz müşteri grubu');
+			}
+		}
+
+		$data = [
+			'user_full_name' => $fullName,
+			'phone' => $phone,
+			'email' => $email,
+		];
+
+		if ($idGroup > 0) {
+			$data['id_group'] = $idGroup;
+		}
+
+		$updated = DB::update(
+			'users',
+			$data,
+			'id_user = :id_user',
+			['id_user' => $idUser]
+		);
+
+		if ($updated === false) {
+			return self::fail('Müşteri güncellenemedi');
+		}
+
+		return [
+			'success' => true,
+			'message' => 'Müşteri bilgileri güncellendi',
+		];
 	}
 
 	public static function requestPasswordReset(string $email): array
@@ -499,77 +622,6 @@ class Customer
 		];
 	}
 
-	public static function updateByAdmin(int $idUser, string $fullName, string $phone, string $email = ''): array
-	{
-		if ($idUser <= 0) {
-			return self::fail('Geçersiz müşteri');
-		}
-
-		$user = DB::getRowSafe('users', 'id_user = ?', [$idUser]);
-
-		if (!$user) {
-			return self::fail('Müşteri bulunamadı');
-		}
-
-		$fullName = trim($fullName);
-		$phone = self::normalizePhone($phone);
-		$email = trim(strtolower($email));
-
-		if (!Validate::isName($fullName)) {
-			return self::fail('Geçerli bir ad soyad girin');
-		}
-
-		if (!self::isValidPhone($phone)) {
-			return self::fail('Geçerli bir telefon numarası girin (05xx xxx xx xx)');
-		}
-
-		if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-			return self::fail('Geçerli bir e-posta adresi girin');
-		}
-
-		if ($phone !== (string) ($user['phone'] ?? '')) {
-			$exists = DB::getValue(
-				'SELECT id_user FROM users WHERE phone = ? AND id_user != ? LIMIT 1',
-				[$phone, $idUser]
-			);
-
-			if ($exists) {
-				return self::fail('Bu telefon numarası başka bir hesapta kayıtlı');
-			}
-		}
-
-		if ($email !== '' && $email !== (string) ($user['email'] ?? '')) {
-			$emailExists = DB::getValue(
-				'SELECT id_user FROM users WHERE email = ? AND id_user != ? LIMIT 1',
-				[$email, $idUser]
-			);
-
-			if ($emailExists) {
-				return self::fail('Bu e-posta adresi başka bir hesapta kayıtlı');
-			}
-		}
-
-		$updated = DB::update(
-			'users',
-			[
-				'user_full_name' => $fullName,
-				'phone' => $phone,
-				'email' => $email,
-			],
-			'id_user = :id_user',
-			['id_user' => $idUser]
-		);
-
-		if ($updated === false) {
-			return self::fail('Müşteri güncellenemedi');
-		}
-
-		return [
-			'success' => true,
-			'message' => 'Müşteri bilgileri güncellendi',
-		];
-	}
-
 	public static function createByAdmin(string $fullName, string $phone, string $email = ''): array
 	{
 		$fullName = trim($fullName);
@@ -602,12 +654,16 @@ class Customer
 			}
 		}
 
+		self::ensureSchema();
+		$idGroup = class_exists('CustomerGroup', false) ? CustomerGroup::getDefaultId() : 0;
+
 		$id = DB::insert('users', [
 			'user_full_name' => mb_substr($fullName, 0, 128),
 			'phone' => $phone,
 			'email' => $email,
 			'password' => self::hashPassword(bin2hex(random_bytes(12))),
 			'active' => 1,
+			'id_group' => $idGroup,
 		]);
 
 		if (!$id) {
@@ -713,6 +769,13 @@ class Customer
 				 ADD UNIQUE KEY `google_id` (`google_id`)"
 			);
 		}
+
+		if (class_exists('CustomerGroup', false)) {
+			CustomerGroup::ensureSchema();
+		} elseif (is_file(dirname(__FILE__) . '/CustomerGroup.php')) {
+			require_once dirname(__FILE__) . '/CustomerGroup.php';
+			CustomerGroup::ensureSchema();
+		}
 	}
 
 	public static function authWithGoogle(string $googleId, string $email, string $fullName): array
@@ -735,25 +798,37 @@ class Customer
 			$fullName = strstr($email, '@', true) ?: 'Google User';
 		}
 
-		$user = DB::getRowSafe('users', 'google_id = ? AND active = 1', [$googleId]);
+		$user = DB::getRowSafe('users', 'google_id = ?', [$googleId]);
 
 		if ($user) {
+			if ((int) $user['active'] !== 1) {
+				return self::fail(translate('Your account is pending admin approval or is inactive.'));
+			}
+
 			self::loginSession((int) $user['id_user'], true);
 
 			return self::ok(translate('Login successful'));
 		}
 
-		$user = DB::getRowSafe('users', 'email = ? AND active = 1', [$email]);
+		$user = DB::getRowSafe('users', 'email = ?', [$email]);
 
 		if ($user) {
 			DB::execute(
 				'UPDATE users SET google_id = ?, user_full_name = IF(user_full_name = "", ?, user_full_name) WHERE id_user = ?',
 				[$googleId, $fullName, (int) $user['id_user']]
 			);
+
+			if ((int) $user['active'] !== 1) {
+				return self::fail(translate('Your account is pending admin approval or is inactive.'));
+			}
+
 			self::loginSession((int) $user['id_user'], true);
 
 			return self::ok(translate('Login successful'));
 		}
+
+		$isActive = self::shouldActivateNewMember() ? 1 : 0;
+		$idGroup = class_exists('CustomerGroup', false) ? CustomerGroup::getDefaultId() : 0;
 
 		$phone = self::generateGooglePlaceholderPhone($googleId);
 		$id = DB::insert('users', [
@@ -762,18 +837,38 @@ class Customer
 			'email' => $email,
 			'google_id' => $googleId,
 			'password' => self::hashPassword(bin2hex(random_bytes(16))),
-			'active' => 1,
+			'active' => $isActive,
+			'id_group' => $idGroup,
 		]);
 
 		if (!$id) {
 			return self::fail(translate('Register failed'));
 		}
 
-		self::loginSession((int) $id, true);
-		Notification::welcome((int) $id, $fullName);
-		Mail::sendWelcome($email, $fullName);
+		if ($isActive) {
+			self::loginSession((int) $id, true);
+			Notification::welcome((int) $id, $fullName);
+			Mail::sendWelcome($email, $fullName);
 
-		return self::ok(translate('Register successful'));
+			return self::ok(translate('Register successful'));
+		}
+
+		return [
+			'success' => true,
+			'pending' => true,
+			'message' => translate('Your registration was received. You can sign in after admin approval.'),
+			'user' => null,
+		];
+	}
+
+	/**
+	 * Admin > Üye onayı ayarı:
+	 * - auto → yeni üye hemen aktif
+	 * - manual → yönetici onayı gerekir (active=0)
+	 */
+	public static function shouldActivateNewMember(): bool
+	{
+		return strtolower(trim((string) Settings::get('MEMBER_APPROVAL'))) !== 'manual';
 	}
 
 	private static function generateGooglePlaceholderPhone(string $googleId): string

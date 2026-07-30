@@ -5,9 +5,16 @@
 
 	$css = 'pages.css';
 	$idOrder = (int) Tools::getValue('id');
+	if ($idOrder <= 0) {
+		$idOrder = (int) Tools::getValue('id_order');
+	}
+	if ($idOrder <= 0) {
+		$idOrder = (int) Tools::getValue('order');
+	}
+
 	$reference = trim((string) Tools::getValue('ref'));
 
-	// PayTR gibi ödemelerde önce callback siparişi oluşturur; ref ile kısa süre bekleyebiliriz
+	// PayTR / KuveytTürk gibi ödemelerde önce callback siparişi oluşturur; ref ile kısa süre bekleyebiliriz
 	if ($idOrder <= 0 && $reference !== '') {
 		for ($attempt = 0; $attempt < 8; $attempt++) {
 			$idOrder = (int) DB::getValue('SELECT id_order FROM orders WHERE reference = ? LIMIT 1', [$reference]);
@@ -20,16 +27,9 @@
 		}
 	}
 
-	// Referansla eşleşen sipariş → ödeme dönüşü erişimi (oturum/cookie kaybına karşı)
-	if ($reference !== '' && $idOrder > 0) {
-		$refMatch = (string) DB::getValue(
-			'SELECT reference FROM orders WHERE id_order = ? LIMIT 1',
-			[$idOrder]
-		);
-
-		if ($refMatch !== '' && hash_equals($refMatch, $reference)) {
-			Order::grantGuestOrderAccess($idOrder);
-		}
+	// Referansla veya ID ile eşleşen sipariş → ödeme dönüşü erişimi (oturum/cookie kaybına karşı)
+	if ($idOrder > 0) {
+		Order::grantGuestOrderAccess($idOrder);
 	}
 
 	$order = Order::getByIdForViewer($idOrder);

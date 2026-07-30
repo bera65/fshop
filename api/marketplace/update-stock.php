@@ -30,7 +30,22 @@ if (!$product) {
 	exit;
 }
 
+$oldStock = Product::getStock($product);
 DB::execute('UPDATE products SET stock = ? WHERE id_product = ?', [$stock, $idProduct]);
+
+$ref = trim((string) ($product['stock_code'] ?? ''));
+
+if ($ref === '') {
+	$ref = trim((string) ($product['barcode'] ?? ''));
+}
+
+if ($ref === '') {
+	$ref = (string) $idProduct;
+}
+
+if ((int) $oldStock !== (int) $stock) {
+	MarketplaceLog::stockChange('', $ref, $oldStock, $stock, 'STOCK_UPDATE', $idProduct);
+}
 
 $mpResults = [];
 $mpMessage = '';

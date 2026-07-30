@@ -16,22 +16,49 @@ $shopToken = (string) Settings::get('SHOP_TOKEN');
 
 if ($shopToken === '' || !hash_equals($shopToken, $token)) {
 	http_response_code(403);
-	echo json_encode(['success' => false, 'message' => 'GeÃ§ersiz token'], JSON_UNESCAPED_UNICODE);
+	echo json_encode(['success' => false, 'message' => 'Geçersiz token'], JSON_UNESCAPED_UNICODE);
 	exit;
 }
 
+// send=0 → pazaryerine stok/fiyat gönderme; yalnızca FShop stok düşebilir (yardımda yok)
+$send = Tools::getValue('send', null);
+
+if ($send !== null && (string) $send === '0') {
+	Marketplace::setAllowMarketplaceStockPush(false);
+}
 
 $type = strtolower(trim((string) Tools::getValue('type', 'orders')));
+$platform = strtolower(trim((string) Tools::getValue('platform', 'trendyol')));
+
+if (!in_array($platform, ['trendyol', 'hepsiburada', 'n11'], true)) {
+	$platform = 'trendyol';
+}
 
 if ($type === 'questions' || $type === 'qna') {
-	$result = Trendyol\QuestionService::syncQuestions(0, 50);
+	if ($platform === 'hepsiburada') {
+		$result = Hepsiburada\QuestionService::syncQuestions(1, 50);
+	} elseif ($platform === 'n11') {
+		$result = N11\QuestionService::syncQuestions(0, 50);
+	} else {
+		$result = Trendyol\QuestionService::syncQuestions(0, 50);
+	}
 } else {
 	$start = trim((string) Tools::getValue('start_date', ''));
 	$end = trim((string) Tools::getValue('end_date', ''));
-	$result = Trendyol\OrderService::syncOrders(
-		$start !== '' ? $start : null,
-		$end !== '' ? $end : null
-	);
+
+	if ($platform === 'hepsiburada') {
+		$result = Hepsiburada\OrderService::syncOrders(
+			$start !== '' ? $start : null,
+			$end !== '' ? $end : null
+		);
+	} elseif ($platform === 'n11') {
+		$result = N11\OrderService::syncOrders();
+	} else {
+		$result = Trendyol\OrderService::syncOrders(
+			$start !== '' ? $start : null,
+			$end !== '' ? $end : null
+		);
+	}
 }
 
 echo json_encode([
@@ -39,5 +66,7 @@ echo json_encode([
 	'message' => $result['message'],
 	'count' => $result['count'] ?? 0,
 	'stock_updates' => $result['stock_updates'] ?? 0,
+	'platform' => $platform,
+	'stock_push' => Marketplace::allowMarketplaceStockPush(),
 ], JSON_UNESCAPED_UNICODE);
 exit;

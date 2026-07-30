@@ -1,8 +1,9 @@
 function updateQty(val) {
 	const input = document.getElementById('qty-input');
 	if (!input) return;
+	if ((input.dataset.saleUnit || 'piece') === 'm2') return;
 
-	const max = parseInt(input.dataset.max, 10) || 99;
+	const max = parseFloat(input.dataset.max) || 99;
 	let current = parseInt(input.value, 10) || 1;
 	const next = current + val;
 
@@ -10,6 +11,69 @@ function updateQty(val) {
 		input.value = next;
 	}
 }
+
+(function () {
+	var measure = document.getElementById('m2Measure');
+	if (!measure) return;
+
+	var widthEl = document.getElementById('m2-width');
+	var lengthEl = document.getElementById('m2-length');
+	var qtyInput = document.getElementById('qty-input');
+	var summary = document.getElementById('m2Summary');
+	var minQty = parseFloat(measure.dataset.min) || 0.01;
+	var step = parseFloat(measure.dataset.step) || 0.01;
+	var unitPrice = parseFloat(measure.dataset.price) || 0;
+	var stock = parseFloat(measure.dataset.stock) || 0;
+
+	function formatNum(n) {
+		var s = (Math.round(n * 1000) / 1000).toFixed(3);
+		s = s.replace(/\.?0+$/, '');
+		return s.replace('.', ',');
+	}
+
+	function normalizeArea(area) {
+		if (!(area > 0)) return 0;
+		var steps = Math.round(area / step);
+		if (steps < 1) steps = 1;
+		area = Math.round(steps * step * 1000) / 1000;
+		if (area < minQty) area = minQty;
+		return area;
+	}
+
+	function refresh() {
+		var w = parseFloat(String(widthEl.value || '').replace(',', '.')) || 0;
+		var l = parseFloat(String(lengthEl.value || '').replace(',', '.')) || 0;
+		var area = normalizeArea(w * l);
+
+		if (w <= 0 || l <= 0) {
+			qtyInput.value = '0';
+			summary.textContent = summary.getAttribute('data-empty') || summary.textContent;
+			if (!summary.getAttribute('data-empty')) {
+				summary.setAttribute('data-empty', summary.textContent);
+			}
+			return;
+		}
+
+		if (area > stock) {
+			summary.textContent = (summary.getAttribute('data-stock') || 'Stock limit') + ': ' + formatNum(stock) + ' m²';
+			qtyInput.value = String(area);
+			return;
+		}
+
+		var total = unitPrice * area;
+		summary.textContent = formatNum(w) + ' × ' + formatNum(l) + ' m = ' + formatNum(area) + ' m² · ' + total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+		qtyInput.value = String(area);
+	}
+
+	if (summary && !summary.getAttribute('data-empty')) {
+		summary.setAttribute('data-empty', summary.textContent);
+	}
+
+	['input', 'change'].forEach(function (ev) {
+		widthEl.addEventListener(ev, refresh);
+		lengthEl.addEventListener(ev, refresh);
+	});
+})();
 
 (function () {
 	var mainImg = document.getElementById('main-display');
@@ -118,7 +182,7 @@ function updateQty(val) {
 	var priceEl = document.getElementById('productCurrentPrice');
 	var qtyInput = document.getElementById('qty-input');
 	var qtyPicker = document.getElementById('qtyPicker');
-	var addBtn = document.querySelector('.addtocart.requires-variation');
+	var buyBtns = Array.prototype.slice.call(document.querySelectorAll('.addtocart.requires-variation, .buynow.requires-variation, .product-buy-block .requires-variation, .product-buy-bar .requires-variation'));
 	var hint = document.getElementById('variationHint');
 	var summaryEl = document.getElementById('variationSummary');
 	var basePriceHtml = priceEl ? priceEl.innerHTML : '';
@@ -288,15 +352,24 @@ function updateQty(val) {
 				var current = parseInt(qtyInput.value, 10) || 1;
 				qtyInput.value = String(Math.min(Math.max(1, current), match.stock));
 			}
-
 			if (qtyPicker) {
 				qtyPicker.classList.remove('d-none');
 			}
 
-			if (addBtn) {
-				addBtn.disabled = !match.in_stock;
-				addBtn.dataset.variation = String(match.id_variation);
+			var optionsValid = true;
+			var optRoot = document.getElementById('productOptions');
+			if (optRoot) {
+				var reqs = optRoot.querySelectorAll('.product-option-group[data-required="1"]');
+				for (var i = 0; i < reqs.length; i++) {
+					var inp = reqs[i].querySelector('.product-option-input');
+					if (!inp || !inp.value) { optionsValid = false; break; }
+				}
 			}
+
+			buyBtns.forEach(function (btn) {
+				btn.disabled = !match.in_stock || (btn.classList.contains('requires-options') && !optionsValid);
+				btn.dataset.variation = String(match.id_variation);
+			});
 
 			if (hint) {
 				hint.textContent = match.in_stock ? '' : t('outOfStock', 'Tükendi');
@@ -316,10 +389,10 @@ function updateQty(val) {
 				qtyPicker.classList.add('d-none');
 			}
 
-			if (addBtn) {
-				addBtn.disabled = true;
-				addBtn.dataset.variation = '0';
-			}
+			buyBtns.forEach(function (btn) {
+				btn.disabled = true;
+				btn.dataset.variation = '0';
+			});
 
 			if (hint) {
 				hint.textContent = optionKeys(selected).length > 0 && optionKeys(selected).length < requiredGroups
@@ -334,7 +407,7 @@ function updateQty(val) {
 	root.addEventListener('click', function (event) {
 		var btn = event.target.closest('.product-variation-option');
 
-		if (!btn || btn.disabled) {
+		if (!btn || btn.disabled || btn.classList.contains('product-option-btn')) {
 			return;
 		}
 
@@ -349,5 +422,90 @@ function updateQty(val) {
 		updateUI();
 	});
 
+	window.fshopUpdateUI = updateUI;
 	updateUI();
+})();
+(function () {
+	'use strict';
+
+	document.addEventListener('DOMContentLoaded', function () {
+		var root = document.querySelector('.product-configurator');
+
+		if (root && window.ProductConfigurator) {
+			ProductConfigurator.init(root);
+		}
+	});
+})();
+
+(function () {
+	'use strict';
+
+	var optRoot = document.getElementById('productOptions');
+	if (!optRoot) return;
+
+	function refreshOptionsBuyState() {
+		var optionsValid = true;
+		var reqs = optRoot.querySelectorAll('.product-option-group[data-required="1"]');
+		for (var i = 0; i < reqs.length; i++) {
+			var inp = reqs[i].querySelector('.product-option-input');
+			if (!inp || !String(inp.value || '').trim()) {
+				optionsValid = false;
+				break;
+			}
+		}
+
+		var buyBtns = document.querySelectorAll('.addtocart.requires-options, .buynow.requires-options');
+		buyBtns.forEach(function (buyBtn) {
+			if (buyBtn.classList.contains('requires-variation')) {
+				if (typeof window.fshopUpdateUI === 'function') {
+					window.fshopUpdateUI();
+				}
+				return;
+			}
+			buyBtn.disabled = !optionsValid;
+		});
+
+		var hint = document.getElementById('optionHint');
+		if (hint) {
+			hint.textContent = optionsValid ? '' : ((optRoot.closest('.product-configurator') && optRoot.closest('.product-configurator').getAttribute('data-select-hint')) || '');
+		}
+	}
+
+	optRoot.addEventListener('click', function (event) {
+		var btn = event.target.closest('.product-option-btn');
+		if (!btn || btn.disabled) return;
+
+		var group = btn.getAttribute('data-group');
+		var value = btn.getAttribute('data-value');
+		var groupEl = btn.closest('.product-option-group');
+		if (!groupEl || !group || !value) return;
+
+		var input = groupEl.querySelector('.product-option-input');
+		if (!input) {
+			input = document.createElement('input');
+			input.type = 'hidden';
+			input.className = 'product-option-input';
+			input.name = 'options[' + group + ']';
+			groupEl.appendChild(input);
+		}
+		input.value = value;
+
+		var label = groupEl.querySelector('.product-option-selected');
+		if (label) label.textContent = value ? ': ' + value : '';
+
+		var btns = groupEl.querySelectorAll('.product-option-btn');
+		btns.forEach(function (b) {
+			var on = b === btn;
+			b.setAttribute('aria-checked', on ? 'true' : 'false');
+			b.classList.toggle('active', on);
+		});
+
+		refreshOptionsBuyState();
+
+		if (typeof window.fshopUpdateUI === 'function') {
+			window.fshopUpdateUI();
+		}
+	});
+
+	refreshOptionsBuyState();
 })();

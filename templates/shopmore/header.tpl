@@ -156,14 +156,27 @@
 
 </head>
 <body id="{$pageName}" class="sm-body prime-body">
+{if !isset($authMode)}
 <div class="offcanvas offcanvas-start prime-mobile-menu" tabindex="-1" id="primeMobileMenu" aria-labelledby="primeMobileMenuLabel">
 	<div class="offcanvas-body p-0">
 		{include file='./plugin/left.tpl'}
 	</div>
 </div>
 {include file="./_mini/{$themeOptions.header|default:'header1'}.tpl"}
+{elseif $authMode != 'gate' && $authMode != 'login' && $authMode != 'register' && $authMode != 'forgot' && $authMode != 'reset'}
+<header class="auth-simple-header text-center py-4 mt-3">
+	{if $siteLogos.header}
+	<a href="{$domain}">
+		<img src="{$siteLogos.header|escape}" alt="{$siteName|escape}" style="max-height: 60px;">
+	</a>
+	{/if}
+</header>
+{/if}
+{if isset($authMode) && ($authMode == 'gate' || $authMode == 'login' || $authMode == 'register' || $authMode == 'forgot' || $authMode == 'reset')}
+{else}
 <section class="py-3 page" role="main">
 {if $pageName != 'home'}
 <div class="sm-container sm-page-wrap">
 {include file='./partials/breadcrumb.tpl'}
+{/if}
 {/if}

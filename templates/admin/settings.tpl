@@ -47,6 +47,32 @@
 						<input type="text" name="SITE_NAME" class="form-control" value="{$settingsValues.SITE_NAME|escape}">
 					</div>
 					<div class="mb-3">
+						<label class="form-label">{'Site visibility'|adminT}</label>
+						<select name="SITE_VISIBILITY" class="form-select" id="siteVisibilitySelect">
+							<option value="public"{if $settingsValues.SITE_VISIBILITY != 'members_only'} selected{/if}>{'Open to everyone'|adminT}</option>
+							<option value="members_only"{if $settingsValues.SITE_VISIBILITY == 'members_only'} selected{/if}>{'Members only'|adminT}</option>
+						</select>
+					</div>
+					<div id="membersOnlySettings"{if $settingsValues.SITE_VISIBILITY != 'members_only'} style="display:none"{/if}>
+						<div class="mb-3">
+							<label class="form-label">{'Member approval'|adminT}</label>
+							<select name="MEMBER_APPROVAL" class="form-select">
+								<option value="auto"{if $settingsValues.MEMBER_APPROVAL != 'manual'} selected{/if}>{'Auto approve (when registered)'|adminT}</option>
+								<option value="manual"{if $settingsValues.MEMBER_APPROVAL == 'manual'} selected{/if}>{'Admin approve (manual)'|adminT}</option>
+							</select>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">{'Gate title'|adminT}</label>
+							<input type="text" name="GATE_TITLE" class="form-control" value="{$settingsValues.GATE_TITLE|escape}" placeholder="{'Members only'|adminT}">
+							<div class="form-text">{'Shown as the main headline on the members-only gate screen.'|adminT}</div>
+						</div>
+						<div class="mb-3">
+							<label class="form-label">{'Gate features'|adminT}</label>
+							<textarea name="GATE_FEATURES" class="form-control" rows="3" placeholder="Antalya içi aynı gün ücretsiz teslimat&#10;₺1.500+ kargo bedava (Türkiye geneli)&#10;Eczacı ve tedarikçilere özel çözümler">{$settingsValues.GATE_FEATURES|escape}</textarea>
+							<div class="form-text">{'Each line will be shown as a feature with a check icon.'|adminT}</div>
+						</div>
+					</div>
+					<div class="mb-3">
 						<label class="form-label">{'Store currency'|adminT}</label>
 						<p class="mb-2"><strong>{$shopCurrencyLabel|escape}</strong> <code>{$shopCurrencyCode|escape}</code></p>
 						<a href="{$adminUrl}currencies" class="btn btn-sm btn-outline-secondary">{'Manage currencies'|adminT}</a>
@@ -331,7 +357,7 @@
 		<div class="admin-panel mt-4">
 			<h2 class="h6 mb-3">{'Web API'|adminT}</h2>
 			<p class="small text-muted mb-2">{'Partner API keys and permissions are managed on a separate page.'|adminT}</p>
-			<a href="{$domain}admin/api" class="btn btn-dark btn-sm">{'Go to API settings'|adminT}</a>
+			<a href="{$adminUrl}/api" class="btn btn-dark btn-sm">{'Go to API settings'|adminT}</a>
 		</div>
 		<div class="admin-panel mt-4">
 			<h2 class="h6 mb-3">{'Store status'|adminT}</h2>
@@ -372,6 +398,14 @@
 			var isSmtp = select.value === 'smtp';
 			smtpFields.style.display = isSmtp ? '' : 'none';
 			phpHint.style.display = isSmtp ? 'none' : '';
+		});
+	}
+
+	var siteVisSelect = document.getElementById('siteVisibilitySelect');
+	var membersOnlyWrap = document.getElementById('membersOnlySettings');
+	if (siteVisSelect && membersOnlyWrap) {
+		siteVisSelect.addEventListener('change', function () {
+			membersOnlyWrap.style.display = this.value === 'members_only' ? '' : 'none';
 		});
 	}
 

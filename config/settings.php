@@ -25,12 +25,16 @@
 	require_once(dirname(__FILE__).'/../core/Security.php');
 	require_once(dirname(__FILE__).'/../core/RateLimit.php');
 	require_once(dirname(__FILE__).'/../core/Product.php');
+	require_once(dirname(__FILE__).'/../core/ProductLog.php');
+	require_once(dirname(__FILE__).'/../core/SaleUnit.php');
 	require_once(dirname(__FILE__).'/../core/StockAnalysis.php');
 	require_once(dirname(__FILE__).'/../core/ProductVariation.php');
 	require_once(dirname(__FILE__).'/../core/ProductOption.php');
 	require_once(dirname(__FILE__).'/../core/VirtualProduct.php');
 	require_once(dirname(__FILE__).'/../core/Cart.php');
 	require_once(dirname(__FILE__).'/../core/Customer.php');
+	require_once(dirname(__FILE__).'/../core/CustomerGroup.php');
+	require_once(dirname(__FILE__).'/../core/GroupPricing.php');
 	require_once(dirname(__FILE__).'/../core/Order.php');
 	require_once(dirname(__FILE__).'/../core/Cargo.php');
 	require_once(dirname(__FILE__).'/../core/ReturnRequest.php');
@@ -151,8 +155,15 @@
 		'connectionError' => translate('Could not connect to the server'),
 		'genericError' => translate('An error occurred'),
 		'selectVariation' => translate('Select product options'),
+		'enterMeasure' => translate('Please enter width and length'),
 		'required' => translate('Required'),
 		'addToCart' => translate('Add To Cart'),
+		'productAddedTitle' => translate('Product added to cart'),
+		'productAddedLead' => translate('Great! Product added to your cart.'),
+		'cartItemsCount' => translate('There are %d items in your cart.'),
+		'goToCart' => translate('Go to cart'),
+		'continueShopping' => translate('Continue shopping'),
+		'productLabel' => translate('Product'),
 	];
 	
 	$cargoHints = Cargo::getDisplayHints();

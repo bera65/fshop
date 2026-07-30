@@ -35,6 +35,15 @@
 				<input type="email" name="email" class="form-control"
 					value="{$customer.email|escape}" placeholder="ornek@mail.com">
 			</div>
+			<div class="mb-3">
+				<label class="form-label">{'Customer group'|adminT}</label>
+				<select name="id_group" class="form-select">
+					{foreach $customerGroups as $group}
+					<option value="{$group.id_group}"{if $customer.id_group == $group.id_group} selected{/if}>{$group.name|escape}{if $group.discount_percent > 0} (−{$group.discount_percent|escape}%){/if}</option>
+					{/foreach}
+				</select>
+				<div class="form-text"><a href="{$adminUrl}customer-groups">{'Manage groups'|adminT}</a></div>
+			</div>
 
 			<p class="mb-1 text-muted small">{'Registration date'|adminT}</p>
 			<p class="mb-3">{$customer.date_formatted}</p>

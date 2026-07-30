@@ -24,6 +24,21 @@
 
 	$protected = Routes::protectedPages();
 
+	$siteVisibility = Settings::get('SITE_VISIBILITY');
+	$allowedGuests = ['login', 'register', 'forgot-password', 'reset-password', 'gate', 'google-login-callback'];
+
+	if ($siteVisibility === 'members_only' && !Customer::isLoggedIn() && !in_array($container, $allowedGuests, true) && strpos($container, 'api/') !== 0) {
+		$redirectUrl = rtrim($domain, '/') . '/' . $container;
+		$query = $_GET;
+		unset($query['container']);
+		if ($query !== []) {
+			$redirectUrl .= '?' . http_build_query($query);
+		}
+		$_SESSION['auth_redirect'] = $redirectUrl;
+		header('Location: ' . $domain . 'gate');
+		exit;
+	}
+
 	if (Tools::getValue('login') === '1' && !Customer::isLoggedIn()) {
 		header('Location: ' . $domain . 'login');
 		exit;

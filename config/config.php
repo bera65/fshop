@@ -31,6 +31,10 @@
 		{
 			return [
 				'SITE_NAME' => ['label' => 'Site name', 'group' => 'general'],
+				'SITE_VISIBILITY' => ['label' => 'Site visibility', 'group' => 'general', 'type' => 'select'],
+				'MEMBER_APPROVAL' => ['label' => 'Member approval', 'group' => 'general', 'type' => 'select'],
+				'GATE_TITLE' => ['label' => 'Gate title', 'group' => 'general'],
+				'GATE_FEATURES' => ['label' => 'Gate features', 'group' => 'general', 'type' => 'textarea'],
 				'SHOP_ACTIVE' => ['label' => 'Store active', 'group' => 'general', 'type' => 'checkbox'],
 				'SHOP_MAINTENANCE_MESSAGE' => ['label' => 'Maintenance message', 'group' => 'general', 'type' => 'html'],
 				'SHOP_MAINTENANCE_IPS' => ['label' => 'Allowed IPs when store is closed', 'group' => 'general', 'type' => 'textarea'],

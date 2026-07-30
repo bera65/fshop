@@ -57,10 +57,14 @@
 							</div>
 						</div>
 						{if $p.in_stock}
+							{if $p.is_m2|default:false}
+							<a href="{$p.url}" class="btn btn-details w-100">{'Enter width and length'|translate}</a>
+							{else}
 							<button type="button" class="btn btn-details w-100 addtocart" data-id="{$p.id_product}">
 								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-basket-icon lucide-shopping-basket"><path d="m15 11-1 9"/><path d="m19 11-4-7"/><path d="M2 11h20"/><path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4"/><path d="M4.5 15.5h15"/><path d="m5 11 4-7"/><path d="m9 11 1 9"/></svg>
 								{'Add to Cart'|translate}
 							</button>
+							{/if}
 						{else}
 							<a href="{$p.url}" class="btn btn-details w-100">{'View'|translate}</a>
 						{/if}

@@ -42,7 +42,8 @@
 				$idUser,
 				(string) Tools::getValue('user_full_name'),
 				(string) Tools::getValue('phone'),
-				(string) Tools::getValue('email')
+				(string) Tools::getValue('email'),
+				(int) Tools::getValue('id_group')
 			);
 			$flash = $result['message'];
 			$flashType = !empty($result['success']) ? 'success' : 'danger';
@@ -100,6 +101,7 @@
 		'customer' => $customer,
 		'flash' => $flash,
 		'flashType' => $flashType,
+		'customerGroups' => class_exists('CustomerGroup', false) ? CustomerGroup::getActiveOptions() : [],
 		'customerContactWapioReady' => CustomerContact::isWapioReady(),
 		'customerHasPhone' => trim((string) ($customer['phone'] ?? '')) !== '',
 		'customerHasEmail' => trim((string) ($customer['email'] ?? '')) !== '' && filter_var((string) $customer['email'], FILTER_VALIDATE_EMAIL),

@@ -279,39 +279,90 @@
 		</div>
 	</div>
 
-	{if $adminHooks.admin_dashboard_main_right || $frisayNews|@count}
 	<div class="row g-4 mb-4">
-		<div class="col-xl-6">
+		<div class="col-12">
 			<div class="dash-panel">
 				<div class="dash-panel__head dash-panel__head--split">
-					<h2 class="dash-panel__title">{'News'|adminT}</h2>
-					<a href="{$frisayNewsUrl|escape}" class="dash-panel__link" target="_blank" rel="noopener">RSS</a>
+					<h2 class="dash-panel__title">{'Marketplace Orders'|adminT}</h2>
+					<a href="{$adminUrl}marketplace-orders" class="dash-panel__link">{'View all'|adminT}</a>
 				</div>
-				<div class="dash-panel__body p-0">
-					{if $frisayNews|@count}
-					<ul class="dash-news-list">
-						{foreach $frisayNews as $news}
-						<li class="dash-news-list__item">
-							<div class="dash-news-list__meta">
-								<span class="dash-news-list__category">{$news.category|escape}</span>
-								<span class="dash-news-list__date">{$news.date_label|escape}</span>
+				<div class="dash-panel__body p-3 dash-mp-orders">
+					{if $recentMarketplaceOrders|@count}
+					<div class="mp-order-list">
+						{foreach $recentMarketplaceOrders as $ord}
+						<div class="mp-order-row mp-order-row--dash">
+							<div>
+								<img
+									src="{$domain}templates/admin/img/icons/{$ord.platform_icon_file|escape}"
+									alt="{$ord.platform_label|escape}"
+									class="mp-order-icon"
+									onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+								<span class="mp-order-icon-fallback {$ord.platform|escape}" style="display:none;">{$ord.platform_icon|escape}</span>
 							</div>
-							<a href="{$news.link|escape}" class="dash-news-list__title" target="_blank" rel="noopener">{$news.title|escape}</a>
-						</li>
+							<div class="mp-order-col">
+								<a
+									href="{$adminUrl|escape}marketplace-orders?open=1&amp;platform={$ord.platform|escape}&amp;order_number={$ord.order_number|escape}&amp;package_id={$ord.shipment_package_id|escape}"
+									class="mp-order-title-btn"
+									style="text-decoration:none;display:block;"
+								>
+									<div class="mp-order-title">#{$ord.order_number|escape}</div>
+								</a>
+								<div class="mp-order-sub">{$ord.cargo_provider|escape}</div>
+							</div>
+							<div class="mp-order-col">
+								<div class="mp-order-title">{$ord.customer_name|escape}</div>
+								<div class="mp-order-sub">{$ord.customer_sub|escape}</div>
+							</div>
+							<div class="mp-order-col mp-order-col-price">
+								<div class="mp-order-price">{$ord.total_price|escape}</div>
+								<div class="mp-order-sub">Satış Tutarı</div>
+							</div>
+							<div class="mp-order-col mp-order-col-status">
+								<span class="mp-order-status-pill {$ord.status_tone|escape}">
+									<span>{$ord.status|escape}</span>
+								</span>
+							</div>
+							<div class="mp-order-datetime mp-order-col-date">
+								<div>{$ord.date_day|escape}</div>
+								{if $ord.date_time}<div>{$ord.date_time|escape}</div>{/if}
+							</div>
+							<div class="mp-order-actions">
+								<a
+									href="{$adminUrl|escape}marketplace-order-print?auto=1&amp;platform={$ord.platform|escape}&amp;order_number={$ord.order_number|escape}&amp;package_id={$ord.shipment_package_id|escape}"
+									target="_blank"
+									rel="noopener"
+									class="mp-order-action"
+									title="Yazdır"
+									aria-label="Yazdır"
+								>
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+								</a>
+								<a
+									href="{$adminUrl|escape}marketplace-orders?open=1&amp;platform={$ord.platform|escape}&amp;order_number={$ord.order_number|escape}&amp;package_id={$ord.shipment_package_id|escape}"
+									class="mp-order-action"
+									title="Detay"
+									aria-label="Detay"
+								>
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h6"/></svg>
+								</a>
+							</div>
+						</div>
 						{/foreach}
-					</ul>
+					</div>
 					{else}
-					<p class="text-muted p-4 mb-0">{'News feed could not be loaded.'|adminT}</p>
+					<div class="mp-order-empty">{'No marketplace orders yet.'|adminT}</div>
 					{/if}
 				</div>
 			</div>
 		</div>
-		<div class="col-xl-6">
-			{if $adminHooks.admin_dashboard_main_right}
+	</div>
+
+	{if $adminHooks.admin_dashboard_main_right}
+	<div class="row g-4 mb-4">
+		<div class="col-12">
 			<div class="dash-hook dash-hook--main-right">
 				{$adminHooks.admin_dashboard_main_right nofilter}
 			</div>
-			{/if}
 		</div>
 	</div>
 	{/if}

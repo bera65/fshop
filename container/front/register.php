@@ -38,6 +38,16 @@
 
 	];
 
+	if (!empty($_SESSION['auth_flash_notice'])) {
+		$authNotice = (string) $_SESSION['auth_flash_notice'];
+		unset($_SESSION['auth_flash_notice']);
+	}
+
+	if (!empty($_SESSION['auth_flash_error'])) {
+		$authError = (string) $_SESSION['auth_flash_error'];
+		unset($_SESSION['auth_flash_error']);
+	}
+
 
 
 	if (!empty($_SESSION['auth_redirect'])) {
@@ -115,20 +125,18 @@
 
 
 				if ($result['success']) {
-
-					$redirect = !empty($_SESSION['auth_redirect']) ? $_SESSION['auth_redirect'] : $domain . 'my-account';
-
-					unset($_SESSION['auth_redirect']);
-
-					header('Location: ' . $redirect);
-
-					exit;
-
+					if (Customer::isLoggedIn()) {
+						$redirect = !empty($_SESSION['auth_redirect']) ? $_SESSION['auth_redirect'] : $domain . 'my-account';
+						unset($_SESSION['auth_redirect']);
+						header('Location: ' . $redirect);
+						exit;
+					} else {
+						$registerSuccess = true;
+						$authNotice = $result['message'];
+					}
+				} else {
+					$authError = $result['message'];
 				}
-
-
-
-				$authError = $result['message'];
 
 			}
 
@@ -147,22 +155,15 @@
 
 
 	$smarty->assign([
-
 		'authNotice' => $authNotice,
-
 		'authError' => $authError,
-
 		'formData' => $formData,
-
 		'authMode' => 'register',
-
+		'registerSuccess' => isset($registerSuccess) ? $registerSuccess : false,
+		'authAsideExists' => is_file(dirname(__DIR__, 2) . '/img/auth-aside.jpg'),
 		'breadcrumb' => [
-
 			['name' => translate('Home Page'), 'url' => $domain],
-
 			['name' => translate('Sign Up'), 'url' => ''],
-
 		],
-
 	]);
 

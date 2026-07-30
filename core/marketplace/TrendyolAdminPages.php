@@ -98,6 +98,8 @@ class TrendyolAdminPages
 			'productsUrl' => \Admin::url('marketplace-products'),
 			'ordersUrl' => \Admin::url('marketplace-orders'),
 			'questionsUrl' => \Admin::url('marketplace-questions'),
+			'logsUrl' => \Admin::url('marketplace-logs'),
+			'helpUrl' => \Admin::url('marketplace-help'),
 			'cronOrdersUrl' => $api . '?action=cron&type=orders&token=' . urlencode((string) \Settings::get('SHOP_TOKEN')),
 			'cronQuestionsUrl' => $api . '?action=cron&type=questions&token=' . urlencode((string) \Settings::get('SHOP_TOKEN')),
 		];

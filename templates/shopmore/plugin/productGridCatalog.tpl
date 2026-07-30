@@ -29,9 +29,13 @@
 				</div>
 			</div>
 			{if $p.in_stock}
+			{if $p.is_m2|default:false}
+			<a href="{$p.url}" class="btn btn-details w-100 mt-2">{'Enter width and length'|translate}</a>
+			{else}
 			<button type="button" class="btn btn-details w-100 addtocart mt-2" data-id="{$p.id_product}">
 				{'Add to Cart'|translate}
 			</button>
+			{/if}
 			{else}
 			<a href="{$p.url}" class="btn btn-details w-100 mt-2">{'Details'|translate}</a>
 			{/if}
