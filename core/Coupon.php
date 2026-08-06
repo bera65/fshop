@@ -110,7 +110,8 @@ class Coupon
 		$paymentMethod = Order::getSelectedPaymentMethod();
 		$paymentInfo = Module::getPaymentDiscount($paymentMethod, $afterDiscount);
 		$paymentDiscount = min($afterDiscount, (float) ($paymentInfo['amount'] ?? 0));
-		$total = max(0.0, $afterDiscount - $paymentDiscount) + $shipping;
+		$gift = Order::resolveGiftWrap();
+		$total = max(0.0, $afterDiscount - $paymentDiscount) + $shipping + (float) $gift['gift_wrap_fee'];
 		$hints = class_exists('Cargo') ? Cargo::getDisplayHints() : ['free_shipping_min' => 0.0];
 
 		return [
@@ -137,6 +138,11 @@ class Coupon
 			'shipping_formatted' => $requiresShipping && $shipping > 0
 				? Tools::displayPrice($shipping)
 				: ($requiresShipping ? 'Ücretsiz' : '—'),
+			'gift_wrap' => (int) $gift['gift_wrap'],
+			'gift_wrap_fee' => (float) $gift['gift_wrap_fee'],
+			'gift_wrap_fee_formatted' => (string) $gift['gift_wrap_fee_formatted'],
+			'gift_wrap_enabled' => !empty($gift['gift_wrap_enabled']),
+			'has_gift_wrap' => (int) $gift['gift_wrap'] === 1,
 			'total' => $total,
 			'total_formatted' => Tools::displayPrice($total),
 			'free_shipping_min' => (float) ($hints['free_shipping_min'] ?? 0),

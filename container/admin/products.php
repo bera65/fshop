@@ -48,19 +48,24 @@
 	$query 			= trim((string) Tools::getValue('q'));
 	$idCategory 	= (int) Tools::getValue('category');
 	$idBrand 		= (int) Tools::getValue('brand');
-	$activeFilter 	= Tools::getIsset('active') ? (int) Tools::getValue('active') : -1;
+	$idSupplier 	= (int) Tools::getValue('supplier');
+	$activeRaw 		= Tools::getValue('active', -1);
+	$activeFilter 	= ($activeRaw === '' || $activeRaw === false || $activeRaw === null)
+		? -1
+		: (int) $activeRaw;
 	$perPage 		= 30;
 
-	$total = Product::countAdmin($query, $idCategory, $idBrand, $activeFilter);
+	$total = Product::countAdmin($query, $idCategory, $idBrand, $activeFilter, $idSupplier);
 	$queryParams = array_filter([
 		'q' 			=> $query,
 		'category' 		=> $idCategory > 0 ? $idCategory : null,
 		'brand' 		=> $idBrand > 0 ? $idBrand : null,
+		'supplier' 		=> $idSupplier > 0 ? $idSupplier : null,
 		'active' 		=> $activeFilter >= 0 ? $activeFilter : null,
 	], static fn($v) 	=> $v !== null && $v !== '');
 
 	$pagination = Pagination::build($total, $currentPage, $perPage, Admin::url('products'), $queryParams);
-	$products 	= Product::getAdminList($query, $idCategory, $idBrand, $activeFilter, $perPage, $pagination['offset']);
+	$products 	= Product::getAdminList($query, $idCategory, $idBrand, $activeFilter, $perPage, $pagination['offset'], $idSupplier);
 
 	$flash = class_exists('ExportExcelService', false) ? ExportExcelService::consumeFlash() : null;
 	if ($flash && $flash['message'] !== '') {
@@ -74,9 +79,11 @@
 		'searchQuery' 		=> $query,
 		'categoryFilter' 	=> $idCategory,
 		'brandFilter' 		=> $idBrand,
+		'supplierFilter' 	=> $idSupplier,
 		'activeFilter' 		=> $activeFilter,
-		'categoryOptions' 	=> Category::getMenuList(),
+		'categoryOptions' 	=> Category::getProductSelectOptions(),
 		'brandOptions' 		=> Brand::getOptions(),
+		'supplierOptions' 	=> Supplier::getOptions(),
 		'sonuc' 			=> $sonuc,
 		'sonucType' 		=> $sonucType,
 	]);

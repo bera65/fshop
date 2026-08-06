@@ -324,6 +324,60 @@ a:hover {
 	text-transform: uppercase;
 }
 
+.nav-accordion {
+	margin-bottom: 0.15rem;
+}
+
+.nav-accordion__toggle {
+	width: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.5rem;
+	padding: 0.7rem 0.65rem 0.45rem;
+	border: none;
+	background: transparent;
+	color: var(--adm-gray-400);
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	cursor: pointer;
+	border-radius: 8px;
+	transition: color var(--adm-transition), background var(--adm-transition);
+}
+
+.nav-accordion__toggle:hover {
+	color: var(--adm-sidebar-text-active);
+	background: var(--adm-sidebar-hover);
+}
+
+.nav-accordion__chevron {
+	flex-shrink: 0;
+	opacity: 0.7;
+	transition: transform 0.2s ease;
+}
+
+.nav-accordion.is-open .nav-accordion__chevron {
+	transform: rotate(180deg);
+}
+
+.nav-accordion__body {
+	display: none;
+	padding-bottom: 0.25rem;
+}
+
+.nav-accordion.is-open > .nav-accordion__body {
+	display: block;
+}
+
+.nav-accordion__toggle .nav-badge {
+	margin-left: auto;
+	margin-right: 0.25rem;
+	text-transform: none;
+	letter-spacing: 0;
+}
+
 .menu-item {
 	display: flex;
 	align-items: center;
@@ -3361,10 +3415,15 @@ a:hover {
 
 	body.admin-sidebar-collapsed .sidebar-brand__text,
 	body.admin-sidebar-collapsed .menu-title,
+	body.admin-sidebar-collapsed .nav-accordion__toggle,
 	body.admin-sidebar-collapsed .menu-item__label,
 	body.admin-sidebar-collapsed .nav-badge,
 	body.admin-sidebar-collapsed .sidebar-footer__label {
 		display: none !important;
+	}
+
+	body.admin-sidebar-collapsed .nav-accordion__body {
+		display: block !important;
 	}
 
 	body.admin-sidebar-collapsed .sidebar-menu {

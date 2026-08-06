@@ -5,11 +5,32 @@ Version numbers follow [Semantic Versioning](https://semver.org/).
 
 | Durum | Sürüm |
 |--------|--------|
-| **Yayında (canlı)** | **2.5.4** |
-| **Geliştirme / bir sonraki yayın** | **2.5.5** (henüz yayınlanmadı) |
+| **Yayında (canlı)** | **2.5.5** |
+| **Geliştirme / bir sonraki yayın** | **2.5.6** (henüz yayınlanmadı) |
 | **İleride** | 3.0.0 |
 
-2.5.4 yayımlandı. Yeni düzeltme ve küçük iyileştirmeler **2.5.5** altında toplanır. Daha büyük yeni işler 2.6.0 veya 3.0.0 altında planlanır.
+2.5.5 yayımlandı. Yeni düzeltme ve küçük iyileştirmeler **2.5.6** altında toplanır. Daha büyük yeni işler 2.6.0 veya 3.0.0 altında planlanır.
+
+---
+## [2.5.6] — WIP
+
+---
+## [2.5.5] — 2026-08-03
+
+### Fixed
+- **CSRF gaps after central gate** — admin product/category/brand delete & bulk forms, BasitKargo settings, search (`csf`→`token`), price-alert modals now send `token`; `Security` also accepts legacy aliases (`csf`, `bulkProductToken`, delete-button values) so older forms do not 403
+- **POS login/lock CSRF** — PIN forms include session `token` (would 403 under the new gate); logout form too
+- **KuveytTürk card form** — hidden CSRF `token` added for same-origin POST
+- **Alert-price module forms** — JS also handles `.alert-price-form` and sends CSRF
+
+### Added
+- **Core autoload** — `core/autoload.php` registers `ClassName` → `core/ClassName.php`; shop/admin bootstraps no longer need a manual require list (prevents “Class not found” when a new core file is forgotten)
+- **Autoload hardening** — `preg_match` name allowlist, `is_file` + `realpath` must stay under `core/`; missing file → silent `return`; bad path / empty file → `ClassNotFoundException`
+- **POST CSRF gate** — `Security::enforcePostCsrf()` on shop/admin bootstrap; exempts install, cron, webapi, marketplace cron, payment `callback`/`notify` webhooks; accepts `token` / `_csrf` / `X-CSRF-TOKEN` (admin also accepts legacy `md5(token)`)
+- **Suppliers** — brand-like admin CRUD (`suppliers` table, Catalog sidebar); `products.id_supplier` on product form and list filter (no public storefront pages)
+- **Gift wrap** — admin settings `GIFT_WRAP_ENABLED` / `GIFT_WRAP_FEE`; checkout checkbox; fee in order totals; gift icon on front/admin order views
+### Changed
+- **Site version** — `FShop::VERSION` 2.5.5 (admin footer)
 
 ---
 ## [2.5.4] — 2026-07-30

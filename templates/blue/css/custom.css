@@ -1,0 +1,30 @@
+/**
+ * Tema özelleştirme — Admin > Temalar ekranından düzenlenir.
+ * Kaynak: settings.THEME_OPTIONS_{tema} (JSON) + bu dosya.
+ */
+:root {
+	--theme-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	--theme-container-max: 1320px;
+	--theme-container-padding-x: 12px;
+	--container: var(--theme-container-max);
+	--nova-radius: 12px;
+}
+
+html[data-theme-init="light"] { color-scheme: light; }
+
+body, .prime-body, .fy-body {
+	font-family: var(--theme-font-family);
+}
+
+.custom-container,
+.fy-container,
+.prime-container,
+.page > .container,
+.page .container.custom-container {
+	max-width: var(--theme-container-max);
+	padding-left: var(--theme-container-padding-x);
+	padding-right: var(--theme-container-padding-x);
+	margin-left: auto;
+	margin-right: auto;
+	width: 100%;
+}

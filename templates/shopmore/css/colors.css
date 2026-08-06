@@ -2,12 +2,12 @@
  * Tema renkleri — Admin > Temalar ekranından düzenlenir.
  */
 :root {
-	--sm-primary: #6366f1;
+	--sm-primary: #333333;
+	--sm-accent: #f97316;
+	--sm-bg: #f4f6fb;
 	--sm-primary-dark: #4f46e5;
 	--sm-primary-soft: #eef2ff;
-	--sm-accent: #f97316;
 	--sm-accent-dark: #ea580c;
-	--sm-bg: #f4f6fb;
 	--sm-surface: #ffffff;
 	--sm-text: #0f172a;
 	--sm-muted: #64748b;

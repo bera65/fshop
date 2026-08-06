@@ -1,0 +1,26 @@
+/**
+ * Theme4 theme settings — auto-generated. Do not edit by hand.
+ */
+:root {
+	--container: 1340px;
+	--font: 'Inter', system-ui, -apple-system, sans-serif;
+	--theme-container-max: 1340px;
+	--theme-font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body,
+body.sm-body,
+.prime-body {
+	font-family: var(--font);
+}
+
+.sm-container,
+.custom-container,
+.page > .container,
+.page .container.custom-container,
+.t4-builder-row.container {
+	max-width: var(--container);
+	width: 100%;
+	margin-left: auto;
+	margin-right: auto;
+}

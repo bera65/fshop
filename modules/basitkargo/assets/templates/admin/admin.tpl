@@ -2,6 +2,7 @@
 	<div class="col-md-6">
 		<div class="admin-panel">
 			<form action="" method="POST">
+			  <input type="hidden" name="token" value="{$adminToken}">
 			  <div class="mb-3">
 				<label class="form-label">Token</label>
 				<input type="password" name="basitKargoToken" value="{$basitKargoToken}" class="form-control">
@@ -33,6 +34,7 @@
 	<div class="col-md-6">
 		<div class="admin-panel">
 			<form action="" method="POST">
+			  <input type="hidden" name="token" value="{$adminToken}">
 			  <div class="alert alert-warning">Test Kargo oluştur</div>
 			  <button type="submit" name="testOrder" value="{$adminToken}" class="btn btn-dark">Test Et</button>
 			</form>

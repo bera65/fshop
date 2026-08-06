@@ -58,6 +58,8 @@
 				'ORDER_REF_PREFIX' => ['label' => 'Order number prefix', 'group' => 'orders'],
 				'ORDER_REF_SUFFIX_MODE' => ['label' => 'Order number format', 'group' => 'orders', 'type' => 'select'],
 				'ORDER_REF_PAD' => ['label' => 'Sequential digit count', 'group' => 'orders'],
+				'GIFT_WRAP_ENABLED' => ['label' => 'Enable gift wrap', 'group' => 'orders', 'type' => 'checkbox'],
+				'GIFT_WRAP_FEE' => ['label' => 'Gift wrap fee', 'group' => 'orders'],
 				'MAIL_DRIVER' => ['label' => 'Mail driver', 'group' => 'mail', 'type' => 'select'],
 				'SMTP_HOST' => ['label' => 'SMTP host', 'group' => 'smtp', 'type' => 'text'],
 				'SMTP_PORT' => ['label' => 'SMTP port', 'group' => 'smtp', 'type' => 'text'],

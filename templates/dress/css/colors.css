@@ -1,0 +1,34 @@
+/**
+ * Tema renkleri — Admin > Temalar ekranından düzenlenir.
+ */
+:root {
+	--fl-primary: #323448;
+	--fl-accent: #ff0000;
+	--fl-green: #3D8B5F;
+	--fl-bg: #F5f5f5;
+	--fl-primary-dark: #222;
+	--fl-primary-soft: #F3EDE7;
+	--fl-surface: #ffffff;
+	--fl-text: #2C2420;
+	--fl-muted: #8A7E76;
+	--fl-border: #E8E2DB;
+	--fl-radius: 14px;
+	--fl-radius-lg: 20px;
+	--fl-shadow: 0 8px 28px rgba(44, 36, 32, 0.06);
+	--sm-primary: var(--fl-primary);
+	--sm-accent: var(--fl-accent);
+	--sm-bg: var(--fl-bg);
+	--sm-text: var(--fl-text);
+	--sm-muted: var(--fl-muted);
+	--sm-border: var(--fl-border);
+	--sm-radius: var(--fl-radius);
+	--sm-radius-lg: var(--fl-radius-lg);
+	--sm-shadow: var(--fl-shadow);
+	--sm-surface: var(--fl-surface);
+}
+
+body.fl-body {
+	background-color: var(--fl-bg, #F9F6F2);
+	font-family: var(--theme-font-family, 'Inter', system-ui, sans-serif);
+	color: #2C2420;
+}

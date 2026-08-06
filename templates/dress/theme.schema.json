@@ -1,0 +1,66 @@
+{
+	"label": "Dress",
+	"description": "Giyim kozmetik teması.",
+	"preview": "theme-preview.png",
+	"color_groups": {
+		"marka": "Marka & Renkler"
+	},
+	"options": {
+		"header": {
+			"label": "Header stili",
+			"type": "select",
+			"default": "header1",
+			"source": "header_variants"
+		},
+		"font": {
+			"label": "Yazı tipi",
+			"type": "select",
+			"default": "inter",
+			"source": "fonts"
+		},
+		"container_width": {
+			"label": "Site genişliği",
+			"type": "select",
+			"default": "1320",
+			"source": "container_widths"
+		},
+		"announcement": {
+			"label": "Üst duyuru bandı (boşsa gizlenir)",
+			"type": "text",
+			"default": ""
+		},
+		"tagline": {
+			"label": "Logo altı slogan",
+			"type": "text",
+			"default": ""
+		},
+		"delivery_regions": {
+			"label": "Teslimat bölgeleri (virgülle)",
+			"type": "text",
+			"default": ""
+		}
+	},
+	"colors": {
+		"fl-primary": {
+			"label": "Ana kahverengi",
+			"default": "#5C4033",
+			"group": "marka"
+		},
+		"fl-accent": {
+			"label": "İndirim turuncusu",
+			"default": "#E67E22",
+			"group": "marka"
+		},
+		"fl-green": {
+			"label": "Yeşil vurgu",
+			"default": "#3D8B5F",
+			"group": "marka"
+		},
+		"fl-bg": {
+			"label": "Sayfa arka planı",
+			"default": "#F9F6F2",
+			"group": "marka"
+		}
+	},
+	"color_extra_css": "body.fl-body {\n\tbackground-color: var(--fl-bg, #F9F6F2);\n\tfont-family: var(--theme-font-family, 'Inter', system-ui, sans-serif);\n\tcolor: #2C2420;\n}"
+}

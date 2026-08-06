@@ -37,6 +37,7 @@
 			<a href="{$posExitUrl|escape}" class="pos-hd-btn pos-hd-btn--primary">Yönetim Paneli</a>
 			{else}
 			<form method="post" class="pos-inline-form">
+				<input type="hidden" name="token" value="{$posToken|escape}">
 				<button type="submit" name="posLogout" value="1" class="pos-hd-btn">Çıkış</button>
 			</form>
 			{/if}

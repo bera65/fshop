@@ -317,6 +317,18 @@
 						<span class="text-muted ms-2">{'The next order number will look like this.'|adminT}</span>
 					</div>
 				</div>
+				<div class="admin-panel mb-4">
+					<h2 class="h6 mb-3">{'Gift wrap'|adminT}</h2>
+					<div class="form-check form-switch mb-3">
+						<input type="checkbox" class="form-check-input" id="giftWrapEnabled" name="GIFT_WRAP_ENABLED" value="1"{if $settingsValues.GIFT_WRAP_ENABLED|default:'0' == '1'} checked{/if}>
+						<label class="form-check-label" for="giftWrapEnabled">{$settingsKeys.GIFT_WRAP_ENABLED.label|adminT|escape}</label>
+					</div>
+					<div class="mb-0" style="max-width:220px">
+						<label class="form-label">{$settingsKeys.GIFT_WRAP_FEE.label|adminT|escape}</label>
+						<input type="text" name="GIFT_WRAP_FEE" class="form-control" value="{$settingsValues.GIFT_WRAP_FEE|default:'0'|escape}" inputmode="decimal">
+						<div class="form-text">{'0 = free gift wrap. Shown at checkout when enabled.'|adminT}</div>
+					</div>
+				</div>
 			</div>
 
 			<div class="settings-tab-panel{if $settingsTab != 'returns'} d-none{/if}">

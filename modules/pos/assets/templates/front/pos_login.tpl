@@ -28,6 +28,7 @@
 		{/if}
 
 		<form method="post" class="pos-login__form">
+			<input type="hidden" name="token" value="{$posToken|escape}">
 			<label for="pos_pin">PIN</label>
 			<input type="password" id="pos_pin" name="pos_pin" class="pos-field" inputmode="numeric" pattern="[0-9]*" maxlength="8" autocomplete="off" required>
 			<button type="submit" name="posLogin" value="1" class="pos-btn pos-btn--pay pos-btn--block">Giriş yap</button>

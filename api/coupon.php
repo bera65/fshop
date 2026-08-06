@@ -59,6 +59,11 @@ switch ($action) {
 		echo json_encode(array_merge(['success' => true], Coupon::getCheckoutSummary($subtotal, $cart)));
 		break;
 
+	case 'set_gift_wrap':
+		Order::setGiftWrapSelected((bool) Tools::getValue('gift_wrap'));
+		echo json_encode(array_merge(['success' => true], Coupon::getCheckoutSummary($subtotal, $cart)));
+		break;
+
 	case 'summary':
 		echo json_encode(array_merge(['success' => true], Coupon::getCheckoutSummary($subtotal, $cart)));
 		break;

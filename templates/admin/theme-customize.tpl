@@ -88,6 +88,18 @@
 
 						</select>
 
+						{elseif $optMeta.type == 'text'}
+
+						<input type="text" name="opt_{$optKey|escape}" id="opt_{$optKey|escape}" class="form-control form-control-sm" value="{$themeOptions[$optKey]|default:''|escape}">
+
+						{elseif $optMeta.type == 'switch'}
+
+						<div class="form-check form-switch mt-1">
+
+							<input type="checkbox" class="form-check-input" name="opt_{$optKey|escape}" id="opt_{$optKey|escape}" value="1"{if $themeOptions[$optKey]|default:'0' == '1'} checked{/if}>
+
+						</div>
+
 						{/if}
 
 					</div>

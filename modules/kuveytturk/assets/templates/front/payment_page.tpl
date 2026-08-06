@@ -16,6 +16,7 @@
         {/if}
 
         <form action="" method="POST" id="kuveytturk-card-form">
+            <input type="hidden" name="token" value="{$token|escape}">
 
             <div class="mb-4">
                 <label class="kuveytturk-label">Kart Üzerindeki Ad Soyad:</label>

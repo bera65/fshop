@@ -165,6 +165,15 @@
 									<button type="button" class="btn btn-outline-secondary" id="quickAddBrandBtn" title="Marka ekle" aria-label="Marka ekle">+</button>
 								</div>
 							</div>
+							<div class="col-md-6">
+								<label class="form-label">{'Supplier'|adminT}</label>
+								<select name="id_supplier" class="form-select">
+									<option value="0">—</option>
+									{foreach $supplierOptions as $s}
+									<option value="{$s.id_supplier}"{if ($product.id_supplier|default:0) == $s.id_supplier} selected{/if}>{$s.supplier_name|escape}</option>
+									{/foreach}
+								</select>
+							</div>
 						</div>
 					</div>
 				</div>

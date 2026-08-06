@@ -25,7 +25,7 @@
 </IfModule>
 
 RewriteEngine On
-RewriteBase /frisay/
+RewriteBase /fshop/
 
 # PWA — dynamic manifest & service worker (mobil-app module)
 RewriteRule ^manifest\.json$ manifest.php [L]

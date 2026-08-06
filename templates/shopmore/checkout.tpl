@@ -149,6 +149,21 @@
 								<label class="form-label">{'Order Note Optional'|translate}</label>
 								<textarea name="note" class="form-control" rows="2" placeholder="{'Order note placeholder'|translate}">{$formData.note|escape}</textarea>
 							</div>
+							{if $giftWrapEnabled|default:false}
+							<div class="col-12">
+								<div class="form-check">
+									<input class="form-check-input" type="checkbox" name="gift_wrap" id="giftWrapCheck" value="1"{if $formData.gift_wrap|default:''} checked{/if}>
+									<label class="form-check-label" for="giftWrapCheck">
+										{'Gift wrap option'|translate}
+										{if ($giftWrapFee|default:0) > 0}
+										<span class="text-muted">(+{$giftWrapFeeFormatted|escape})</span>
+										{else}
+										<span class="text-muted">({'Free'|translate})</span>
+										{/if}
+									</label>
+								</div>
+							</div>
+							{/if}
 						</div>
 					</div>
 				</div>
@@ -358,6 +373,12 @@
 				<div class="checkout-summary__row" id="checkoutShippingRow">
 					<span>{'Cargo'|translate}</span>
 					<span id="checkoutShipping">{if $checkoutTotals.shipping > 0}{$checkoutTotals.shipping_formatted}{else}{'Free'|translate}{/if}</span>
+				</div>
+				{/if}
+				{if $giftWrapEnabled|default:false}
+				<div class="checkout-summary__row{if !$checkoutTotals.has_gift_wrap|default:false} d-none{/if}" id="checkoutGiftWrapRow">
+					<span>{'Gift wrap'|translate}</span>
+					<span id="checkoutGiftWrap">{if ($checkoutTotals.gift_wrap_fee|default:0) > 0}{$checkoutTotals.gift_wrap_fee_formatted}{else}{'Free'|translate}{/if}</span>
 				</div>
 				{/if}
 				<div class="checkout-summary__row checkout-summary__row--total">

@@ -41,7 +41,7 @@ $defaults = [
 	'rewrite_base' => rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'] ?? '/install')), '/') . '/',
 	'admin_name' => 'Admin',
 	'admin_email' => 'admin@example.com',
-	'theme' => 'blue',
+	'theme' => 'dress',
 	'shop_lang' => 'tr',
 	'admin_lang' => 'tr',
 ];
@@ -137,10 +137,7 @@ $defaults = [
 			<div style="margin-bottom:12px;">
 				<label class="form-label">Theme</label>
 				<select name="theme" class="form-control">
-					<option value="blue">blue</option>
-					<option value="nova">nova</option>
-					<option value="fyazilim">fyazilim</option>
-					<option value="default">default</option>
+					<option value="dress">Default</option>
 				</select>
 			</div>
 			<div style="margin-bottom:12px;">

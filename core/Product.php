@@ -136,6 +136,7 @@ class Product
 		}
 
 		Tax::ensureSchema();
+		Supplier::ensureSchema();
 	}
 
 	public static function isPackProduct(array $product): bool
@@ -951,12 +952,16 @@ class Product
 		int $idBrand = 0,
 		int $activeFilter = -1,
 		int $limit = 30,
-		int $offset = 0
+		int $offset = 0,
+		int $idSupplier = 0
 	): array {
-		$sql = 'SELECT p.*, b.brand_name, c.category_name, i.id_image
+		Supplier::ensureSchema();
+
+		$sql = 'SELECT p.*, b.brand_name, c.category_name, s.supplier_name, i.id_image
 			FROM products p
 			INNER JOIN brands b ON p.id_brand = b.id_brand
 			INNER JOIN categories c ON p.id_category = c.id_category
+			LEFT JOIN suppliers s ON p.id_supplier = s.id_supplier
 			LEFT JOIN images i ON p.id_product = i.id_product AND i.cover = 1
 			WHERE 1=1';
 		$params = [];
@@ -978,6 +983,11 @@ class Product
 			$params[] = $idBrand;
 		}
 
+		if ($idSupplier > 0) {
+			$sql .= ' AND p.id_supplier = ?';
+			$params[] = $idSupplier;
+		}
+
 		if ($activeFilter >= 0) {
 			$sql .= ' AND p.active = ?';
 			$params[] = $activeFilter;
@@ -991,6 +1001,7 @@ class Product
 			$row['price_formatted'] = Tools::displayPrice((float) $row['price']);
 			$row['image_url'] = self::getImageUrl(isset($row['id_image']) ? (int) $row['id_image'] : null);
 			$row['active_label'] = (int) $row['active'] === 1 ? 'Aktif' : 'Pasif';
+			$row['supplier_name'] = (string) ($row['supplier_name'] ?? '');
 		}
 		unset($row);
 
@@ -1001,8 +1012,11 @@ class Product
 		string $query = '',
 		int $idCategory = 0,
 		int $idBrand = 0,
-		int $activeFilter = -1
+		int $activeFilter = -1,
+		int $idSupplier = 0
 	): int {
+		Supplier::ensureSchema();
+
 		$sql = 'SELECT COUNT(*) FROM products p WHERE 1=1';
 		$params = [];
 
@@ -1021,6 +1035,11 @@ class Product
 		if ($idBrand > 0) {
 			$sql .= ' AND p.id_brand = ?';
 			$params[] = $idBrand;
+		}
+
+		if ($idSupplier > 0) {
+			$sql .= ' AND p.id_supplier = ?';
+			$params[] = $idSupplier;
 		}
 
 		if ($activeFilter >= 0) {
@@ -1177,6 +1196,7 @@ class Product
 		$link 			= trim((string) ($defaultEntry['product_link'] ?? $data['product_link'] ?? ''));
 		$idCategory 	= (int) ($data['id_category'] ?? 0);
 		$idBrand 		= (int) ($data['id_brand'] ?? 0);
+		$idSupplier 	= (int) ($data['id_supplier'] ?? 0);
 		$stockCode 		= trim((string) ($data['stock_code'] ?? ''));
 		$barcode 		= trim((string) ($data['barcode'] ?? ''));
 		$desi 			= (int) ($data['desi'] ?? 0);
@@ -1324,6 +1344,7 @@ class Product
 		$row = [
 			'id_category' 		=> $idCategory,
 			'id_brand' 			=> $idBrand,
+			'id_supplier' 		=> max(0, $idSupplier),
 			'product_name' 		=> $name,
 			'short_description' => mb_substr($shortDescription, 0, 512),
 			'meta_title' => mb_substr($metaTitle, 0, 255),

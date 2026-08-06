@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600" fill="none">
+  <g stroke="#2563EB" stroke-opacity="0.14" stroke-width="1.2">
+    <path d="M40 300 C180 120 320 480 460 300 S740 120 900 300 1100 480 1160 300"/>
+    <path d="M40 340 C200 160 360 500 520 340 S800 160 960 340 1120 500 1160 340"/>
+    <path d="M80 220 C220 80 360 360 500 220 S780 80 920 220 1080 360 1140 220"/>
+    <path d="M60 400 C210 260 360 540 510 400 S790 260 940 400 1100 540 1160 400"/>
+  </g>
+  <g fill="#2563EB" fill-opacity="0.18">
+    <circle cx="160" cy="210" r="4"/><circle cx="280" cy="160" r="3"/><circle cx="420" cy="250" r="4"/>
+    <circle cx="560" cy="180" r="3"/><circle cx="700" cy="280" r="4"/><circle cx="840" cy="200" r="3"/>
+    <circle cx="980" cy="260" r="4"/><circle cx="320" cy="360" r="3"/><circle cx="640" cy="380" r="4"/>
+    <circle cx="880" cy="360" r="3"/><circle cx="200" cy="420" r="3"/><circle cx="500" cy="120" r="3"/>
+  </g>
+  <g fill="none" stroke="#3B82F6" stroke-opacity="0.1" stroke-width="1">
+    <ellipse cx="600" cy="300" rx="420" ry="180"/>
+    <ellipse cx="600" cy="300" rx="300" ry="120"/>
+    <ellipse cx="600" cy="300" rx="180" ry="70"/>
+  </g>
+</svg>

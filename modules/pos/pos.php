@@ -1144,6 +1144,7 @@ class PosModule extends ModuleBase
 			'posAdminConfigUrl' => rtrim($adminUrl, '/') . '/module-pos',
 			'posSiteName' => Settings::get('SITE_NAME', 'FShop'),
 			'posBackUrl' => defined('IN_ADMIN') ? rtrim($adminUrl, '/') . '/login' : rtrim($domain, '/') . '/',
+			'posToken' => $this->getApiToken(),
 		]);
 
 		header('Content-Type: text/html; charset=utf-8');
@@ -1159,6 +1160,7 @@ class PosModule extends ModuleBase
 			'posError' => $error,
 			'posCssUrl' => $this->getAssetUrl('css/pos.css'),
 			'posSiteName' => Settings::get('SITE_NAME', 'FShop'),
+			'posToken' => $this->getApiToken(),
 		]);
 
 		header('Content-Type: text/html; charset=utf-8');

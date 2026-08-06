@@ -61,6 +61,7 @@
 		'address_label' => '',
 		'payment_method' => Order::getSelectedPaymentMethod() ?: $defaultPayment,
 		'id_cargo' => class_exists('Cargo') ? Cargo::getSelectedId() : 0,
+		'gift_wrap' => Order::isGiftWrapSelected() ? '1' : '',
 	];
 
 	if ($defaultAddress && $selectedAddressId > 0) {
@@ -93,6 +94,7 @@
 				'address_label' => (string) Tools::getValue('address_label'),
 				'payment_method' => (string) Tools::getValue('payment_method'),
 				'id_cargo' => (int) Tools::getValue('id_cargo'),
+				'gift_wrap' => Tools::getValue('gift_wrap') ? '1' : '',
 			];
 
 			$result = Order::place([
@@ -109,6 +111,7 @@
 				'note' => $formData['note'],
 				'payment_method' => $formData['payment_method'],
 				'id_cargo' => $formData['id_cargo'],
+				'gift_wrap' => $formData['gift_wrap'],
 				'save_address' => Tools::getValue('save_address'),
 				'address_label' => $formData['address_label'],
 				'set_default_address' => Tools::getValue('set_default_address'),
@@ -129,8 +132,16 @@
 		}
 	}
 
+	if (Order::isGiftWrapEnabled()) {
+		Order::setGiftWrapSelected(!empty($formData['gift_wrap']));
+		$checkoutTotals = Coupon::getCheckoutSummary((float) $cart['total']);
+	}
+
 	$pageTitle = translate('Checkout page title');
 	$pageDesc = translate('Checkout page description');
+
+	$giftWrapEnabled = Order::isGiftWrapEnabled();
+	$giftWrapFee = Order::getGiftWrapFeeSetting();
 
 	$smarty->assign([
 		'checkoutTotals' => $checkoutTotals,
@@ -142,6 +153,9 @@
 		'cartHasVirtual' => Cart::hasVirtualProducts($cart),
 		'cartRequiresShipping' => $cartRequiresShipping,
 		'cargoOptions' => $cargoOptions,
+		'giftWrapEnabled' => $giftWrapEnabled,
+		'giftWrapFee' => $giftWrapFee,
+		'giftWrapFeeFormatted' => $giftWrapFee > 0 ? Tools::displayPrice($giftWrapFee) : translate('Free'),
 		'breadcrumb' => [
 			['name' => translate('Home Page'), 'url' => $domain],
 			['name' => translate('My Cart'), 'url' => $domain . 'cart'],

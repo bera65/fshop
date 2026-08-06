@@ -12,6 +12,7 @@ class Schema
 
 		self::$ready = true;
 		Product::ensureSchema();
+		Supplier::ensureSchema();
 
 		if (is_file(dirname(__DIR__) . '/core/Tax.php')) {
 			require_once dirname(__DIR__) . '/core/Tax.php';
@@ -131,6 +132,8 @@ class Schema
 			'{"try":{"label":"Türk Lirası","symbol":"₺"},"usd":{"label":"Amerikan Doları","symbol":"$"},"eur":{"label":"Euro","symbol":"€"}}'
 		);
 		self::ensureSetting('SHOP_CURRENCY', 'try');
+		self::ensureSetting('GIFT_WRAP_ENABLED', '0');
+		self::ensureSetting('GIFT_WRAP_FEE', '0');
 
 		if (!class_exists('Currency', false)) {
 			require_once dirname(__DIR__) . '/core/Currency.php';

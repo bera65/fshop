@@ -4,10 +4,9 @@
 	require_once(dirname(__FILE__).'/connection.php');
 	require_once(dirname(__FILE__).'/database.php');
 	require_once(dirname(__FILE__).'/config.php');
+	require_once(dirname(__FILE__).'/../core/autoload.php');
 
 	App::configureSession();
-
-	require_once(dirname(__FILE__).'/../core/Lang.php');
 
 	if (session_status() !== PHP_SESSION_ACTIVE) {
 		session_start();
@@ -22,56 +21,10 @@
 	$selectLang = clearSQL((string) $_SESSION['selectLang']);
 
 	require_once(dirname(__FILE__).'/../lang/lang.php');
-	require_once(dirname(__FILE__).'/../core/Security.php');
-	require_once(dirname(__FILE__).'/../core/RateLimit.php');
-	require_once(dirname(__FILE__).'/../core/Product.php');
-	require_once(dirname(__FILE__).'/../core/ProductLog.php');
-	require_once(dirname(__FILE__).'/../core/SaleUnit.php');
-	require_once(dirname(__FILE__).'/../core/StockAnalysis.php');
-	require_once(dirname(__FILE__).'/../core/ProductVariation.php');
-	require_once(dirname(__FILE__).'/../core/ProductOption.php');
-	require_once(dirname(__FILE__).'/../core/VirtualProduct.php');
-	require_once(dirname(__FILE__).'/../core/Cart.php');
-	require_once(dirname(__FILE__).'/../core/Customer.php');
-	require_once(dirname(__FILE__).'/../core/CustomerGroup.php');
-	require_once(dirname(__FILE__).'/../core/GroupPricing.php');
-	require_once(dirname(__FILE__).'/../core/Order.php');
-	require_once(dirname(__FILE__).'/../core/Cargo.php');
-	require_once(dirname(__FILE__).'/../core/ReturnRequest.php');
-	require_once(dirname(__FILE__).'/../core/CancelRequest.php');
-	require_once(dirname(__FILE__).'/../core/AdminNotification.php');
-	require_once(dirname(__FILE__).'/../core/Category.php');
-	require_once(dirname(__FILE__).'/../core/Favorite.php');
-	require_once(dirname(__FILE__).'/../core/Contact.php');
-	require_once(dirname(__FILE__).'/../core/Address.php');
-	require_once(dirname(__FILE__).'/../core/Pagination.php');
-	require_once(dirname(__FILE__).'/../core/CatalogFilter.php');
-	require_once(dirname(__FILE__).'/../core/Coupon.php');
-	require_once(dirname(__FILE__).'/../core/CartPromotion.php');
-	require_once(dirname(__FILE__).'/../core/Brand.php');
-	require_once(dirname(__FILE__).'/../core/Cms.php');
-	require_once(dirname(__FILE__).'/../core/Currency.php');
-	require_once(dirname(__FILE__).'/../core/Tax.php');
 	Currency::handleSwitchRequest();
-	require_once(dirname(__FILE__).'/../core/ModuleBase.php');
-	require_once(dirname(__FILE__).'/../core/Module.php');
-	require_once(dirname(__FILE__).'/../core/Captcha.php');
-	require_once(dirname(__FILE__).'/../core/Schema.php');
-	require_once(dirname(__FILE__).'/../core/Mail.php');
-	require_once(dirname(__FILE__).'/../core/StoreStatus.php');
-	require_once(dirname(__FILE__).'/../core/SmtpMailer.php');
-	require_once(dirname(__FILE__).'/../core/Notification.php');
-	require_once(dirname(__FILE__).'/../core/Routes.php');
-	require_once(dirname(__FILE__).'/../core/Theme.php');
-	require_once(dirname(__FILE__).'/../core/SiteAssets.php');
-	require_once(dirname(__FILE__).'/../core/Performance.php');
-	require_once(dirname(__FILE__).'/../core/Lcp.php');
-	require_once(dirname(__FILE__).'/../core/CanonicalHost.php');
 
 	Performance::ensureDefaults();
 	App::configureErrors();
-	require_once(dirname(__FILE__).'/../core/Seo.php');
-	require_once(dirname(__FILE__).'/../core/SchemaOrg.php');
 
 	App::sendSecurityHeaders();
 	Cookie::autoLoginFromRememberCookie();
@@ -121,6 +74,8 @@
 		$_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 		$token = $_SESSION['csrf_token'];
 	}
+
+	Security::enforcePostCsrf('front');
 
 	Schema::ensure();
 	Cms::ensureSchema();
@@ -237,13 +192,17 @@
 		],
 		'footerDescription' => Settings::getFooterDescription(),
 		'moduleAssets' 		=> $moduleAssets,
-		'hooks' 			=> Module::getRenderedDisplayHooks(),
 		'cartI18n' 			=> $cartI18n,
 		'cartI18nJson' 		=> json_encode($cartI18n, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT),
 		'newsletterApiUrl' 	=> rtrim($domain, '/') . '/api/module.php?m=newsletter&action=subscribe',
 		'themeOptions'		=> $themeOptions,
 		'activeTheme'		=> $theme,
 	));
+// Hook render'dan ÖNCE: modül şablonlarında |translate kullanılabilsin
 	$smarty->registerPlugin('modifier', 'translate', 'translate');
+
+	$smarty->assign([
+		'hooks' => Module::getRenderedDisplayHooks(),
+	]);
 
 	Performance::bootstrapFront();

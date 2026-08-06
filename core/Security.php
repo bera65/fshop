@@ -183,4 +183,206 @@ class Security
 
 		return $content;
 	}
+
+	/**
+	 * Session CSRF token (front or admin).
+	 */
+	public static function getCsrfToken(string $scope = 'front'): string
+	{
+		$key = $scope === 'admin' ? 'admin_csrf_token' : 'csrf_token';
+		$token = (string) ($_SESSION[$key] ?? '');
+
+		if ($token === '') {
+			$token = bin2hex(random_bytes(32));
+			$_SESSION[$key] = $token;
+		}
+
+		return $token;
+	}
+
+	/**
+	 * Token from POST/GET `token` / `_csrf` / legacy aliases or X-CSRF-TOKEN header.
+	 */
+	public static function getRequestCsrfToken(): string
+	{
+		$tokens = self::getRequestCsrfTokens();
+
+		return $tokens[0] ?? '';
+	}
+
+	/**
+	 * All CSRF candidates on the request (first match wins in validateCsrf).
+	 *
+	 * Legacy admin/front forms sometimes put the session token in alternate
+	 * field names or submit-button values (deleteProduct, csf, …).
+	 *
+	 * @return list<string>
+	 */
+	public static function getRequestCsrfTokens(): array
+	{
+		$candidates = [];
+
+		foreach (['token', '_csrf', 'csf', 'bulkProductToken'] as $key) {
+			if (!isset($_POST[$key])) {
+				continue;
+			}
+
+			$value = trim((string) $_POST[$key]);
+
+			if ($value !== '') {
+				$candidates[] = $value;
+			}
+		}
+
+		// Submit buttons whose value is the session CSRF token.
+		foreach ([
+			'deleteProduct',
+			'deleteCategory',
+			'deleteBrand',
+			'saveKargo',
+			'testOrder',
+			'addDiscount',
+		] as $key) {
+			if (!isset($_POST[$key])) {
+				continue;
+			}
+
+			$value = trim((string) $_POST[$key]);
+
+			if ($value !== '') {
+				$candidates[] = $value;
+			}
+		}
+
+		if (isset($_GET['token'])) {
+			$value = trim((string) $_GET['token']);
+
+			if ($value !== '') {
+				$candidates[] = $value;
+			}
+		}
+
+		if (!empty($_SERVER['HTTP_X_CSRF_TOKEN'])) {
+			$value = trim((string) $_SERVER['HTTP_X_CSRF_TOKEN']);
+
+			if ($value !== '') {
+				$candidates[] = $value;
+			}
+		}
+
+		return array_values(array_unique($candidates));
+	}
+
+	/**
+	 * External POSTs that cannot send our session CSRF (PSP callback, cron, API key).
+	 */
+	public static function isCsrfExemptRequest(): bool
+	{
+		$script = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+		$action = strtolower(trim((string) (
+			$_POST['action'] ?? $_GET['action'] ?? ''
+		)));
+
+		if (strpos($script, '/install/') !== false) {
+			return true;
+		}
+
+		if (preg_match('#/api/cron\.php$#', $script)) {
+			return true;
+		}
+
+		if (preg_match('#/api/webapi\.php$#', $script)) {
+			return true;
+		}
+
+		// Marketplace cron uses SHOP_TOKEN, not session CSRF.
+		if (preg_match('#/api/marketplace\.php$#', $script) && $action === 'cron') {
+			return true;
+		}
+
+		// Payment / module webhooks (bank POST back).
+		if (preg_match('#/api/module\.php$#', $script)) {
+			$webhookActions = ['callback', 'notify', 'webhook', 'ipn', 'return', '3d-return', '3dreturn'];
+
+			if (in_array($action, $webhookActions, true)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public static function validateCsrf(string $scope = 'front'): bool
+	{
+		$sessionToken = self::getCsrfToken($scope);
+		$providedList = self::getRequestCsrfTokens();
+
+		// Never treat empty === empty as valid.
+		if ($sessionToken === '' || $providedList === []) {
+			return false;
+		}
+
+		foreach ($providedList as $provided) {
+			if (hash_equals($sessionToken, $provided)) {
+				return true;
+			}
+
+			// Legacy admin forms sometimes submit md5(token).
+			if ($scope === 'admin' && hash_equals(md5($sessionToken), $provided)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Enforce CSRF on the current request. Call only for POST (or state-changing) requests.
+	 */
+	public static function requireCsrf(string $scope = 'front'): void
+	{
+		if (self::validateCsrf($scope)) {
+			return;
+		}
+
+		http_response_code(403);
+
+		$wantsJson = (
+			strpos(str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? '')), '/api/') !== false
+			|| strpos((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json') !== false
+			|| strtolower((string) ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '')) === 'xmlhttprequest'
+		);
+
+		if ($wantsJson) {
+			header('Content-Type: application/json; charset=utf-8');
+			echo json_encode([
+				'success' => false,
+				'message' => 'Geçersiz istek (CSRF)',
+				'error' => 'csrf_invalid',
+			], JSON_UNESCAPED_UNICODE);
+			exit;
+		}
+
+		header('Content-Type: text/plain; charset=utf-8');
+		echo 'Geçersiz istek (CSRF)';
+		exit;
+	}
+
+	/**
+	 * If this is POST and not exempt, require a valid CSRF token.
+	 */
+	public static function enforcePostCsrf(string $scope = 'front'): void
+	{
+		$method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+
+		if ($method !== 'POST' && $method !== 'PUT' && $method !== 'PATCH' && $method !== 'DELETE') {
+			return;
+		}
+
+		if (self::isCsrfExemptRequest()) {
+			return;
+		}
+
+		self::requireCsrf($scope);
+	}
 }

@@ -44,7 +44,7 @@
 				</div>
 			</div>
 			<div class="row g-2 small" id="orderInfoReadonly">
-				<div class="col-md-6"><strong>{'Order no:'|adminT}</strong> {$order.reference|escape}</div>
+				<div class="col-md-6"><strong>{'Order no:'|adminT}</strong> {$order.reference|escape}{if $order.has_gift_wrap|default:false} <span class="text-danger ms-1" title="{'Gift wrap'|adminT}" aria-label="{'Gift wrap'|adminT}"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5A4.8 8 0 0 1 12 8a4.8 8 0 0 1 4.5-5 2.5 2.5 0 0 1 0 5"/></svg></span>{/if}</div>
 				<div class="col-md-6"><strong>{'Date:'|adminT}</strong> {$order.date_formatted}</div>
 				<div class="col-md-6"><strong>{'Customer:'|adminT}</strong> {$order.customer_name|escape}</div>
 				<div class="col-md-6"><strong>{'Phone:'|adminT}</strong> {$order.customer_phone|escape}</div>
@@ -219,7 +219,8 @@
 				data-old-total="{$order.total|escape}"
 				data-coupon="{$order.coupon_discount|default:0|escape}"
 				data-promotion="{$order.promotion_discount|default:0|escape}"
-				data-payment="{$order.payment_discount|default:0|escape}">
+				data-payment="{$order.payment_discount|default:0|escape}"
+				data-gift-fee="{if $order.has_gift_wrap|default:false}{$order.gift_wrap_fee|default:0|escape}{else}0{/if}">
 				<div class="d-flex justify-content-between small mb-1"><span>{'Subtotal'|adminT}</span><span id="previewSubtotal">{$order.subtotal_formatted}</span></div>
 				{if $order.coupon_discount > 0}
 				<div class="d-flex justify-content-between small text-success mb-1"><span>{'Coupon'|adminT}</span><span>-{$order.coupon_discount_formatted}</span></div>
@@ -232,6 +233,9 @@
 				{/if}
 				<div class="d-flex justify-content-between small text-success mb-1"><span>{'Order discount'|adminT}</span><span id="previewManualDiscount">-{$order.manual_discount_formatted|default:'0'}</span></div>
 				<div class="d-flex justify-content-between small mb-1"><span>{'Shipping'|adminT}</span><span id="previewShipping">{$order.shipping_formatted}</span></div>
+				{if $order.has_gift_wrap|default:false}
+				<div class="d-flex justify-content-between small mb-1"><span>{'Gift wrap'|adminT}</span><span>{if $order.gift_wrap_fee > 0}{$order.gift_wrap_fee_formatted}{else}{'Free'|adminT}{/if}</span></div>
+				{/if}
 				<div class="d-flex justify-content-between fw-bold border-top pt-2 mt-2"><span>{'New total'|adminT}</span><span id="previewNewTotal">{$order.total_formatted}</span></div>
 				<div class="d-flex justify-content-between small mt-2"><span>{'Previous total'|adminT}</span><span>{$order.total_formatted}</span></div>
 				<div class="d-flex justify-content-between fw-semibold mt-1" id="previewDiffRow"><span>{'Difference'|adminT}</span><span id="previewDiff">0</span></div>
@@ -262,6 +266,9 @@
 			<p class="mb-1 d-flex justify-content-between text-success"><span>{'Order discount'|adminT}{if $order.manual_discount_type == 'percent'} ({$order.manual_discount_value|escape}%){/if}</span><span>-{$order.manual_discount_formatted}</span></p>
 			{/if}
 			<p class="mb-1 d-flex justify-content-between"><span>{'Shipping'|adminT}</span><span>{$order.shipping_formatted}</span></p>
+			{if $order.has_gift_wrap|default:false}
+			<p class="mb-1 d-flex justify-content-between"><span>{'Gift wrap'|adminT}</span><span>{if $order.gift_wrap_fee > 0}{$order.gift_wrap_fee_formatted}{else}{'Free'|adminT}{/if}</span></p>
+			{/if}
 			<p class="mb-3 d-flex justify-content-between fw-bold"><span>{'Total'|adminT}</span><span>{$order.total_formatted}</span></p>
 			<p class="mb-0 small text-muted">{'Payment:'|adminT} {$order.payment_label|escape}</p>
 		</div>
@@ -398,12 +405,13 @@
 		var promotion = parseNum(previewBox.getAttribute('data-promotion'));
 		var payment = parseNum(previewBox.getAttribute('data-payment'));
 		var shipping = parseNum(document.getElementById('orderEditShipping').value);
+		var giftFee = parseNum(previewBox.getAttribute('data-gift-fee'));
 		var dtype = document.getElementById('orderDiscountType').value;
 		var dval = parseNum(document.getElementById('orderDiscountValue').value);
 		var manual = 0;
 		if (dtype === 'percent' && dval > 0) manual = Math.round(subtotal * (Math.min(100, dval) / 100) * 100) / 100;
 		else if (dtype === 'fixed' && dval > 0) manual = Math.min(subtotal, dval);
-		var newTotal = Math.max(0, Math.round((subtotal - coupon - promotion - payment - manual + shipping) * 100) / 100);
+		var newTotal = Math.max(0, Math.round((subtotal - coupon - promotion - payment - manual + shipping + giftFee) * 100) / 100);
 		var oldTotal = parseNum(previewBox.getAttribute('data-old-total'));
 		var diff = Math.round((newTotal - oldTotal) * 100) / 100;
 		document.getElementById('previewSubtotal').textContent = currencyFmt(subtotal);

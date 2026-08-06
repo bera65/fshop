@@ -1,12 +1,17 @@
-$(document).on('submit', '#alertPrice', function (e) {
+$(document).on('submit', '#alertPrice, .alert-price-form', function (e) {
 	e.preventDefault();
 
 	var $form 		= $(this);
 	var url 		= $form.data('api-url');
-	var idProduct 	= $form.data('selectedProductId');
-	var $messageBox = $('#alertPriceMessage');
+	var productId 	= $form.data('product-id') || $form.find('[name="selectedProductId"]').val();
+	var $messageBox = $form.closest('.modal-body, .modal-content, form').find('[id^="alertPriceMessage"]').first();
+	if (!$messageBox.length) {
+		$messageBox = $('#alertPriceMessage');
+	}
 	var $submitBtn 	= $form.find('button[type="submit"]');
-	var modalEl 	= document.getElementById('priceModal');
+	var modalEl 	= $form.closest('.modal').get(0) || document.getElementById('priceModal');
+	var email 		= $.trim($form.find('[name="userEmail"], [name="email"]').val());
+	var price 		= $form.find('[name="price"], [name="target_price"]').val();
 
 	if (!url || typeof csrfToken === 'undefined') {
 		if ($messageBox.length) {
@@ -24,9 +29,9 @@ $(document).on('submit', '#alertPrice', function (e) {
 		dataType: 'json',
 		data: {
 			token: csrfToken,
-			idProduct: $form.find('[name="selectedProductId"]').val(),
-			email: $.trim($form.find('[name="userEmail"]').val()),
-			price: $form.find('[name="price"]').val()
+			idProduct: productId,
+			email: email,
+			price: price
 		}
 	}).done(function (data) {
 		if (!$messageBox.length) {

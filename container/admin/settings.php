@@ -128,6 +128,10 @@
 
 					$value = (string) max(3, min(10, (int) $value ?: 5));
 
+				} elseif ($key === 'GIFT_WRAP_FEE') {
+
+					$value = (string) max(0, round((float) str_replace(',', '.', $value), 2));
+
 				} elseif ($key === 'MAIL_HEADER' && $value === Mail::getDefaultEmailHeader()) {
 
 					$value = '';

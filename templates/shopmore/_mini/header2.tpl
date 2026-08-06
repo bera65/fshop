@@ -39,7 +39,7 @@
 						<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search-icon lucide-search"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
 						<input type="text" name="query" class="form-control border-0 bg-transparent fs-5 fw-light" placeholder="{'Search product..'|translate}" style="outline: none; box-shadow: none; font-family: var(--font-main);">
 						<button class="btn btn-dark btn-sm" name="search">{'Search'|translate}</button>
-						<input type="hidden" name="csf" value="{$token}" />
+						<input type="hidden" name="token" value="{$token}" />
 					</div>
 				</form>
 			</div>

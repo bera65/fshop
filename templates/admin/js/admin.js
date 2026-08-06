@@ -95,12 +95,66 @@ document.addEventListener('DOMContentLoaded', function () {
 	});
 
 	initSidebarCollapse();
+	initSidebarAccordion();
 	initModuleListFilters();
 	initAdminConfirmBindings();
 	initAutoHideAlerts();
 	initLivePoll();
 });
 
+function initSidebarAccordion() {
+	var menu = document.getElementById('adminSidebarMenu');
+	if (!menu) {
+		return;
+	}
+
+	var groups = Array.prototype.slice.call(menu.querySelectorAll('.nav-accordion'));
+	if (!groups.length) {
+		return;
+	}
+
+	function setOpen(group, open) {
+		group.classList.toggle('is-open', !!open);
+		var btn = group.querySelector('.nav-accordion__toggle');
+		if (btn) {
+			btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+		}
+	}
+
+	function openOnly(target) {
+		groups.forEach(function (group) {
+			setOpen(group, group === target);
+		});
+	}
+
+	groups.forEach(function (group) {
+		var btn = group.querySelector('.nav-accordion__toggle');
+		if (!btn) {
+			return;
+		}
+		btn.addEventListener('click', function () {
+			if (document.body.classList.contains('admin-sidebar-collapsed') && window.innerWidth >= 992) {
+				return;
+			}
+			if (group.classList.contains('is-open')) {
+				setOpen(group, false);
+				return;
+			}
+			openOnly(group);
+		});
+	});
+
+	var activeItem = menu.querySelector('.menu-item.active');
+	var activeGroup = activeItem ? activeItem.closest('.nav-accordion') : null;
+	if (activeGroup) {
+		openOnly(activeGroup);
+		try {
+			activeItem.scrollIntoView({ block: 'nearest' });
+		} catch (e) {}
+	} else {
+		openOnly(groups[0]);
+	}
+}
 function initAutoHideAlerts() {
 	var alerts = document.querySelectorAll('.admin-content > .alert, .admin-login-alert');
 	if (!alerts.length) {

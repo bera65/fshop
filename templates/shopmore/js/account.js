@@ -263,6 +263,14 @@
 			$('#checkoutPaymentDiscountRow').addClass('d-none');
 		}
 		if (data.shipping_formatted) $('#checkoutShipping').text(data.shipping_formatted);
+		if (typeof data.has_gift_wrap !== 'undefined') {
+			if (data.has_gift_wrap) {
+				$('#checkoutGiftWrapRow').removeClass('d-none');
+				$('#checkoutGiftWrap').text(data.gift_wrap_fee_formatted || '');
+			} else {
+				$('#checkoutGiftWrapRow').addClass('d-none');
+			}
+		}
 		if (data.total_formatted) {
 			$('#checkoutTotal').text(data.total_formatted);
 			$('#checkoutSubmitTotal').text(data.total_formatted);
@@ -290,6 +298,16 @@
 		$.post(typeof couponApiUrl !== 'undefined' ? couponApiUrl : (domain + 'api/coupon.php'), {
 			action: 'set_payment',
 			payment_method: method,
+			token: csrfToken
+		}).done(function (res) {
+			if (res.success) refreshCheckoutTotals(res);
+		});
+	});
+
+	$(document).on('change', '#giftWrapCheck', function () {
+		$.post(typeof couponApiUrl !== 'undefined' ? couponApiUrl : (domain + 'api/coupon.php'), {
+			action: 'set_gift_wrap',
+			gift_wrap: $(this).is(':checked') ? 1 : 0,
 			token: csrfToken
 		}).done(function (res) {
 			if (res.success) refreshCheckoutTotals(res);

@@ -6,16 +6,13 @@
 	require_once dirname(__FILE__) . '/connection.php';
 	require_once dirname(__FILE__) . '/database.php';
 	require_once dirname(__FILE__) . '/config.php';
+	require_once dirname(__FILE__) . '/../core/autoload.php';
 
 	App::configureSession();
 
 	if (session_status() !== PHP_SESSION_ACTIVE) {
 		session_start();
 	}
-
-	require_once dirname(__FILE__) . '/../core/Cms.php';
-	require_once dirname(__FILE__) . '/../core/Lang.php';
-	require_once dirname(__FILE__) . '/../core/AdminLang.php';
 
 	AdminLang::handleSwitchRequest();
 	$adminLang = AdminLang::current();
@@ -34,55 +31,8 @@
 		}
 	}
 
-	require_once dirname(__FILE__) . '/../core/Security.php';
-	require_once dirname(__FILE__) . '/../core/RateLimit.php';
-	require_once dirname(__FILE__) . '/../core/Admin.php';
-	require_once dirname(__FILE__) . '/../core/Order.php';
-	require_once dirname(__FILE__) . '/../core/ReturnRequest.php';
-	require_once dirname(__FILE__) . '/../core/CancelRequest.php';
-	require_once dirname(__FILE__) . '/../core/AdminNotification.php';
-	require_once dirname(__FILE__) . '/../core/Contact.php';
-	require_once dirname(__FILE__) . '/../core/Product.php';
-	require_once dirname(__FILE__) . '/../core/ProductLog.php';
-	require_once dirname(__FILE__) . '/../core/SaleUnit.php';
-	require_once dirname(__FILE__) . '/../core/ProductVariation.php';
-	require_once dirname(__FILE__) . '/../core/ProductOption.php';
-	require_once dirname(__FILE__) . '/../core/VirtualProduct.php';
-	require_once dirname(__FILE__) . '/../core/Category.php';
-	require_once dirname(__FILE__) . '/../core/Brand.php';
-	require_once dirname(__FILE__) . '/../core/Cms.php';
-	require_once dirname(__FILE__) . '/../core/Lang.php';
-	require_once dirname(__FILE__) . '/../core/Currency.php';
-	require_once dirname(__FILE__) . '/../core/Tax.php';
-	require_once dirname(__FILE__) . '/../core/Customer.php';
-	require_once dirname(__FILE__) . '/../core/CustomerGroup.php';
-	require_once dirname(__FILE__) . '/../core/GroupPricing.php';
-	require_once dirname(__FILE__) . '/../core/Address.php';
-	require_once dirname(__FILE__) . '/../core/Pagination.php';
-	require_once dirname(__FILE__) . '/../core/ModuleBase.php';
-	require_once dirname(__FILE__) . '/../core/Module.php';
-	require_once dirname(__FILE__) . '/../core/Marketplace.php';
-	require_once dirname(__FILE__) . '/../core/MarketplaceAdmin.php';
-	require_once dirname(__FILE__) . '/../core/Captcha.php';
-	require_once dirname(__FILE__) . '/../core/Schema.php';
-	require_once dirname(__FILE__) . '/../core/ApiKey.php';
-	require_once dirname(__FILE__) . '/../core/Cargo.php';
-	require_once dirname(__FILE__) . '/../core/Mail.php';
-	require_once dirname(__FILE__) . '/../core/StoreStatus.php';
-	require_once dirname(__FILE__) . '/../core/CustomerContact.php';
-	require_once dirname(__FILE__) . '/../core/SmtpMailer.php';
-	require_once dirname(__FILE__) . '/../core/Notification.php';
-	require_once dirname(__FILE__) . '/../core/Coupon.php';
-	require_once dirname(__FILE__) . '/../core/CartPromotion.php';
-	require_once dirname(__FILE__) . '/../core/Theme.php';
-	require_once dirname(__FILE__) . '/../core/SiteAssets.php';
-	require_once dirname(__FILE__) . '/../core/Performance.php';
-	require_once dirname(__FILE__) . '/../core/FShop.php';
-
 	Performance::ensureDefaults();
 	App::configureErrors();
-	require_once dirname(__FILE__) . '/../core/Seo.php';
-	require_once dirname(__FILE__) . '/../core/CanonicalHost.php';
 
 	App::sendSecurityHeaders();
 
@@ -111,6 +61,7 @@
 	}
 
 	$adminToken = $_SESSION['admin_csrf_token'];
+	Security::enforcePostCsrf('admin');
 	$adminUser = Admin::getCurrent();
 
 	Module::bootstrap('admin');

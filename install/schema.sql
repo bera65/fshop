@@ -31,10 +31,20 @@ CREATE TABLE `brands` (
   KEY `brand_link` (`brand_link`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `suppliers` (
+  `id_supplier` int(11) NOT NULL AUTO_INCREMENT,
+  `supplier_name` varchar(128) NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT 1,
+  `date_add` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_supplier`),
+  KEY `active` (`active`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE `products` (
   `id_product` int(11) NOT NULL AUTO_INCREMENT,
   `id_category` int(11) NOT NULL,
   `id_brand` int(11) NOT NULL,
+  `id_supplier` int(11) NOT NULL DEFAULT 0,
   `product_name` varchar(128) NOT NULL,
   `short_description` varchar(512) NOT NULL DEFAULT '',
   `meta_title` varchar(255) NOT NULL DEFAULT '',
@@ -70,6 +80,7 @@ CREATE TABLE `products` (
   PRIMARY KEY (`id_product`),
   KEY `id_category` (`id_category`),
   KEY `id_brand` (`id_brand`),
+  KEY `id_supplier` (`id_supplier`),
   KEY `product_link` (`product_link`),
   KEY `barcode` (`barcode`),
   KEY `stock_code` (`stock_code`)
@@ -143,6 +154,8 @@ CREATE TABLE `orders` (
   `manual_discount_value` decimal(10,2) NOT NULL DEFAULT 0.00,
   `subtotal` decimal(20,2) NOT NULL DEFAULT 0.00,
   `shipping` decimal(20,2) NOT NULL DEFAULT 0.00,
+  `gift_wrap` tinyint(1) NOT NULL DEFAULT 0,
+  `gift_wrap_fee` decimal(10,2) NOT NULL DEFAULT 0.00,
   `total` decimal(20,2) NOT NULL DEFAULT 0.00,
   `date_add` datetime NOT NULL DEFAULT current_timestamp(),
   `date_delivered` datetime DEFAULT NULL,
@@ -363,7 +376,7 @@ INSERT INTO `settings` (`title`, `value`) VALUES
 ('DOMAIN', 'http://localhost/fshop/'),
 ('FOLDER', '/fshop/'),
 ('SITE_NAME', 'FShop'),
-('THEME', 'blue'),
+('THEME', 'dress'),
 ('DEFAULT_LANG', 'tr'),
 ('SHOP_LANGUAGES', 'tr,en'),
 ('ADMIN_DEFAULT_LANG', 'tr'),
@@ -372,5 +385,7 @@ INSERT INTO `settings` (`title`, `value`) VALUES
 ('SHIPPING_FEE', '79.90'),
 ('HAVALE', '3'),
 ('CARGO_DAY', '3'),
-('MAIL_DRIVER', 'php');
+('MAIL_DRIVER', 'php'),
+('GIFT_WRAP_ENABLED', '0'),
+('GIFT_WRAP_FEE', '0');
 

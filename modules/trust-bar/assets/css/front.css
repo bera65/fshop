@@ -21,7 +21,7 @@
 	gap: 10px;
 	padding: 14px;
 	background: var(--sm-surface, #fff);
-	border-radius: var(--sm-radius, 12px);
+	border-radius: 8px;
 	border: 1px solid var(--sm-border, #e5e7eb);
 }
 

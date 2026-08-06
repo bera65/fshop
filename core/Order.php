@@ -36,6 +36,8 @@ class Order
 			'manual_discount' => "decimal(10,2) NOT NULL DEFAULT 0.00 AFTER `payment_discount_label`",
 			'manual_discount_type' => "varchar(16) NOT NULL DEFAULT '' AFTER `manual_discount`",
 			'manual_discount_value' => "decimal(10,2) NOT NULL DEFAULT 0.00 AFTER `manual_discount_type`",
+			'gift_wrap' => "tinyint(1) NOT NULL DEFAULT 0 AFTER `shipping`",
+			'gift_wrap_fee' => "decimal(10,2) NOT NULL DEFAULT 0.00 AFTER `gift_wrap`",
 		];
 
 		foreach ($columns as $name => $definition) {
@@ -77,6 +79,64 @@ class Order
 	}
 
 	public const PAYMENT_SESSION_KEY = 'checkout_payment_method';
+	public const GIFT_WRAP_SESSION_KEY = 'checkout_gift_wrap';
+
+	public static function isGiftWrapEnabled(): bool
+	{
+		return (string) Settings::get('GIFT_WRAP_ENABLED') === '1';
+	}
+
+	public static function getGiftWrapFeeSetting(): float
+	{
+		return max(0.0, round((float) Settings::get('GIFT_WRAP_FEE'), 2));
+	}
+
+	public static function isGiftWrapSelected(): bool
+	{
+		return !empty($_SESSION[self::GIFT_WRAP_SESSION_KEY]);
+	}
+
+	public static function setGiftWrapSelected(bool $selected): void
+	{
+		if ($selected && self::isGiftWrapEnabled()) {
+			$_SESSION[self::GIFT_WRAP_SESSION_KEY] = 1;
+		} else {
+			unset($_SESSION[self::GIFT_WRAP_SESSION_KEY]);
+		}
+	}
+
+	public static function resolveGiftWrap(?bool $requested = null): array
+	{
+		$want = $requested !== null ? $requested : self::isGiftWrapSelected();
+
+		if (!self::isGiftWrapEnabled() || !$want) {
+			return [
+				'gift_wrap' => 0,
+				'gift_wrap_fee' => 0.0,
+				'gift_wrap_fee_formatted' => Tools::displayPrice(0),
+				'gift_wrap_enabled' => self::isGiftWrapEnabled(),
+			];
+		}
+
+		$fee = self::getGiftWrapFeeSetting();
+
+		return [
+			'gift_wrap' => 1,
+			'gift_wrap_fee' => $fee,
+			'gift_wrap_fee_formatted' => $fee > 0 ? Tools::displayPrice($fee) : translate('Free'),
+			'gift_wrap_enabled' => true,
+		];
+	}
+
+	private static function enrichGiftWrapFields(array $order): array
+	{
+		$order['gift_wrap'] = (int) ($order['gift_wrap'] ?? 0);
+		$order['gift_wrap_fee'] = (float) ($order['gift_wrap_fee'] ?? 0);
+		$order['has_gift_wrap'] = $order['gift_wrap'] === 1;
+		$order['gift_wrap_fee_formatted'] = Tools::displayPrice($order['gift_wrap_fee']);
+
+		return $order;
+	}
 
 	public static function getSelectedPaymentMethod(): string
 	{
@@ -166,7 +226,7 @@ class Order
 		], true);
 	}
 
-	public static function getCheckoutTotals(float $subtotal, float $discount = 0.0, ?array $cart = null, ?int $idCargo = null, ?string $paymentMethod = null): array
+	public static function getCheckoutTotals(float $subtotal, float $discount = 0.0, ?array $cart = null, ?int $idCargo = null, ?string $paymentMethod = null, ?bool $giftWrap = null): array
 	{
 		$discount = max(0.0, min($subtotal, $discount));
 		$afterDiscount = $subtotal - $discount;
@@ -175,7 +235,8 @@ class Order
 		$paymentMethod = $paymentMethod !== null ? trim($paymentMethod) : self::getSelectedPaymentMethod();
 		$paymentInfo = Module::getPaymentDiscount($paymentMethod, $afterDiscount);
 		$paymentDiscount = min($afterDiscount, (float) ($paymentInfo['amount'] ?? 0));
-		$total = max(0.0, $afterDiscount - $paymentDiscount) + $shipping;
+		$gift = self::resolveGiftWrap($giftWrap);
+		$total = max(0.0, $afterDiscount - $paymentDiscount) + $shipping + (float) $gift['gift_wrap_fee'];
 		$hints = class_exists('Cargo') ? Cargo::getDisplayHints() : ['free_shipping_min' => 0.0];
 
 		return [
@@ -191,6 +252,11 @@ class Order
 			'shipping_formatted' => $requiresShipping && $shipping > 0
 				? Tools::displayPrice($shipping)
 				: ($requiresShipping ? translate('Free') : '—'),
+			'gift_wrap' => (int) $gift['gift_wrap'],
+			'gift_wrap_fee' => (float) $gift['gift_wrap_fee'],
+			'gift_wrap_fee_formatted' => (string) $gift['gift_wrap_fee_formatted'],
+			'gift_wrap_enabled' => !empty($gift['gift_wrap_enabled']),
+			'has_gift_wrap' => (int) $gift['gift_wrap'] === 1,
 			'total' => $total,
 			'total_formatted' => Tools::displayPrice($total),
 			'free_shipping_min' => (float) ($hints['free_shipping_min'] ?? 0),
@@ -341,6 +407,9 @@ class Order
 
 		self::setSelectedPaymentMethod($payment);
 
+		$giftRequested = !empty($data['gift_wrap']);
+		self::setGiftWrapSelected($giftRequested);
+
 		// "Önce ödeme" isteyen modül (sanal POS gibi): sipariş henüz OLUŞTURULMAZ.
 		// Form verisi session'da bekletilir, müşteri kart sayfasına yönlendirilir.
 		// Banka onayından sonra modül Order::placePending() ile siparişi oluşturur.
@@ -380,7 +449,8 @@ class Order
 			(float) $checkoutSummary['discount'],
 			$cart,
 			null,
-			$payment
+			$payment,
+			$giftRequested
 		);
 
 		if (!empty($data['_reference'])) {
@@ -447,6 +517,8 @@ class Order
 				'cargo_company' => $cargoCompanyName,
 				'subtotal' => $totals['subtotal'],
 				'shipping' => $totals['shipping'],
+				'gift_wrap' => (int) ($totals['gift_wrap'] ?? 0),
+				'gift_wrap_fee' => (float) ($totals['gift_wrap_fee'] ?? 0),
 				'total' => $totals['total'],
 			]);
 
@@ -478,6 +550,7 @@ class Order
 
 			$db->commit();
 			Cart::clear();
+			self::setGiftWrapSelected(false);
 
 			if (class_exists('ProductLog', false)) {
 				foreach ($cart['items'] as $item) {
@@ -683,6 +756,7 @@ class Order
 			? Tools::displayPrice($order['shipping'])
 			: translate('Free');
 		$order['total_formatted'] = Tools::displayPrice($order['total']);
+		$order = self::enrichGiftWrapFields($order);
 		$order['coupon_code'] = (string) ($order['coupon_code'] ?? '');
 		$order['coupon_discount'] = (float) ($order['coupon_discount'] ?? 0);
 		$order['coupon_discount_formatted'] = Tools::displayPrice($order['coupon_discount']);
@@ -958,6 +1032,9 @@ class Order
 				: '';
 			$row['tracking_url'] = '';
 
+			$row['gift_wrap'] = (int) ($row['gift_wrap'] ?? 0);
+			$row['has_gift_wrap'] = $row['gift_wrap'] === 1;
+
 			$trackingNumber = trim((string) ($row['tracking_number'] ?? ''));
 
 			if ($trackingNumber !== '' && class_exists('Cargo', false)) {
@@ -1118,6 +1195,7 @@ class Order
 		$order['subtotal_formatted'] = Tools::displayPrice($order['subtotal']);
 		$order['shipping_formatted'] = Tools::displayPrice($order['shipping']);
 		$order['total_formatted'] = Tools::displayPrice($order['total']);
+		$order = self::enrichGiftWrapFields($order);
 		$order['coupon_discount'] = (float) ($order['coupon_discount'] ?? 0);
 		$order['coupon_discount_formatted'] = Tools::displayPrice($order['coupon_discount']);
 		$order['promotion_discount'] = (float) ($order['promotion_discount'] ?? 0);
@@ -1694,7 +1772,8 @@ class Order
 			0,
 			round($subtotal - $couponDiscount - $promotionDiscount - $paymentDiscount - $manualDiscount, 2)
 		);
-		$newTotal = round($discounted + $shipping, 2);
+		$giftFee = !empty($order['gift_wrap']) ? round((float) ($order['gift_wrap_fee'] ?? 0), 2) : 0.0;
+		$newTotal = round($discounted + $shipping + $giftFee, 2);
 
 		$row = [
 			'customer_name' => mb_substr(trim(strip_tags((string) ($data['customer_name'] ?? $order['customer_name']))), 0, 128),

@@ -1,0 +1,51 @@
+{
+	"label": "Blue",
+	"description": "Klasik e-ticaret teması — çoklu header varyantı ve mavi marka paleti.",
+	"preview": "theme-preview.png",
+	"color_groups": {
+		"marka": "Marka & Header"
+	},
+	"options": {
+		"header": {
+			"label": "Header stili",
+			"type": "select",
+			"default": "header2",
+			"source": "header_variants"
+		},
+		"font": {
+			"label": "Yazı tipi",
+			"type": "select",
+			"default": "system",
+			"source": "fonts"
+		},
+		"container_width": {
+			"label": "Site genişliği",
+			"type": "select",
+			"default": "1320",
+			"source": "container_widths"
+		}
+	},
+	"colors": {
+		"prime-primary": {
+			"label": "Ana marka rengi",
+			"default": "#213c8b",
+			"group": "marka"
+		},
+		"header-bg": {
+			"label": "Header arka plan",
+			"default": "#213c8b",
+			"group": "marka"
+		},
+		"header-input-bg": {
+			"label": "Header arama kutusu",
+			"default": "rgba(255, 255, 255, 0.15)",
+			"group": "marka"
+		},
+		"coral-color": {
+			"label": "Vurgu rengi (coral)",
+			"default": "#ff8b71",
+			"group": "marka"
+		}
+	},
+	"color_extra_css": "body {\n\tbackground-color: #f4f4f4;\n\tfont-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n\tmargin: 0;\n\tpadding: 0;\n}"
+}

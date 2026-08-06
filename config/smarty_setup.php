@@ -36,6 +36,21 @@ function fshop_configure_smarty(Smarty\Smarty $smarty): void
 		return strpos((string) $haystack, (string) $needle) !== false;
 	});
 
+	$smarty->registerPlugin('modifier', 'split', static function ($value, $delimiter = ',') {
+		$parts = explode((string) $delimiter, (string) $value);
+		$result = [];
+
+		foreach ($parts as $part) {
+			$part = trim($part);
+
+			if ($part !== '') {
+				$result[] = $part;
+			}
+		}
+
+		return $result;
+	});
+
 	$smarty->registerPlugin('modifier', 'asset_url', static function ($url) {
 		return class_exists('Performance', false)
 			? Performance::versionedUrl((string) $url)

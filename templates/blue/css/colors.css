@@ -1,0 +1,60 @@
+/**
+ * Tema renkleri — Admin > Temalar ekranından düzenlenir.
+ */
+:root {
+	--prime-primary: #213c8b;
+	--header-bg: #213c8b;
+	--header-input-bg: rgba(255, 255, 255, 0.15);
+	--coral-color: #ff8b71;
+	--fy-primary: #2563EB;
+	--fy-secondary: #1D4ED8;
+	--fy-accent: #3B82F6;
+	--fy-hover: #1E40AF;
+	--fy-dark: #0F172A;
+	--fy-footer-bg: #0F172A;
+	--brand-primary: #1a1a1a;
+	--brand-primary-dark: #000000;
+	--brand-accent: #d6001c;
+	--brand-accent-light: #fdeaec;
+	--surface: #ffffff;
+	--surface-soft: #f6f6f6;
+	--border-color: #ebebeb;
+	--text-primary: #1a1a1a;
+	--text-secondary: #767676;
+	--link-color: #1a1a1a;
+	--link-hover-color: #d6001c;
+	--color-dark: #000000;
+	--color1: #1a1a1a;
+	--color1-hover: #000000;
+	--color2: #f6f6f6;
+	--color3: #1a1a1a;
+	--color3-hover: #000000;
+	--price-color: #1a1a1a;
+	--old-price-color: #767676;
+	--discount-bg: #d6001c;
+	--discount-color: #ffffff;
+	--footer-bg: #0c0c0c;
+	--footer-heading: #ffffff;
+	--footer-text: #a3a3a3;
+	--footer-accent: #ffffff;
+	--footer-border: #0c0c0c;
+	--social-icon-color: #a3a3a3;
+	--social-icon-hover: #ffffff;
+	--social-icon-bg: rgba(255,255,255,0.1);
+	--social-icon-bg-hover: #d6001c;
+	--theme-color: #213c8b;
+	--active-category-color: #d6001c;
+	--category-hover-color: #d6001c;
+	--mobile-menu-bg: #ffffff;
+	--mobile-category-icon-color: #213c8b;
+	--fy-gradient: #4279ea;
+	--font-family: 'Poppins', 'Segoe UI', sans-serif;
+	--container: var(--theme-container-max, 1320px);
+}
+
+body {
+	background-color: #f4f4f4;
+	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	margin: 0;
+	padding: 0;
+}

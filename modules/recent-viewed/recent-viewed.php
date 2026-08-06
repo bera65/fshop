@@ -16,12 +16,12 @@ class RecentViewedModule extends ModuleBase
 	public string $author = 'FShop';
 
 	public array $displayHooks = [
-		'home_promo_slider' => 'Ana sayfa — son bakılan ürünler bloğu',
+		'home_bottom' => 'Ana sayfa — son bakılan ürünler bloğu',
 		'product_detail' => 'Ürün detay — görüntüleme kaydı (görünmez)',
 	];
 
 	public array $defaultDisplayHooks = [
-		'home_promo_slider',
+		'home_bottom',
 		'product_detail',
 	];
 
@@ -65,7 +65,7 @@ class RecentViewedModule extends ModuleBase
 			return null;
 		}
 
-		if ($hook !== 'home_promo_slider' || !RecentViewedService::isEnabled()) {
+		if ($hook !== 'home_bottom' || !RecentViewedService::isEnabled()) {
 			return null;
 		}
 
@@ -75,7 +75,7 @@ class RecentViewedModule extends ModuleBase
 			return null;
 		}
 
-		$html = $this->renderFrontTemplate('home_promo_slider', [
+		$html = $this->renderFrontTemplate('home_bottom', [
 			'title' => RecentViewedService::getTitle(),
 			'products' => $products,
 		]);

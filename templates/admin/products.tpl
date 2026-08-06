@@ -13,7 +13,7 @@
 		</div>
 	</div>
 {/if}
-<form method="get" class="admin-toolbar row g-2 mb-3">
+<form method="get" action="{$adminUrl}products" class="admin-toolbar row g-2 mb-3">
 	<div class="col-md-3">
 		<input type="text" name="q" class="form-control form-control-sm" placeholder="{'Search...'|adminT}" value="{$searchQuery|escape}">
 	</div>
@@ -21,7 +21,7 @@
 		<select name="category" class="form-select form-select-sm">
 			<option value="0">{'All categories'|adminT}</option>
 			{foreach $categoryOptions as $cat}
-			<option value="{$cat.id_category}"{if $categoryFilter == $cat.id_category} selected{/if}>{$cat.category_name|escape}</option>
+			<option value="{$cat.id_category}"{if $categoryFilter == $cat.id_category} selected{/if}>{if isset($cat.depth) && $cat.depth > 0}{for $i=1 to $cat.depth}—{/for} {/if}{$cat.category_name|escape}</option>
 			{/foreach}
 		</select>
 	</div>
@@ -34,13 +34,21 @@
 		</select>
 	</div>
 	<div class="col-md-2">
+		<select name="supplier" class="form-select form-select-sm">
+			<option value="0">{'All suppliers'|adminT}</option>
+			{foreach $supplierOptions as $s}
+			<option value="{$s.id_supplier}"{if $supplierFilter == $s.id_supplier} selected{/if}>{$s.supplier_name|escape}</option>
+			{/foreach}
+		</select>
+	</div>
+	<div class="col-md-2">
 		<select name="active" class="form-select form-select-sm">
-			<option value=""{if $activeFilter == -1} selected{/if}>{'All statuses'|adminT}</option>
+			<option value="-1"{if $activeFilter == -1} selected{/if}>{'All statuses'|adminT}</option>
 			<option value="1"{if $activeFilter == 1} selected{/if}>{'Active'|adminT}</option>
 			<option value="0"{if $activeFilter == 0} selected{/if}>{'Inactive'|adminT}</option>
 		</select>
 	</div>
-	<div class="col-md-3 d-flex gap-2">
+	<div class="col-md-2 d-flex gap-2">
 		<button type="submit" class="btn btn-sm btn-dark">{'Filter'|adminT}</button>
 		<a href="{$adminUrl}products" class="btn btn-sm btn-outline-secondary">{'Clear'|adminT}</a>
 	</div>
@@ -53,6 +61,7 @@
 		</a>
 	</div>
 	<form method="post" id="productsBulkForm" class="d-flex align-items-center flex-wrap gap-2" hidden>
+		<input type="hidden" name="token" value="{$adminToken}">
 		<input type="hidden" name="bulkProductToken" value="{$adminToken}">
 		<span class="small text-muted" id="productsBulkCount">0 {'selected'|adminT}</span>
 		<button type="submit" name="bulkProductAction" value="activate" class="btn btn-sm btn-outline-success js-bulk-product-submit">{'Active'|adminT}</button>
@@ -73,6 +82,7 @@
 					<th>{'Product'|adminT}</th>
 					<th>{'Category'|adminT}</th>
 					<th>{'Brand'|adminT}</th>
+					<th>{'Supplier'|adminT}</th>
 					<th>{'Price'|adminT}</th>
 					<th>{'Stock'|adminT}</th>
 					<th>{'Status'|adminT}</th>
@@ -91,11 +101,13 @@
 					<td>{$row.product_name|escape|truncate:40}{if $row.product_type|default:'physical' == 'virtual'} <span class="badge bg-info">{'Virtual'|adminT}</span>{/if}</td>
 					<td>{$row.category_name|escape}</td>
 					<td>{$row.brand_name|escape}</td>
+					<td>{if $row.supplier_name|default:'' != ''}{$row.supplier_name|escape}{else}—{/if}</td>
 					<td>{$row.price_formatted}</td>
 					<td>{$row.stock}</td>
 					<td>{$row.active_label|escape}</td>
 					<td class="text-end">
 					<form action="" method="POST">
+						<input type="hidden" name="token" value="{$adminToken}">
 						<a href="{$adminUrl}product?id={$row.id_product}" class="btn btn-sm btn-outline-dark">
 							<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil-icon lucide-pencil"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
 						</a>
@@ -108,7 +120,7 @@
 				</tr>
 				{/foreach}
 				{else}
-				<tr><td colspan="10" class="text-muted">{'No records found.'|adminT}</td></tr>
+				<tr><td colspan="11" class="text-muted">{'No records found.'|adminT}</td></tr>
 				{/if}
 			</tbody>
 		</table>
