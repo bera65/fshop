@@ -114,7 +114,7 @@
 										<input type="hidden" name="id_tab" value="{$tab.id_tab}">
 										<button type="submit" class="btn btn-sm btn-outline-secondary">{if $tab.active}Pasif{else}Aktif{/if}</button>
 									</form>
-									<form method="post" class="d-inline" onsubmit="return confirm('Bu sekme silinsin mi?');">
+									<form method="post" class="d-inline" data-confirm-message="Bu sekme silinsin mi?">
 										<input type="hidden" name="deleteProductTab" value="1">
 										<input type="hidden" name="token" value="{$adminToken}">
 										<input type="hidden" name="id_tab" value="{$tab.id_tab}">

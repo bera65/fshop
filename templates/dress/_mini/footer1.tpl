@@ -7,6 +7,7 @@
 				<p class="fl-newsletter__desc">{'Newsletter description'|translate}</p>
 			</div>
 			<form class="fl-newsletter__form" id="footerNewsletterForm" data-api-url="{$newsletterApiUrl|escape}" method="post" action="#">
+				<input type="hidden" name="token" value="{$token|escape}">
 				<input type="email" name="email" class="fl-newsletter__input" placeholder="{'Your Email'|translate}" required>
 				<button type="submit" class="fl-newsletter__btn"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send-horizontal-icon lucide-send-horizontal"><path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/><path d="M6 12h16"/></svg></button>
 			</form>
@@ -64,10 +65,14 @@
 				<div class="col-6 col-lg-2">
 					<h4 class="fl-footer__title">{'Categories'|translate}</h4>
 					<ul class="fl-footer__links">
+						{if $hooks.footer_menu}
+						{$hooks.footer_menu nofilter}
+						{else}
 						{foreach $menuCategories as $cat name=flFooterCats}
 						{if $smarty.foreach.flFooterCats.iteration > 7}{break}{/if}
 						<li><a href="{$domain}{$cat.category_link|escape}">{$cat.category_name|escape}</a></li>
 						{/foreach}
+						{/if}
 					</ul>
 				</div>
 

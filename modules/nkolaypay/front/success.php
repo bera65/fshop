@@ -5,29 +5,12 @@ if (!defined('IN_SCRIPT')) {
 }
 
 $request = array_merge($_GET, $_POST);
-$ctx = NkolaypayModule::resolveReturnContext($request);
-$reference = (string) ($ctx['reference'] ?? '');
-$returnToken = (string) ($ctx['return_token'] ?? '');
-$responseMsg = trim((string) ($ctx['message'] ?? ''));
-$returnCode = strtoupper(trim((string) ($ctx['return_code'] ?? '')));
-$responseCode = strtoupper(trim((string) ($ctx['response_code'] ?? '')));
-$amountRaw = (string) ($ctx['amount'] ?? '0');
+$result = NkolaypayModule::handleBrowserReturn($request);
+$reference = (string) ($result['reference'] ?? '');
+$returnToken = (string) ($result['return_token'] ?? '');
 
-$isSuccess = $reference !== ''
-	&& in_array($returnCode, ['0', '00', 'SUCCESS'], true)
-	&& in_array($responseCode, ['0', '00', 'SUCCESS'], true);
-
-if (!$isSuccess) {
-	$message = $responseMsg !== '' ? $responseMsg : 'Ödeme sonucu başarısız';
-	$codeBits = array_filter([$returnCode, $responseCode], static function ($v) {
-		return $v !== '';
-	});
-
-	if ($codeBits !== []) {
-		$message .= ' (Kod: ' . implode(' / ', $codeBits) . ')';
-	}
-
-	$message = 'N Kolay Pay: ' . $message;
+if (empty($result['success'])) {
+	$message = (string) ($result['message'] ?? 'Ödeme sonucu başarısız');
 
 	if ($reference !== '') {
 		NkolaypayModule::saveReturnError($reference, $message);
@@ -44,14 +27,17 @@ if (!$isSuccess) {
 	exit;
 }
 
-$paidAmount = NkolaypayModule::parseAmount($amountRaw);
-NkolaypayModule::completeOrderAfterPayment($reference, $paidAmount);
 Order::clearPendingPayment();
 
-$idOrder = (int) DB::getValue('SELECT id_order FROM orders WHERE reference = ? LIMIT 1', [$reference]);
+$idOrder = (int) ($result['id_order'] ?? 0);
+
+if ($idOrder <= 0 && $reference !== '') {
+	$idOrder = (int) DB::getValue('SELECT id_order FROM orders WHERE reference = ? LIMIT 1', [$reference]);
+}
+
 $target = $idOrder > 0
 	? rtrim($domain, '/') . '/checkout-success?id=' . $idOrder
-	: rtrim($domain, '/') . '/checkout-success?ref=' . rawurlencode($reference);
+	: rtrim($domain, '/') . '/checkout';
 
 header('Location: ' . $target);
 exit;

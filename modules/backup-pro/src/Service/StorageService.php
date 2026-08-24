@@ -141,4 +141,126 @@ class StorageService
 
         return $written !== false;
     }
+
+    public static function isPathInside(string $path, string $root): bool
+    {
+        $path = rtrim(str_replace('\\', '/', $path), '/');
+        $root = rtrim(str_replace('\\', '/', $root), '/');
+
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $path = strtolower($path);
+            $root = strtolower($root);
+        }
+
+        return $path === $root || strpos($path, $root . '/') === 0;
+    }
+
+    public function isSafeBackupArchive(string $path): bool
+    {
+        $real = realpath($path);
+        $backupReal = realpath(rtrim($this->backupDir, '/\\'));
+
+        if ($real === false || $backupReal === false || !is_file($real)) {
+            return false;
+        }
+
+        if (!self::isPathInside($real, $backupReal)) {
+            return false;
+        }
+
+        return strtolower((string) pathinfo($real, PATHINFO_EXTENSION)) === 'zip';
+    }
+
+    public static function getRestoreStagingBase(): ?string
+    {
+        $base = realpath(sys_get_temp_dir());
+        if ($base === false || !is_dir($base)) {
+            return null;
+        }
+
+        $project = realpath(self::getProjectRoot());
+        if ($project !== false && self::isPathInside($base, $project)) {
+            return null;
+        }
+
+        return $base;
+    }
+
+    public static function isApprovedRestoreStagingDir(string $dir): bool
+    {
+        $real = realpath($dir);
+        $base = self::getRestoreStagingBase();
+
+        if ($real === false || $base === null || !is_dir($real)) {
+            return false;
+        }
+
+        if (!preg_match('/^fshop-restore-[a-f0-9]{32}$/', basename($real))) {
+            return false;
+        }
+
+        $parent = realpath(dirname($real));
+        if ($parent === false || !self::isPathInside($parent, $base) || !self::isPathInside($base, $parent)) {
+            return false;
+        }
+
+        $project = realpath(self::getProjectRoot());
+        if ($project !== false && self::isPathInside($real, $project)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function createRestoreStagingDir(): ?string
+    {
+        $base = self::getRestoreStagingBase();
+        if ($base === null) {
+            return null;
+        }
+
+        $dir = $base . DIRECTORY_SEPARATOR . 'fshop-restore-' . bin2hex(random_bytes(16));
+
+        if (!mkdir($dir, 0700) && !is_dir($dir)) {
+            return null;
+        }
+
+        $real = realpath($dir);
+        if ($real === false || !self::isApprovedRestoreStagingDir($real)) {
+            if (is_dir($dir)) {
+                @rmdir($dir);
+            }
+
+            return null;
+        }
+
+        return $real;
+    }
+
+    public function removeRestoreStagingDir(?string $dir): void
+    {
+        if ($dir === null || $dir === '' || !is_dir($dir)) {
+            return;
+        }
+
+        $real = realpath($dir);
+        if ($real === false || !self::isApprovedRestoreStagingDir($real)) {
+            return;
+        }
+
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($real, \RecursiveDirectoryIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($iterator as $item) {
+            if ($item->isDir()) {
+                @rmdir($item->getPathname());
+            } else {
+                @unlink($item->getPathname());
+            }
+        }
+
+        @rmdir($real);
+    }
 }

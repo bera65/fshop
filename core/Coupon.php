@@ -228,12 +228,47 @@ class Coupon
 		return min($subtotal, max(0.0, $discount));
 	}
 
-	public static function markUsed(string $code): void
+	public static function reserveUse(string $code): bool
 	{
 		$code = self::normalizeCode($code);
 
+		if ($code === '') {
+			return true;
+		}
+
+		global $db;
+
+		$stmt = $db->prepare(
+			'UPDATE coupons
+			 SET used_count = used_count + 1
+			 WHERE code = ?
+			   AND (max_uses = 0 OR used_count < max_uses)'
+		);
+
+		if (!$stmt || !$stmt->execute([$code])) {
+			return false;
+		}
+
+		return $stmt->rowCount() > 0;
+	}
+
+	public static function markUsed(string $code): void
+	{
+		self::reserveUse($code);
+	}
+
+	public static function releaseUsed(string $code): void
+	{
+		$code = self::normalizeCode($code);
+
+		if ($code === '') {
+			return;
+		}
+
 		DB::execute(
-			'UPDATE coupons SET used_count = used_count + 1 WHERE code = ?',
+			'UPDATE coupons
+			 SET used_count = GREATEST(used_count - 1, 0)
+			 WHERE code = ?',
 			[$code]
 		);
 	}

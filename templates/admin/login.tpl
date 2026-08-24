@@ -6,7 +6,7 @@
 	<title>{'Admin Login'|adminT} | {$siteName|escape}</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 	<link rel="stylesheet" href="{$domain}templates/admin/css/bootstrap.min.css">
 	<link rel="stylesheet" href="{$adminCssDir}admin.css?v={$smarty.now}">
 	{if $recaptchaModuleCss}
@@ -60,7 +60,10 @@
 					<input type="email" name="email" id="adminLoginEmail" class="form-control admin-login-input" required autofocus placeholder="admin@ornek.com" autocomplete="username">
 				</div>
 				<div class="admin-login-field">
-					<label class="form-label" for="adminLoginPassword">{'Password'|adminT}</label>
+					<div class="admin-login-field__label-row">
+						<label class="form-label" for="adminLoginPassword">{'Password'|adminT}</label>
+						<a class="admin-login-forgot" href="{$adminUrl}forgot-password">{'Forgot password?'|adminT}</a>
+					</div>
 					<div class="admin-login-password">
 						<input type="password" name="password" id="adminLoginPassword" class="form-control admin-login-input" required placeholder="••••••••" autocomplete="current-password">
 						<button type="button" class="admin-login-password__toggle" id="adminLoginTogglePass" aria-label="{'Show password'|adminT}" data-show-label="{'Show password'|adminT}" data-hide-label="{'Hide password'|adminT}">

@@ -122,9 +122,13 @@ class Product
 
 		$stockCol = DB::execute("SHOW COLUMNS FROM `products` LIKE 'stock'");
 		$stockType = strtolower((string) ($stockCol[0]['Type'] ?? ''));
-		if ($stockType !== '' && strpos($stockType, 'decimal') === false) {
+		if ($stockType !== '' && (strpos($stockType, 'decimal(12,3)') !== false || strpos($stockType, 'int') !== false)) {
 			DB::execute(
-				'ALTER TABLE `products` MODIFY COLUMN `stock` decimal(12,3) NOT NULL DEFAULT 100.000'
+				'ALTER TABLE `products` MODIFY COLUMN `stock` decimal(12,2) NOT NULL DEFAULT 100.00'
+			);
+		} elseif ($stockType !== '' && strpos($stockType, 'decimal') === false) {
+			DB::execute(
+				'ALTER TABLE `products` MODIFY COLUMN `stock` decimal(12,2) NOT NULL DEFAULT 100.00'
 			);
 		}
 
@@ -300,12 +304,26 @@ class Product
 			}
 		}
 
+		$oldStock = is_array($product) ? (float) ($product['stock'] ?? 0) : 0;
+
 		$stmt = $db->prepare(
 			'UPDATE products SET stock = stock - ? WHERE id_product = ? AND stock >= ?'
 		);
 		$stmt->execute([$qty, $idProduct, $qty]);
 
-		return $stmt->rowCount() > 0;
+		if ($stmt->rowCount() <= 0) {
+			return false;
+		}
+
+		$newStock = max(0.0, $oldStock - $qty);
+
+		if (!class_exists('StockAnalysis', false)) {
+			require_once dirname(__FILE__) . '/StockAnalysis.php';
+		}
+
+		StockAnalysis::touchStockEmptyAt($idProduct, $oldStock, $newStock);
+
+		return true;
 	}
 
 	public static function increaseStock(int $idProduct, float $qty, int $idVariation = 0): void
@@ -998,6 +1016,8 @@ class Product
 		$rows = DB::execute($sql, $params) ?: [];
 
 		foreach ($rows as &$row) {
+			$row['stock'] = round((float) ($row['stock'] ?? 0), 2);
+			$row['stock_formatted'] = Tools::displayStock($row['stock']);
 			$row['price_formatted'] = Tools::displayPrice((float) $row['price']);
 			$row['image_url'] = self::getImageUrl(isset($row['id_image']) ? (int) $row['id_image'] : null);
 			$row['active_label'] = (int) $row['active'] === 1 ? 'Aktif' : 'Pasif';
@@ -1067,6 +1087,7 @@ class Product
 		}
 
 		$product = $rows[0];
+		$product['stock'] = round((float) ($product['stock'] ?? 0), 2);
 		$product['images'] = self::getImages($id);
 
 		return $product;
@@ -1359,7 +1380,7 @@ class Product
 			'doviz_old_price'	=> max(0, $oldPrice),
 			'old_price' 		=> max(0, $oldPrice),
 			'vat' 				=> max(0, $vat),
-			'stock' 			=> $productType === 'pack' ? 0 : max(0, round($stock, 3)),
+			'stock' 			=> $productType === 'pack' ? 0 : max(0, round($stock, 2)),
 			'sale_unit' 		=> $saleUnit,
 			'sale_qty_min' 		=> $saleQtyMin,
 			'sale_qty_step' 	=> $saleQtyStep,
@@ -1739,8 +1760,13 @@ class Product
 
 		$binary = curl_exec($ch);
 		$httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		$finalUrl = (string) curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
 		$curlError = curl_error($ch);
 		curl_close($ch);
+
+		if ($finalUrl !== '' && !Security::isSafeOutboundUrl($finalUrl)) {
+			return ['success' => false, 'message' => 'Görsel URL güvenlik kontrolünden geçemedi'];
+		}
 
 		if ($binary === false || $binary === '') {
 			return ['success' => false, 'message' => $curlError !== '' ? 'Görsel indirilemedi: ' . $curlError : 'Görsel indirilemedi'];
@@ -1780,7 +1806,7 @@ class Product
 		$row = [];
 
 		if (array_key_exists('stock', $data)) {
-			$row['stock'] = max(0, round((float) str_replace(',', '.', (string) $data['stock']), 3));
+			$row['stock'] = max(0, round((float) str_replace(',', '.', (string) $data['stock']), 2));
 		}
 
 		if (array_key_exists('active', $data)) {

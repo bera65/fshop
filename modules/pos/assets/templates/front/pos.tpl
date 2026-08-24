@@ -173,7 +173,7 @@
 					<button type="button" id="pos-customer-create-toggle" class="pos-outline-btn pos-outline-btn--sm">+ Yeni müşteri ekle</button>
 					<div id="pos-customer-create-form" class="pos-customer-create__form" hidden>
 						<input type="text" id="pos-customer-create-name" class="pos-field" placeholder="Ad soyad" autocomplete="off">
-						<input type="text" id="pos-customer-create-phone" class="pos-field" placeholder="05xx xxx xx xx" autocomplete="off">
+						<input type="text" id="pos-customer-create-phone" class="pos-field" placeholder="+90 / +1 / +44 …" autocomplete="off">
 						<input type="email" id="pos-customer-create-email" class="pos-field" placeholder="E-posta (isteğe bağlı)" autocomplete="off">
 						<button type="button" id="pos-customer-create-save" class="pos-checkout pos-checkout--inline">Kaydet ve seç</button>
 					</div>

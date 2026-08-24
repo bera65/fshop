@@ -33,6 +33,13 @@ $filters = Order::normalizeAdminFilters([
 	'customer' => Tools::getValue('customer'),
 	'date_from' => Tools::getValue('date_from'),
 	'date_to' => Tools::getValue('date_to'),
+	'payment_method' => Tools::getValue('payment_method'),
+	'sku' => Tools::getValue('sku'),
+	'product_name' => Tools::getValue('product_name'),
+	'tracking_number' => Tools::getValue('tracking_number'),
+	'cargo_company' => Tools::getValue('cargo_company'),
+	'channel' => Tools::getValue('channel'),
+	'sort' => Tools::getValue('sort'),
 ]);
 
 ExportExcelService::exportOrders($status, $filters);

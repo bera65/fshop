@@ -15,6 +15,8 @@ cache/cache/*
 !cache/cache/index.php
 cache/pages/*
 !cache/pages/index.php
+cache/updates/*
+!cache/updates/index.php
 cache/news-feed.json
 cache/*.txt
 cache/*.xml
@@ -46,3 +48,6 @@ Desktop.ini
 # Geçici
 config/debug.log
 *.bak
+
+# Yayın paketleri
+dist/

@@ -96,7 +96,8 @@ class ExportExcelService
 		$filters = Order::normalizeAdminFilters($filters);
 		$total = Order::countAdmin($status, $filters['date_from'], $filters['date_to'], $filters);
 		$rows = Order::enrichAdminRows(
-			Order::getAdminList($status, max(1, $total), 0, $filters['date_from'], $filters['date_to'], $filters)
+			Order::getAdminList($status, max(1, $total), 0, $filters['date_from'], $filters['date_to'], $filters),
+			true
 		);
 
 		$books = [[
@@ -106,10 +107,16 @@ class ExportExcelService
 			'<b>Phone</b>',
 			'<b>Status</b>',
 			'<b>Payment</b>',
+			'<b>Product</b>',
+			'<b>Stock code</b>',
+			'<b>Barcode</b>',
+			'<b>Unit price</b>',
+			'<b>Qty</b>',
+			'<b>Line total</b>',
 			'<b>Subtotal</b>',
 			'<b>Shipping</b>',
 			'<b>Discount</b>',
-			'<b>Total</b>',
+			'<b>Order total</b>',
 			'<b>Date</b>',
 			'<b>Note</b>',
 		]];
@@ -117,15 +124,18 @@ class ExportExcelService
 		foreach ($rows as $row) {
 			$discount = (float) ($row['coupon_discount'] ?? 0)
 				+ (float) ($row['promotion_discount'] ?? 0)
-				+ (float) ($row['payment_discount'] ?? 0);
+				+ (float) ($row['payment_discount'] ?? 0)
+				+ (float) ($row['manual_discount'] ?? 0);
 
-			$books[] = [
+			$base = [
 				(string) ($row['reference'] ?? ''),
 				(string) ($row['customer_name'] ?? ''),
 				(string) ($row['customer_email'] ?? ''),
 				(string) ($row['customer_phone'] ?? ''),
 				(string) ($row['status_label'] ?? ''),
 				(string) ($row['payment_label'] ?? ''),
+			];
+			$tail = [
 				(float) ($row['subtotal'] ?? 0),
 				(float) ($row['shipping'] ?? 0),
 				$discount,
@@ -133,6 +143,24 @@ class ExportExcelService
 				(string) ($row['date_add'] ?? ''),
 				(string) ($row['note'] ?? ''),
 			];
+
+			$lines = is_array($row['lines'] ?? null) ? $row['lines'] : [];
+
+			if ($lines === []) {
+				$books[] = array_merge($base, ['', '', '', '', '', ''], $tail);
+				continue;
+			}
+
+			foreach ($lines as $line) {
+				$books[] = array_merge($base, [
+					(string) ($line['product_name'] ?? ''),
+					(string) ($line['stock_code'] ?? ''),
+					(string) ($line['barcode'] ?? ''),
+					(float) ($line['price'] ?? 0),
+					(float) ($line['qty'] ?? 0),
+					(float) ($line['total'] ?? 0),
+				], $tail);
+			}
 		}
 
 		$name = 'order-list.xlsx';

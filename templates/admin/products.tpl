@@ -66,7 +66,7 @@
 		<span class="small text-muted" id="productsBulkCount">0 {'selected'|adminT}</span>
 		<button type="submit" name="bulkProductAction" value="activate" class="btn btn-sm btn-outline-success js-bulk-product-submit">{'Active'|adminT}</button>
 		<button type="submit" name="bulkProductAction" value="deactivate" class="btn btn-sm btn-outline-secondary js-bulk-product-submit">{'Deactive'|adminT}</button>
-		<button type="submit" name="bulkProductAction" value="delete" class="btn btn-sm btn-outline-danger js-bulk-product-submit js-admin-confirm" data-confirm-title="Toplu sil" data-confirm-message="{'Selected items will be permanently deleted. Do you want to continue?'|adminT}">{'Delete'|adminT}</button>
+		<button type="submit" name="bulkProductAction" value="delete" class="btn btn-sm btn-outline-danger js-bulk-product-submit js-admin-confirm" data-confirm-title="{'Delete'|adminT}" data-confirm-message="{'Selected items will be permanently deleted. Do you want to continue?'|adminT}" data-confirm-require-checked=".js-product-select" data-confirm-empty-message="{'Select at least one product'|adminT}">{'Delete'|adminT}</button>
 	</form>
 </div>
 <div class="admin-panel p-0">
@@ -103,19 +103,19 @@
 					<td>{$row.brand_name|escape}</td>
 					<td>{if $row.supplier_name|default:'' != ''}{$row.supplier_name|escape}{else}—{/if}</td>
 					<td>{$row.price_formatted}</td>
-					<td>{$row.stock}</td>
+					<td>{$row.stock_formatted|default:$row.stock}</td>
 					<td>{$row.active_label|escape}</td>
-					<td class="text-end">
-					<form action="" method="POST">
-						<input type="hidden" name="token" value="{$adminToken}">
-						<a href="{$adminUrl}product?id={$row.id_product}" class="btn btn-sm btn-outline-dark">
-							<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil-icon lucide-pencil"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
-						</a>
-						<input type="hidden" name="idProduct" value="{$row.id_product}" />
-						<button type="submit" name="deleteProduct" value="{$adminToken}" class="btn btn-danger btn-sm js-admin-confirm" data-confirm-title="{'Delete product'|adminT}" data-confirm-message="{'Are you sure you want to delete this product? The product and related images will be permanently removed.'|adminT}">
-							<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-						</button>
-					</form>
+					<td class="text-end text-nowrap">
+						<form action="" method="POST" class="adm-row-actions">
+							<input type="hidden" name="token" value="{$adminToken}">
+							<input type="hidden" name="idProduct" value="{$row.id_product}">
+							<a href="{$adminUrl}product?id={$row.id_product}" class="adm-icon-btn" title="{'Edit'|adminT}" aria-label="{'Edit'|adminT}">
+								<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
+							</a>
+							<button type="submit" name="deleteProduct" value="{$adminToken}" class="adm-icon-btn adm-icon-btn--danger js-admin-confirm" title="{'Delete'|adminT}" aria-label="{'Delete'|adminT}" data-confirm-title="{'Delete product'|adminT}" data-confirm-message="{'Are you sure you want to delete this product? The product and related images will be permanently removed.'|adminT}">
+								<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+							</button>
+						</form>
 					</td>
 				</tr>
 				{/foreach}
@@ -182,7 +182,9 @@
 			if (document.querySelectorAll('.js-product-select:checked').length === 0) {
 				event.preventDefault();
 				event.stopPropagation();
-				window.alert('Lütfen en az bir ürün seçin.');
+				if (window.AdminToast) {
+					AdminToast.show('{'Select at least one product'|adminT|escape:'javascript'}', 'warning');
+				}
 			}
 		});
 	});

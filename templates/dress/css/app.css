@@ -563,11 +563,75 @@ body.fl-body .page {
 	overflow: hidden;
 }
 
+.fl-card__media-link {
+	display: block;
+	height: 100%;
+	color: inherit;
+	text-decoration: none;
+}
+
 .fl-card__img {
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
 	display: block;
+	transition: transform .35s ease;
+}
+
+.fl-card:hover .fl-card__img {
+	transform: scale(1.04);
+}
+
+.fl-card__cart {
+	position: absolute;
+	left: 10px;
+	right: 10px;
+	bottom: 10px;
+	z-index: 3;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-height: 42px;
+	padding: 10px 14px;
+	border: 0;
+	border-radius: 8px;
+	background: rgba(26, 26, 26, 0.92);
+	color: #fff;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.2;
+	text-align: center;
+	text-decoration: none;
+	cursor: pointer;
+	opacity: 0;
+	transform: translateY(10px);
+	pointer-events: none;
+	transition: opacity .2s ease, transform .2s ease, background .2s ease;
+}
+
+.fl-card:hover .fl-card__cart,
+.fl-card:focus-within .fl-card__cart {
+	opacity: 1;
+	transform: translateY(0);
+	pointer-events: auto;
+}
+
+.fl-card__cart:hover {
+	background: #000;
+	color: #fff;
+}
+
+.fl-card__cart svg {
+	flex-shrink: 0;
+}
+
+@media (hover: none) {
+	.fl-card__cart {
+		opacity: 1;
+		transform: none;
+		pointer-events: auto;
+	}
 }
 
 .fl-card__badges {

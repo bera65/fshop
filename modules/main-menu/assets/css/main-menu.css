@@ -254,3 +254,13 @@
 	padding-left: 2.5rem;
 	font-size: 0.9rem;
 }
+
+/* —— Footer menu links (li items injected into theme ul) —— */
+.mm-footer-menu__link {
+	text-decoration: none;
+}
+
+.mm-footer-menu__item + .mm-footer-menu__item {
+	margin-top: 0.15rem;
+}
+

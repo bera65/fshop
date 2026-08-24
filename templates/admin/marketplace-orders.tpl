@@ -1,161 +1,127 @@
 {include file='admin/marketplace/_nav.tpl'}
-<div class="admin-panel p-3 mb-3 mp-orders-page">
-	<div class="mp-filter-card">
-		<div class="mp-filter-header">
-			<div class="mp-filter-title">
-				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M22 3H2l8 9v7l4 2v-9l8-9z"/>
-				</svg>
-				Sipariş Filtreleri
+<div class="mp-orders-page">
+	<div class="admin-panel p-3 mb-3">
+		<div class="mp-filter-card mb-0">
+			<div class="mp-filter-header">
+				<div class="mp-filter-title">
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M22 3H2l8 9v7l4 2v-9l8-9z"/>
+					</svg>
+					Sipariş Filtreleri
+				</div>
+				<div class="mp-filter-sub">Tarih, müşteri, sipariş no ve ürün/stok koduna göre listele.</div>
 			</div>
-			<div class="mp-filter-sub">Tarih, müşteri, sipariş no ve ürün/stok koduna göre listele.</div>
+
+			<form id="mpFilterForm" method="get" action="{$ordersUrl|escape}">
+				<div class="row">
+					<div class="col-md-4 mb-3">
+						<label>PAZARYERİ</label>
+						<select name="marketplace_platform" class="form-select form-select-sm">
+							<option value="all"{if $marketplaceOrderPlatform == 'all'} selected{/if}>Tümü</option>
+							<option value="trendyol"{if $marketplaceOrderPlatform == 'trendyol'} selected{/if}>Trendyol</option>
+							<option value="hepsiburada"{if $marketplaceOrderPlatform == 'hepsiburada'} selected{/if}>Hepsiburada</option>
+							<option value="n11"{if $marketplaceOrderPlatform == 'n11'} selected{/if}>N11</option>
+						</select>
+					</div>
+
+					<div class="col-md-4 mb-3">
+						<label>BAŞLANGIÇ TARİHİ</label>
+						<input type="date" name="start_date" class="form-control form-control-sm" value="{$marketplaceOrderStartDate|escape}">
+					</div>
+
+					<div class="col-md-4 mb-3">
+						<label>BİTİŞ TARİHİ</label>
+						<input type="date" name="end_date" class="form-control form-control-sm" value="{$marketplaceOrderEndDate|escape}">
+					</div>
+
+					<div class="col-md-3 mb-3">
+						<label>SİPARİŞ NO</label>
+						<input type="text" name="order_number" class="form-control form-control-sm" placeholder="Sipariş numarası" value="{$marketplaceOrderFilterOrderNumber|escape}">
+					</div>
+
+					<div class="col-md-3 mb-3">
+						<label>MÜŞTERİ ADI</label>
+						<input type="text" name="customer_name" class="form-control form-control-sm" placeholder="Müşteri adı" value="{$marketplaceOrderFilterCustomerName|escape}">
+					</div>
+
+					<div class="col-md-3 mb-3">
+						<label>ÜRÜN / STOK KODU</label>
+						<input type="text" name="product_query" class="form-control form-control-sm" placeholder="Ürün adı veya stok kodu" value="{$marketplaceOrderFilterProductQuery|escape}">
+					</div>
+
+					<div class="col-md-3 mb-3">
+						<label>SİPARİŞ DURUMU</label>
+						<select name="order_status" class="form-select form-select-sm">
+							<option value="all"{if $marketplaceOrderFilterStatus == 'all'} selected{/if}>Tümü</option>
+							<option value="pending"{if $marketplaceOrderFilterStatus == 'pending'} selected{/if}>Hazırlanıyor</option>
+							<option value="navy"{if $marketplaceOrderFilterStatus == 'navy'} selected{/if}>Paketleniyor</option>
+							<option value="success"{if $marketplaceOrderFilterStatus == 'success'} selected{/if}>Kargoda</option>
+							<option value="done"{if $marketplaceOrderFilterStatus == 'done'} selected{/if}>Teslim Edildi</option>
+							<option value="danger"{if $marketplaceOrderFilterStatus == 'danger'} selected{/if}>İptal / İade</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="mp-filter-actions">
+					<div style="display:flex;gap:10px;flex-wrap:wrap">
+						<button type="submit" class="btn btn-warning">Ara</button>
+						<button type="button" id="mpExportBtn" class="btn btn-success">Excel'e Aktar</button>
+						<button type="button" id="mpImportOrderBtn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#mpImportModal">Sipariş Import</button>
+					</div>
+				</div>
+			</form>
 		</div>
-
-		<form id="mpFilterForm" method="get" action="{$ordersUrl|escape}">
-			<div class="row">
-				<div class="col-md-4 mb-3">
-					<label>PAZARYERİ</label>
-					<select name="marketplace_platform" class="form-select form-select-sm">
-						<option value="all"{if $marketplaceOrderPlatform == 'all'} selected{/if}>Tümü</option>
-						<option value="trendyol"{if $marketplaceOrderPlatform == 'trendyol'} selected{/if}>Trendyol</option>
-						<option value="hepsiburada"{if $marketplaceOrderPlatform == 'hepsiburada'} selected{/if}>Hepsiburada</option>
-						<option value="n11"{if $marketplaceOrderPlatform == 'n11'} selected{/if}>N11</option>
-					</select>
-				</div>
-
-				<div class="col-md-4 mb-3">
-					<label>BAŞLANGIÇ TARİHİ</label>
-					<input type="date" name="start_date" class="form-control form-control-sm" value="{$marketplaceOrderStartDate|escape}">
-				</div>
-
-				<div class="col-md-4 mb-3">
-					<label>BİTİŞ TARİHİ</label>
-					<input type="date" name="end_date" class="form-control form-control-sm" value="{$marketplaceOrderEndDate|escape}">
-				</div>
-
-				<div class="col-md-3 mb-3">
-					<label>SİPARİŞ NO</label>
-					<input type="text" name="order_number" class="form-control form-control-sm" placeholder="Sipariş numarası" value="{$marketplaceOrderFilterOrderNumber|escape}">
-				</div>
-
-				<div class="col-md-3 mb-3">
-					<label>MÜŞTERİ ADI</label>
-					<input type="text" name="customer_name" class="form-control form-control-sm" placeholder="Müşteri adı" value="{$marketplaceOrderFilterCustomerName|escape}">
-				</div>
-
-				<div class="col-md-3 mb-3">
-					<label>ÜRÜN / STOK KODU</label>
-					<input type="text" name="product_query" class="form-control form-control-sm" placeholder="Ürün adı veya stok kodu" value="{$marketplaceOrderFilterProductQuery|escape}">
-				</div>
-
-				<div class="col-md-3 mb-3">
-					<label>SİPARİŞ DURUMU</label>
-					<select name="order_status" class="form-select form-select-sm">
-						<option value="all"{if $marketplaceOrderFilterStatus == 'all'} selected{/if}>Tümü</option>
-						<option value="pending"{if $marketplaceOrderFilterStatus == 'pending'} selected{/if}>Hazırlanıyor</option>
-						<option value="navy"{if $marketplaceOrderFilterStatus == 'navy'} selected{/if}>Paketleniyor</option>
-						<option value="success"{if $marketplaceOrderFilterStatus == 'success'} selected{/if}>Kargoda</option>
-						<option value="done"{if $marketplaceOrderFilterStatus == 'done'} selected{/if}>Teslim Edildi</option>
-						<option value="danger"{if $marketplaceOrderFilterStatus == 'danger'} selected{/if}>İptal / İade</option>
-					</select>
-				</div>
-			</div>
-
-			<div class="mp-filter-actions">
-				<div style="display:flex;gap:10px;flex-wrap:wrap">
-					<button type="submit" class="btn btn-warning">Ara</button>
-					<button type="button" id="mpExportBtn" class="btn btn-success">Excel'e Aktar</button>
-					<button type="button" id="mpImportOrderBtn" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#mpImportModal">Sipariş Import</button>
-				</div>
-			</div>
-		</form>
-		{*
-		<form method="post" action="{$ordersUrl|escape}" class="mt-2">
-			<input type="hidden" name="token" value="{$adminToken}">
-			<input type="hidden" name="syncMarketplaceOrders" value="1">
-			<input type="hidden" name="marketplace_platform" value="{$marketplaceOrderPlatform|escape}">
-			<input type="hidden" name="start_date" value="{$marketplaceOrderStartDate|escape}">
-			<input type="hidden" name="end_date" value="{$marketplaceOrderEndDate|escape}">
-			<button type="submit" class="btn btn-sm btn-outline-dark">Siparişleri Çek</button>
-		</form>
-		*}
 	</div>
 
 	{if $marketplaceOrders|@count}
-	<div class="mp-order-bar">
-		<label class="mp-order-bar-left mb-0">
-			<input type="checkbox" class="form-check-input mp-order-check" id="mpSelectAll">
-			<span>Tümünü Seç</span>
-		</label>
-		<div class="mp-order-bar-right">
-			<button type="button" id="mpPrintSelected" class="mp-btn">{'Print'|adminT}</button>
+	<div class="adm-orders-bulk admin-panel mb-3">
+		<div class="adm-orders-bulk__bd">
+			<div class="adm-orders-bulk__left">
+				<label class="adm-orders-bulk__check">
+					<input type="checkbox" class="form-check-input mp-order-check" id="mpSelectAll">
+					<span>Tümünü Seç</span>
+				</label>
+				<button type="button" id="mpPrintSelected" class="btn btn-sm btn-outline-secondary">
+					<i data-lucide="printer" style="width:14px;height:14px"></i>
+					{'Print'|adminT}
+				</button>
+			</div>
 		</div>
 	</div>
 
-	<div class="mp-order-list">
-		{foreach $marketplaceOrders as $ord}
-		<div class="mp-order-row" data-order="{$ord.detail_json|escape}">
+	<div class="admin-panel adm-orders-table-panel mb-3">
+		<div class="adm-orders-table-panel__hd">
 			<div>
-				<input type="checkbox" class="form-check-input mp-order-check mp-order-row-check" value="{$ord.platform|escape}::{$ord.order_number|escape}::{$ord.shipment_package_id|escape}">
-			</div>
-			<div>
-				<img
-					src="{$domain}templates/admin/img/icons/{$ord.platform_icon_file|escape}"
-					alt="{$ord.platform_label|escape}"
-					class="mp-order-icon"
-					onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-				<span class="mp-order-icon-fallback {$ord.platform|escape}" style="display:none;">{$ord.platform_icon|escape}</span>
-			</div>
-			<div class="mp-order-col">
-				<button type="button" class="mp-order-title-btn js-mp-open-detail">
-					<div class="mp-order-title">#{$ord.order_number|escape}</div>
-				</button>
-				<div class="mp-order-sub">{$ord.cargo_provider|escape}</div>
-			</div>
-			<div class="mp-order-col">
-				<div class="mp-order-title">{$ord.customer_name|escape}</div>
-				<div class="mp-order-sub">{$ord.customer_sub|escape}</div>
-			</div>
-			<div class="mp-order-col mp-order-col-price">
-				<div class="mp-order-price">{$ord.total_price|escape}</div>
-				<div class="mp-order-sub">Satış Tutarı</div>
-			</div>
-			<div class="mp-order-col mp-order-col-status">
-				<span class="mp-order-status-pill {$ord.status_tone|escape}">
-					<span>{$ord.status|escape}</span>
-				</span>
-			</div>
-			<div class="mp-order-datetime mp-order-col-date">
-				<div>{$ord.date_day|escape}</div>
-				{if $ord.date_time}<div>{$ord.date_time|escape}</div>{/if}
-			</div>
-			<div class="mp-order-actions">
-				<a
-					href="{$adminUrl|escape}marketplace-order-print?auto=1&amp;platform={$ord.platform|escape}&amp;order_number={$ord.order_number|escape}&amp;package_id={$ord.shipment_package_id|escape}"
-					target="_blank"
-					rel="noopener"
-					class="mp-order-action"
-					title="Yazdır"
-					aria-label="Yazdır"
-				>
-					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
-				</a>
-				<div class="mp-order-menu">
-					<button type="button" class="mp-order-action js-mp-menu-toggle" title="İşlemler" aria-label="İşlemler" aria-expanded="false">
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
-					</button>
-					<div class="mp-order-menu-drop" hidden>
-						<button type="button" class="mp-order-menu-item js-mp-refresh-order">Güncel durum al</button>
-						<button type="button" class="mp-order-menu-item js-mp-cancel-order">Siparişi iptal et</button>
-						<button type="button" class="mp-order-menu-item danger js-mp-delete-order">Siparişi sil</button>
-					</div>
-				</div>
+				<h2 class="h6 mb-0">Pazaryeri siparişleri</h2>
+				<p class="text-muted small mb-0">{$marketplaceOrders|@count} kayıt</p>
 			</div>
 		</div>
-		{/foreach}
+		<div class="p-0">
+			<div class="table-responsive adm-orders-shell">
+				<table class="table adm-orders-table mb-0 align-middle">
+					<thead>
+						<tr>
+							<th style="width:96px"><span class="visually-hidden">{'Select'|adminT}</span></th>
+							<th>{'Channel'|adminT}</th>
+							<th>{'Order date'|adminT}</th>
+							<th class="text-center" style="width:148px">{'Actions'|adminT}</th>
+							<th>{'Order no'|adminT}</th>
+							<th>{'Status'|adminT}</th>
+							<th>{'Customer'|adminT}</th>
+							<th>{'Payment'|adminT}</th>
+							<th>{'Cost'|adminT}</th>
+							<th>{'Total'|adminT}</th>
+						</tr>
+					</thead>
+					<tbody>
+						{include file='admin/partials/marketplace-order-list-rows.tpl'}
+					</tbody>
+				</table>
+			</div>
+		</div>
 	</div>
 	{else}
-	<div class="mp-order-empty">Henüz sipariş yok.</div>
+	<div class="mp-order-empty mb-3">Henüz sipariş yok.</div>
 	{/if}
 
 	{if isset($pagination) && $pagination.total_pages > 1}
@@ -265,8 +231,8 @@
 	exportBtn.addEventListener('click', function (e) {
 		e.preventDefault();
 		var params = new URLSearchParams(new FormData(form));
-		params.set('token', '{$adminToken}');
-		window.location.href = '{$exportOrdersUrl}&' + params.toString();
+		params.set('token', {$adminToken|js nofilter});
+		window.location.href = {$exportOrdersUrl|js nofilter} + '&' + params.toString();
 	});
 })();
 
@@ -274,7 +240,7 @@
 	var printBtn = document.getElementById('mpPrintSelected');
 	if (!printBtn) return;
 
-	var adminBase = '{$adminUrl}';
+	var adminBase = {$adminUrl|js nofilter};
 	printBtn.addEventListener('click', function () {
 		var selected = [];
 		document.querySelectorAll('.mp-order-row-check:checked').forEach(function (el) {
@@ -282,7 +248,9 @@
 		});
 
 		if (selected.length === 0) {
-			alert('Lütfen yazdırmak için en az 1 sipariş seçin.');
+			if (window.AdminToast) {
+				AdminToast.show('Lütfen yazdırmak için en az 1 sipariş seçin.', 'warning');
+			}
 			return;
 		}
 
@@ -296,8 +264,8 @@
 	var drawer = document.getElementById('mpDrawer');
 	var overlay = document.getElementById('mpDrawerOverlay');
 	var closeBtn = document.getElementById('mpDrawerClose');
-	var domain = '{$domain}';
-	var adminBase = '{$adminUrl}';
+	var domain = {$domain|js nofilter};
+	var adminBase = {$adminUrl|js nofilter};
 
 	if (!drawer || !overlay) return;
 
@@ -388,11 +356,45 @@
 	document.querySelectorAll('.js-mp-open-detail').forEach(function (btn) {
 		btn.addEventListener('click', function (e) {
 			e.preventDefault();
+			e.stopPropagation();
 			var row = btn.closest('.mp-order-row');
 			if (!row) return;
 			try {
 				openDrawer(JSON.parse(row.getAttribute('data-order') || '{}'));
 			} catch (err) {}
+		});
+	});
+
+	function toggleMpDetail(id) {
+		var row = document.querySelector('.mp-order-row[data-order-id="' + id + '"]');
+		var detail = document.getElementById('adm-order-detail-' + id);
+		if (!detail) return;
+		var open = !detail.classList.contains('is-open');
+		detail.classList.toggle('is-open', open);
+		detail.hidden = !open;
+		if (row) row.classList.toggle('is-open', open);
+		if (window.lucide) window.lucide.createIcons();
+	}
+
+	document.querySelectorAll('.mp-order-row').forEach(function (row) {
+		row.addEventListener('click', function (e) {
+			if (e.target.closest('a, button, input, select, .dropdown-menu, .adm-order-select-cell, .adm-order-action-cell')) {
+				return;
+			}
+			toggleMpDetail(row.getAttribute('data-order-id'));
+		});
+		row.addEventListener('keydown', function (e) {
+			if (e.key === 'Enter' || e.key === ' ') {
+				e.preventDefault();
+				toggleMpDetail(row.getAttribute('data-order-id'));
+			}
+		});
+	});
+
+	document.querySelectorAll('.mp-order-row [data-order-expand]').forEach(function (btn) {
+		btn.addEventListener('click', function (e) {
+			e.stopPropagation();
+			toggleMpDetail(btn.getAttribute('data-order-expand'));
 		});
 	});
 
@@ -418,6 +420,8 @@
 			} catch (err) {}
 		});
 	}
+
+	if (window.lucide) window.lucide.createIcons();
 })();
 </script>
 
@@ -486,7 +490,8 @@
 
 <script>
 (function () {
-	var actionUrl = '{$orderActionUrl|escape}';
+	var actionUrl = {$orderActionUrl|js nofilter};
+	var csrfToken = {$adminToken|@json_encode nofilter};
 	var shopName = {$siteName|@json_encode nofilter};
 	var cancelCtx = null;
 
@@ -495,56 +500,56 @@
 		catch (e) { return null; }
 	}
 
+	function toast(message, type) {
+		if (window.AdminToast) {
+			AdminToast.show(message, type || 'info');
+		}
+	}
+
+	function busyStart(btn) {
+		if (window.AdminBusy) {
+			AdminBusy.start(btn);
+		} else if (btn) {
+			btn.disabled = true;
+		}
+	}
+
+	function busyStop(btn) {
+		if (window.AdminBusy) {
+			AdminBusy.stop(btn);
+		} else if (btn) {
+			btn.disabled = false;
+		}
+	}
+
 	function postAction(payload) {
-		var body = new URLSearchParams(payload);
+		var data = Object.assign({}, payload || {}, { token: csrfToken });
+		var body = new URLSearchParams(data);
 		return fetch(actionUrl, {
 			method: 'POST',
 			credentials: 'same-origin',
-			headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+				'X-CSRF-TOKEN': csrfToken || ''
+			},
 			body: body.toString()
 		}).then(function (r) { return r.json(); });
 	}
-
-	function closeMenus() {
-		document.querySelectorAll('.mp-order-menu-drop').forEach(function (el) {
-			el.hidden = true;
-		});
-		document.querySelectorAll('.js-mp-menu-toggle').forEach(function (el) {
-			el.setAttribute('aria-expanded', 'false');
-		});
-	}
-
-	document.addEventListener('click', function (e) {
-		var toggle = e.target.closest('.js-mp-menu-toggle');
-		if (toggle) {
-			e.preventDefault();
-			e.stopPropagation();
-			var drop = toggle.parentElement.querySelector('.mp-order-menu-drop');
-			var open = drop && !drop.hidden;
-			closeMenus();
-			if (drop && !open) {
-				drop.hidden = false;
-				toggle.setAttribute('aria-expanded', 'true');
-			}
-			return;
-		}
-		if (!e.target.closest('.mp-order-menu')) closeMenus();
-	});
 
 	var importSubmit = document.getElementById('mpImportSubmit');
 	if (importSubmit) {
 		importSubmit.addEventListener('click', function () {
 			var platform = document.getElementById('mpImportPlatform').value;
 			var orderNo = (document.getElementById('mpImportOrderNo').value || '').trim();
-			if (!orderNo) { alert('Sipariş numarası girin'); return; }
-			importSubmit.disabled = true;
+			if (!orderNo) { toast('Sipariş numarası girin', 'warning'); return; }
+			busyStart(importSubmit);
 			postAction({ op: 'import', platform: platform, order_number: orderNo })
 				.then(function (res) {
-					alert(res.message || (res.success ? 'Tamam' : 'Hata'));
+					toast(res.message || (res.success ? 'Tamam' : 'Hata'), res.success ? 'success' : 'danger');
 					if (res.success) window.location.reload();
 				})
-				.catch(function () { alert('İstek başarısız'); })
-				.finally(function () { importSubmit.disabled = false; });
+				.catch(function () { toast('İstek başarısız', 'danger'); })
+				.finally(function () { busyStop(importSubmit); });
 		});
 	}
 
@@ -553,18 +558,17 @@
 			var row = btn.closest('.mp-order-row');
 			var order = row ? parseOrder(row) : null;
 			if (!order) return;
-			closeMenus();
-			btn.disabled = true;
+			busyStart(btn);
 			postAction({
 				op: 'refresh',
 				platform: order.platform || '',
 				order_number: order.order_number || '',
 				package_id: order.shipment_package_id || ''
 			}).then(function (res) {
-				alert(res.message || (res.success ? 'Güncellendi' : 'Hata'));
+				toast(res.message || (res.success ? 'Güncellendi' : 'Hata'), res.success ? 'success' : 'danger');
 				if (res.success) window.location.reload();
-			}).catch(function () { alert('İstek başarısız'); })
-			.finally(function () { btn.disabled = false; });
+			}).catch(function () { toast('İstek başarısız', 'danger'); })
+			.finally(function () { busyStop(btn); });
 		});
 	});
 
@@ -573,17 +577,26 @@
 			var row = btn.closest('.mp-order-row');
 			var order = row ? parseOrder(row) : null;
 			if (!order) return;
-			closeMenus();
-			if (!confirm('Sipariş ' + shopName + ' listesinden silinecek. Pazaryerindeki sipariş durur. Devam?')) return;
-			postAction({
-				op: 'delete',
-				platform: order.platform || '',
-				order_number: order.order_number || '',
-				package_id: order.shipment_package_id || ''
-			}).then(function (res) {
-				alert(res.message || (res.success ? 'Silindi' : 'Hata'));
-				if (res.success) window.location.reload();
-			}).catch(function () { alert('İstek başarısız'); });
+			var ask = window.AdminConfirm && AdminConfirm.ask
+				? AdminConfirm.ask({
+					title: 'Siparişi sil',
+					message: 'Sipariş ' + shopName + ' listesinden silinecek. Pazaryerindeki sipariş durur. Devam?'
+				})
+				: Promise.resolve(false);
+			ask.then(function (ok) {
+				if (!ok) return;
+				busyStart(btn);
+				postAction({
+					op: 'delete',
+					platform: order.platform || '',
+					order_number: order.order_number || '',
+					package_id: order.shipment_package_id || ''
+				}).then(function (res) {
+					toast(res.message || (res.success ? 'Silindi' : 'Hata'), res.success ? 'success' : 'danger');
+					if (res.success) window.location.reload();
+				}).catch(function () { toast('İstek başarısız', 'danger'); })
+				.finally(function () { busyStop(btn); });
+			});
 		});
 	});
 
@@ -592,7 +605,6 @@
 			var row = btn.closest('.mp-order-row');
 			var order = row ? parseOrder(row) : null;
 			if (!order) return;
-			closeMenus();
 			cancelCtx = order;
 			document.getElementById('mpCancelOrderLabel').textContent =
 				'#' + (order.order_number || '') + ' · ' + (order.platform_label || order.platform || '');
@@ -616,6 +628,9 @@
 			var checked = document.querySelector('input[name="mpCancelStock"]:checked');
 			if (checked) mode = checked.value;
 			cancelSubmit.disabled = true;
+			if (window.AdminBusy) {
+				AdminBusy.start(cancelSubmit);
+			}
 			postAction({
 				op: 'cancel',
 				platform: cancelCtx.platform || '',
@@ -623,10 +638,21 @@
 				package_id: cancelCtx.shipment_package_id || '',
 				stock_mode: mode
 			}).then(function (res) {
-				alert(res.message || (res.success ? 'İptal edildi' : 'Hata'));
+				if (window.AdminToast) {
+					AdminToast.show(res.message || (res.success ? 'İptal edildi' : 'Hata'), res.success ? 'success' : 'danger');
+				}
 				if (res.success) window.location.reload();
-			}).catch(function () { alert('İstek başarısız'); })
-			.finally(function () { cancelSubmit.disabled = false; });
+			}).catch(function () {
+				if (window.AdminToast) {
+					AdminToast.show('İstek başarısız', 'danger');
+				}
+			})
+			.finally(function () {
+				cancelSubmit.disabled = false;
+				if (window.AdminBusy) {
+					AdminBusy.stop(cancelSubmit);
+				}
+			});
 		});
 	}
 })();

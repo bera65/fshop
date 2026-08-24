@@ -89,6 +89,26 @@
 			else
 				return 0;
 		}
+
+		/** Stock / qty display: always 2 decimal places (avoids decimal(12,3) “2.000” looking like 2000). */
+		public static function displayStock($qty): string
+		{
+			$n = round((float) $qty, 2);
+			$useComma = true;
+
+			if (defined('IN_ADMIN') && class_exists('AdminLang', false)) {
+				$useComma = strtolower((string) AdminLang::current()) !== 'en';
+			} elseif (class_exists('Lang', false)) {
+				$useComma = strtolower((string) Lang::current()) !== 'en'
+					&& strtolower((string) Lang::getDefault()) !== 'en';
+			}
+
+			if ($useComma) {
+				return number_format($n, 2, ',', '.');
+			}
+
+			return number_format($n, 2, '.', ',');
+		}
 		public static function formatDate($timestamp)
 		{
 			$utcTimestamp = $timestamp / 1000;

@@ -128,6 +128,56 @@ class Seo
 		];
 	}
 
+	/**
+	 * Short brand suffix for non-home pages (browser / OG title).
+	 * Empty setting falls back to SITE_NAME for backward compatibility.
+	 */
+	public static function getTitleSuffix(): string
+	{
+		$suffix = trim((string) Settings::get('SEO_TITLE_SUFFIX'));
+		if ($suffix !== '') {
+			return $suffix;
+		}
+
+		$siteName = trim((string) Settings::get('SITE_NAME'));
+
+		return $siteName !== '' ? $siteName : 'FShop';
+	}
+
+	/**
+	 * Full document title for &lt;title&gt; / og:title / twitter:title.
+	 * Home uses the page title as-is; other pages append " | {suffix}".
+	 */
+	public static function formatDocumentTitle(string $pageTitle, string $pageName = ''): string
+	{
+		$pageTitle = trim($pageTitle);
+		$siteName = trim((string) Settings::get('SITE_NAME'));
+		if ($siteName === '') {
+			$siteName = 'FShop';
+		}
+		$suffix = self::getTitleSuffix();
+
+		if ($pageName === 'home') {
+			return $pageTitle !== '' ? $pageTitle : $siteName;
+		}
+
+		if ($pageTitle === '' || strcasecmp($pageTitle, $siteName) === 0 || strcasecmp($pageTitle, $suffix) === 0) {
+			return $pageTitle !== '' ? $pageTitle : $suffix;
+		}
+
+		$tail = ' | ' . $suffix;
+		if (mb_substr($pageTitle, -mb_strlen($tail)) === $tail) {
+			return $pageTitle;
+		}
+
+		return $pageTitle . $tail;
+	}
+
+	public static function saveTitleSuffix(string $suffix): bool
+	{
+		return Settings::set('SEO_TITLE_SUFFIX', mb_substr(trim(strip_tags($suffix)), 0, 128));
+	}
+
 	/** @return array<string, string> */
 	public static function getSchemaOrgFields(): array
 	{

@@ -74,7 +74,16 @@
 		'cancellations' => CancelRequest::countPending(),
 		'notifications' => AdminNotification::countUnread(),
 		'messages' => Contact::countUnread(),
+		'upgrade' => 0,
 	];
+
+	if ($adminUser) {
+		$updateStatus = UpdateChecker::maybeRefresh();
+
+		if (!empty($updateStatus['update_available'])) {
+			$adminNavBadges['upgrade'] = 1;
+		}
+	}
 
 	$adminMenuItems = Module::getAdminMenuItems();
 	$smarty->assign([
@@ -86,9 +95,13 @@
 		'adminToken' => $adminToken,
 		'adminUser' => $adminUser,
 		'adminInitial' => $adminUser
-			? mb_strtoupper(mb_substr($adminUser['full_name'], 0, 1, 'UTF-8'))
+			? Admin::initialsFromName((string) ($adminUser['full_name'] ?? 'Admin'))
 			: 'A',
 		'adminNavBadges' => $adminNavBadges,
+		'adminPosUrl' => Module::isEnabled('pos')
+			? rtrim((string) $adminUrl, '/') . '/pos'
+			: rtrim((string) $domain, '/') . '/pos',
+		'adminPosAvailable' => Module::isInstalled('pos'),
 		'adminMenuItems' => $adminMenuItems,
 		'marketplaceAdminAssets' => ['css' => [], 'js' => []],
 		'year' => date('Y'),
@@ -106,6 +119,8 @@
 		'adminI18n' => [
 			'confirmTitle' => adminT('Confirm action'),
 			'confirmMessage' => adminT('Are you sure you want to perform this action?'),
+			'confirmYes' => adminT('Yes, confirm'),
+			'confirmCancel' => adminT('Cancel'),
 		],
 	]);
 	$smarty->registerPlugin('modifier', 'adminT', 'adminT');

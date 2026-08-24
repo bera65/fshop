@@ -69,6 +69,7 @@ $smarty->assign([
 	'blogRecentPosts' => $recentPosts,
 	'pageName' => 'blog-post',
 	'pageTitle' => $pageTitle,
+	'documentTitle' => Seo::formatDocumentTitle($pageTitle, 'blog-post'),
 	'pageDesc' => $pageDesc,
 	'breadcrumb' => [
 		['name' => translate('Home Page'), 'url' => $domain],

@@ -9,7 +9,7 @@
 		{if !$configured}
 		<div class="alert alert-warning small mb-0">
 			Firma ID tanımlı değil.
-			<a href="{$domain}admin/module-bizimhesap">Modül ayarları</a>
+			<a href="{$adminUrl}module-bizimhesap">Modül ayarları</a>
 		</div>
 		{elseif isset($invoice.status) && $invoice.status == 'created'}
 		<div class="small mb-0">

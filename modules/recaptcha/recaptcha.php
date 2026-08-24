@@ -72,7 +72,7 @@ class RecaptchaModule extends ModuleBase
 				}
 
 				$smarty->assign('recaptchaClientConfig', $config);
-				$smarty->assign('recaptchaConfigJson', json_encode($config, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+				$smarty->assign('recaptchaConfigJson', Security::jsonForHtmlScript($config));
 			});
 		}
 	}
@@ -99,7 +99,7 @@ class RecaptchaModule extends ModuleBase
 		$smarty->assign([
 			'recaptchaAdminLogin' => $html,
 			'recaptchaClientConfig' => $config,
-			'recaptchaConfigJson' => json_encode($config, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+			'recaptchaConfigJson' => Security::jsonForHtmlScript($config),
 			'recaptchaModuleJs' => $module->getAssetUrl('js/front.js'),
 			'recaptchaModuleCss' => $module->getAssetUrl('css/front.css'),
 		]);

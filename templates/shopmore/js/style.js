@@ -501,6 +501,7 @@ function showToast(message, cl) {
 	var toast = bootstrap.Toast.getOrCreateInstance($toast[0], { delay: 3500 });
 	toast.show();
 }
+window.showToast = showToast;
 
 $(document).on('click', '.toggle-favorite', function (e) {
 	e.preventDefault();

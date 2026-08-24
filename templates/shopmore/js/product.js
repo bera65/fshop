@@ -55,13 +55,13 @@ function updateQty(val) {
 		}
 
 		if (area > stock) {
-			summary.textContent = (summary.getAttribute('data-stock') || 'Stock limit') + ': ' + formatNum(stock) + ' m²';
+			summary.textContent = (summary.getAttribute('data-stock') || 'Stock limit') + ': ' + formatNum(stock) + ' mÂ²';
 			qtyInput.value = String(area);
 			return;
 		}
 
 		var total = unitPrice * area;
-		summary.textContent = formatNum(w) + ' × ' + formatNum(l) + ' m = ' + formatNum(area) + ' m² · ' + total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+		summary.textContent = formatNum(w) + ' Ã— ' + formatNum(l) + ' m = ' + formatNum(area) + ' mÂ² Â· ' + total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 		qtyInput.value = String(area);
 	}
 
@@ -81,6 +81,9 @@ function updateQty(val) {
 	var thumbs = Array.prototype.slice.call(document.querySelectorAll('.product-gallery__thumb'));
 	var prevBtn = document.querySelector('.product-gallery__nav--prev');
 	var nextBtn = document.querySelector('.product-gallery__nav--next');
+	var modalPrev = document.getElementById('imageModalPrev');
+	var modalNext = document.getElementById('imageModalNext');
+	var modalCounter = document.getElementById('imageModalCounter');
 	var currentIndex = 0;
 
 	function getImageUrls() {
@@ -118,6 +121,10 @@ function updateQty(val) {
 		thumbs.forEach(function (thumb, i) {
 			thumb.classList.toggle('active', i === index);
 		});
+
+		if (modalCounter) {
+			modalCounter.textContent = String(index + 1);
+		}
 	}
 
 	thumbs.forEach(function (thumb, index) {
@@ -126,21 +133,21 @@ function updateQty(val) {
 		});
 	});
 
-	if (prevBtn) {
-		prevBtn.addEventListener('click', function (event) {
+	function bindNav(btn, delta) {
+		if (!btn) {
+			return;
+		}
+		btn.addEventListener('click', function (event) {
 			event.preventDefault();
 			event.stopPropagation();
-			setActiveIndex(currentIndex - 1);
+			setActiveIndex(currentIndex + delta);
 		});
 	}
 
-	if (nextBtn) {
-		nextBtn.addEventListener('click', function (event) {
-			event.preventDefault();
-			event.stopPropagation();
-			setActiveIndex(currentIndex + 1);
-		});
-	}
+	bindNav(prevBtn, -1);
+	bindNav(nextBtn, 1);
+	bindNav(modalPrev, -1);
+	bindNav(modalNext, 1);
 
 	if (mainImg) {
 		mainImg.addEventListener('click', function () {
@@ -156,8 +163,37 @@ function updateQty(val) {
 			if (modalImg && mainImg && mainImg.src) {
 				modalImg.src = mainImg.src;
 			}
+			if (modalCounter) {
+				modalCounter.textContent = String(currentIndex + 1);
+			}
+		});
+
+		imageModal.addEventListener('keydown', function (event) {
+			if (getImageUrls().length < 2) {
+				return;
+			}
+			if (event.key === 'ArrowLeft') {
+				event.preventDefault();
+				setActiveIndex(currentIndex - 1);
+			} else if (event.key === 'ArrowRight') {
+				event.preventDefault();
+				setActiveIndex(currentIndex + 1);
+			}
 		});
 	}
+
+	document.addEventListener('keydown', function (event) {
+		if (!imageModal || !imageModal.classList.contains('show') || getImageUrls().length < 2) {
+			return;
+		}
+		if (event.key === 'ArrowLeft') {
+			event.preventDefault();
+			setActiveIndex(currentIndex - 1);
+		} else if (event.key === 'ArrowRight') {
+			event.preventDefault();
+			setActiveIndex(currentIndex + 1);
+		}
+	});
 })();
 
 (function () {
@@ -186,8 +222,8 @@ function updateQty(val) {
 	var hint = document.getElementById('variationHint');
 	var summaryEl = document.getElementById('variationSummary');
 	var basePriceHtml = priceEl ? priceEl.innerHTML : '';
-	var selectHint = root.getAttribute('data-select-hint') || 'Lütfen seçenekleri belirleyin';
-	var outHint = root.getAttribute('data-out-hint') || 'Tükendi';
+	var selectHint = root.getAttribute('data-select-hint') || 'LÃ¼tfen seÃ§enekleri belirleyin';
+	var outHint = root.getAttribute('data-out-hint') || 'TÃ¼kendi';
 
 	function t(key, fallback) {
 		if (key === 'selectOptions') {
@@ -331,7 +367,7 @@ function updateQty(val) {
 
 	function updateUI() {
 		while (clearInvalidSelections()) {
-			// Boşaltılan seçimler sonrası diğer grupları yeniden kontrol et
+			// BoÅŸaltÄ±lan seÃ§imler sonrasÄ± diÄŸer gruplarÄ± yeniden kontrol et
 		}
 
 		var match = findMatch();
@@ -372,7 +408,7 @@ function updateQty(val) {
 			});
 
 			if (hint) {
-				hint.textContent = match.in_stock ? '' : t('outOfStock', 'Tükendi');
+				hint.textContent = match.in_stock ? '' : t('outOfStock', 'TÃ¼kendi');
 			}
 
 			updateSummary(match);
@@ -396,8 +432,8 @@ function updateQty(val) {
 
 			if (hint) {
 				hint.textContent = optionKeys(selected).length > 0 && optionKeys(selected).length < requiredGroups
-					? t('selectOptions', 'Lütfen tüm seçenekleri belirleyin')
-					: t('selectOptions', 'Lütfen seçenekleri belirleyin');
+					? t('selectOptions', 'LÃ¼tfen tÃ¼m seÃ§enekleri belirleyin')
+					: t('selectOptions', 'LÃ¼tfen seÃ§enekleri belirleyin');
 			}
 
 			updateSummary(null);

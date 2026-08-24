@@ -20,6 +20,8 @@ class NewsletterModule extends ModuleBase
 
 	public array $defaultDisplayHooks = ['footer'];
 
+	public array $frontScripts = ['newsletter.js'];
+
 	public array $apiActions = [
 		'subscribe' => 'api/subscribe.php',
 	];
@@ -85,6 +87,7 @@ class NewsletterModule extends ModuleBase
 
 		$html = $this->renderFrontTemplate($hook, [
 			'newsletterApiUrl' => rtrim($domain, '/') . '/api/module.php?m=newsletter&action=subscribe',
+			'token' => Security::getCsrfToken('front'),
 		]);
 
 		return $html !== '' ? $html : null;

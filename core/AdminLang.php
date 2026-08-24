@@ -60,12 +60,51 @@ class AdminLang
 			$redirect = parse_url($_SERVER['REQUEST_URI'] ?? self::defaultAdminPath(), PHP_URL_PATH) ?: self::defaultAdminPath();
 		}
 
-		if (strpos($redirect, '://') !== false || strncmp($redirect, '//', 2) === 0) {
-			$redirect = self::defaultAdminPath();
-		}
+		$redirect = self::sanitizeSwitchRedirect($redirect);
 
 		header('Location: ' . $redirect);
 		exit;
+	}
+
+	/**
+	 * Path-only same-origin redirects (blocks //evil, /\evil, scheme tricks).
+	 */
+	private static function sanitizeSwitchRedirect(string $redirect): string
+	{
+		$redirect = trim(str_replace(["\r", "\n", "\0"], '', $redirect));
+		$fallback = self::defaultAdminPath();
+
+		if ($redirect === '') {
+			return $fallback;
+		}
+
+		if (preg_match('#^[a-z][a-z0-9+.-]*:#i', $redirect) || strncmp($redirect, '//', 2) === 0) {
+			return $fallback;
+		}
+
+		if (strpos($redirect, '\\') !== false) {
+			return $fallback;
+		}
+
+		$path = (string) (parse_url($redirect, PHP_URL_PATH) ?: '');
+		$query = parse_url($redirect, PHP_URL_QUERY);
+
+		if ($path === '' || $path[0] !== '/') {
+			return $fallback;
+		}
+
+		// Reject "/\evil.com" and protocol-relative style after first slash.
+		if (isset($path[1]) && ($path[1] === '/' || $path[1] === '\\')) {
+			return $fallback;
+		}
+
+		$safe = $path;
+
+		if (is_string($query) && $query !== '') {
+			$safe .= '?' . $query;
+		}
+
+		return $safe;
 	}
 
 	public static function makeSwitchUrl(string $code): string

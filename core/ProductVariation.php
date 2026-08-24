@@ -520,6 +520,13 @@ class ProductVariation
 			$params[] = $idProduct;
 		}
 
+		$oldProductStock = 0.0;
+
+		if ($idProduct > 0) {
+			$product = Product::getByIdAdmin($idProduct);
+			$oldProductStock = (float) ($product['stock'] ?? 0);
+		}
+
 		$stmt = $db->prepare($sql);
 		$stmt->execute($params);
 
@@ -530,6 +537,12 @@ class ProductVariation
 		if ($idProduct > 0) {
 			$totalStock = self::getTotalStock($idProduct);
 			DB::update('products', ['stock' => $totalStock], 'id_product = :where_id', ['where_id' => $idProduct]);
+
+			if (!class_exists('StockAnalysis', false)) {
+				require_once dirname(__FILE__) . '/StockAnalysis.php';
+			}
+
+			StockAnalysis::touchStockEmptyAt($idProduct, $oldProductStock, (float) $totalStock);
 		}
 
 		return true;

@@ -27,16 +27,36 @@
 			var checkedFields = document.querySelectorAll('#bulkPricingForm input[name^="field_"]:checked').length;
 
 			if (checkedFields === 0) {
-				window.alert('En az bir fiyat alanı seçin.');
 				event.preventDefault();
+				if (window.AdminToast) {
+					AdminToast.show('En az bir fiyat alanı seçin.', 'warning');
+				}
 				return;
 			}
 
-			var message = 'Seçili filtrelere uyan tüm ürünlerin fiyatları güncellenecek. Devam edilsin mi?';
-
-			if (!window.confirm(message)) {
-				event.preventDefault();
+			if (btn.dataset.adminConfirmed === '1') {
+				return;
 			}
+
+			event.preventDefault();
+			var message = 'Seçili filtrelere uyan tüm ürünlerin fiyatları güncellenecek. Devam edilsin mi?';
+			var ask = window.AdminConfirm && AdminConfirm.ask
+				? AdminConfirm.ask({ message: message })
+				: Promise.resolve(false);
+
+			ask.then(function (ok) {
+				if (!ok) {
+					return;
+				}
+
+				btn.dataset.adminConfirmed = '1';
+				var form = btn.form || btn.closest('form');
+				if (form && typeof form.requestSubmit === 'function') {
+					form.requestSubmit(btn);
+				} else if (form) {
+					form.submit();
+				}
+			});
 		});
 	}
 

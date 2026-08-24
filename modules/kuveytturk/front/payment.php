@@ -60,7 +60,7 @@ if (Tools::isSubmit('submitKuveytturk')) {
 			$expireYear = substr($expireYear, -2);
 		}
 
-		$total = (float) ($cart['total'] ?? 0);
+		$total = (float) ($previewOrder['total'] ?? 0);
 		$amountKurus = (int) round($total * 100);
 
 		$callbackUrl = $baseUrl . 'api/module.php?m=kuveytturk&action=callback';

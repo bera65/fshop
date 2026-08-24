@@ -97,7 +97,7 @@ class ShopierModule extends ModuleBase
 			'configured' => ProductSyncService::isConfigured(),
 			'syncUrl' => $domain . '/api/module.php?m=shopier&action=sync',
 			'deleteUrl' => $domain . '/api/module.php?m=shopier&action=delete',
-			'settingsUrl' => $domain . '/admin/module-shopier',
+			'settingsUrl' => Admin::url('module-shopier'),
 			'adminToken' => (string) $adminToken,
 		]);
 

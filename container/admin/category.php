@@ -41,6 +41,8 @@
 		'meta_description' => '',
 		'id_parent' => 0,
 		'active' => 1,
+		'show_on_home' => 0,
+		'home_position' => 0,
 	];
 
 	$langRows = $isNew ? [] : Category::getLangRows($id);

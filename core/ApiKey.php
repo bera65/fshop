@@ -10,6 +10,10 @@ class ApiKey
 	public const PERM_PRODUCTS_DELETE = 'products.delete';
 	public const PERM_CATEGORIES_READ = 'categories.read';
 	public const PERM_BRANDS_READ = 'brands.read';
+	public const PERM_MESSAGES_READ = 'messages.read';
+	public const PERM_MESSAGES_WRITE = 'messages.write';
+	public const PERM_NOTIFICATIONS_READ = 'notifications.read';
+	public const PERM_NOTIFICATIONS_WRITE = 'notifications.write';
 
 	/** @var array{id:int,name:string,permissions:array<int,string>}|null */
 	private static $current = null;
@@ -79,6 +83,10 @@ class ApiKey
 			self::PERM_PRODUCTS_DELETE => self::t('Delete products'),
 			self::PERM_CATEGORIES_READ => self::t('Read categories'),
 			self::PERM_BRANDS_READ => self::t('Read brands'),
+			self::PERM_MESSAGES_READ => self::t('Read messages'),
+			self::PERM_MESSAGES_WRITE => self::t('Reply to messages'),
+			self::PERM_NOTIFICATIONS_READ => self::t('Read notifications'),
+			self::PERM_NOTIFICATIONS_WRITE => self::t('Mark notifications read'),
 		];
 	}
 

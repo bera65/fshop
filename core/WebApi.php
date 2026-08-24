@@ -24,6 +24,12 @@ class WebApi
 				ApiKey::requirePermission(ApiKey::PERM_BRANDS_READ);
 				self::handleBrands($method);
 				break;
+			case 'messages':
+				self::handleMessages($method, $route['id'], $route['sub']);
+				break;
+			case 'notifications':
+				self::handleNotifications($method, $route['id'], $route['sub']);
+				break;
 			default:
 				self::respond(404, ['success' => false, 'message' => 'Kaynak bulunamadı']);
 		}
@@ -139,8 +145,17 @@ class WebApi
 		}));
 
 		$resource = strtolower((string) ($parts[0] ?? ''));
-		$id = isset($parts[1]) && ctype_digit((string) $parts[1]) ? (int) $parts[1] : 0;
-		$sub = strtolower((string) ($parts[2] ?? ''));
+		$id = 0;
+		$sub = '';
+
+		if (isset($parts[1])) {
+			if (ctype_digit((string) $parts[1])) {
+				$id = (int) $parts[1];
+				$sub = strtolower((string) ($parts[2] ?? ''));
+			} else {
+				$sub = strtolower((string) $parts[1]);
+			}
+		}
 
 		return [
 			'resource' => $resource,
@@ -1080,6 +1095,297 @@ class WebApi
 		}
 
 		return $_POST ?? [];
+	}
+
+	private static function handleMessages(string $method, int $id, string $sub = ''): void
+	{
+		require_once dirname(__DIR__) . '/core/Contact.php';
+
+		if ($method === 'GET' && $id <= 0 && $sub === '') {
+			ApiKey::requirePermission(ApiKey::PERM_MESSAGES_READ);
+			self::listMessages();
+		}
+
+		if ($method === 'GET' && $id > 0 && $sub === '') {
+			ApiKey::requirePermission(ApiKey::PERM_MESSAGES_READ);
+			self::getMessage($id);
+		}
+
+		if ($method === 'POST' && $id > 0 && $sub === 'reply') {
+			ApiKey::requirePermission(ApiKey::PERM_MESSAGES_WRITE);
+			self::replyMessage($id);
+		}
+
+		if ($method === 'POST' && $id > 0 && $sub === 'read') {
+			ApiKey::requirePermission(ApiKey::PERM_MESSAGES_WRITE);
+			self::markMessageRead($id);
+		}
+
+		self::respond(405, ['success' => false, 'message' => 'Desteklenmeyen mesaj işlemi']);
+	}
+
+	private static function listMessages(): void
+	{
+		$page = max(0, (int) Tools::getValue('page', 0));
+		$size = min(100, max(1, (int) Tools::getValue('size', (int) Tools::getValue('limit', 30))));
+		$offset = $page * $size;
+		$readFilter = self::parseReadFilter(Tools::getValue('unread', Tools::getValue('read')));
+
+		$rows = Contact::getAdminThreadList($size, $offset, $readFilter);
+		$total = Contact::countAdminThreads($readFilter);
+		$totalPages = $size > 0 ? (int) ceil($total / $size) : 0;
+
+		self::respond(200, [
+			'totalElements' => $total,
+			'totalPages' => $totalPages,
+			'page' => $page,
+			'size' => $size,
+			'unread_total' => Contact::countUnread(),
+			'content' => array_map([self::class, 'formatMessageThread'], $rows),
+		]);
+	}
+
+	private static function getMessage(int $id): void
+	{
+		$message = Contact::getById($id);
+
+		if (!$message) {
+			self::respond(404, ['success' => false, 'message' => 'Mesaj bulunamadı']);
+		}
+
+		$idOrder = (int) ($message['id_order'] ?? 0);
+		$thread = $idOrder > 0
+			? Contact::getAdminOrderThread($idOrder)
+			: Contact::getAdminGeneralThread($id);
+
+		if (!$thread) {
+			self::respond(404, ['success' => false, 'message' => 'Mesaj bulunamadı']);
+		}
+
+		self::respond(200, [
+			'success' => true,
+			'content' => self::formatMessageThreadDetail($thread),
+		]);
+	}
+
+	private static function replyMessage(int $id): void
+	{
+		$body = self::getInput();
+		$text = trim((string) ($body['message'] ?? $body['reply'] ?? ''));
+		$result = Contact::replyFromAdmin($id, $text, 0);
+
+		if (empty($result['success'])) {
+			self::respond(400, ['success' => false, 'message' => $result['message']]);
+		}
+
+		Contact::markRead($id);
+		$message = Contact::getById($id);
+		$idOrder = (int) ($message['id_order'] ?? 0);
+
+		if ($idOrder > 0) {
+			Contact::markOrderThreadRead($idOrder);
+		}
+
+		$thread = $idOrder > 0
+			? Contact::getAdminOrderThread($idOrder)
+			: Contact::getAdminGeneralThread($id);
+
+		self::respond(200, [
+			'success' => true,
+			'message' => $result['message'],
+			'content' => $thread ? self::formatMessageThreadDetail($thread) : null,
+		]);
+	}
+
+	private static function markMessageRead(int $id): void
+	{
+		$message = Contact::getById($id);
+
+		if (!$message) {
+			self::respond(404, ['success' => false, 'message' => 'Mesaj bulunamadı']);
+		}
+
+		$idOrder = (int) ($message['id_order'] ?? 0);
+
+		if ($idOrder > 0) {
+			Contact::markOrderThreadRead($idOrder);
+		} else {
+			Contact::markRead($id);
+		}
+
+		self::respond(200, [
+			'success' => true,
+			'message' => 'Mesaj okundu olarak işaretlendi',
+		]);
+	}
+
+	/** @param array<string, mixed> $row */
+	private static function formatMessageThread(array $row): array
+	{
+		return [
+			'id_message' => (int) ($row['id_message'] ?? 0),
+			'id_order' => (int) ($row['id_order'] ?? 0),
+			'is_order_thread' => !empty($row['is_order_thread']),
+			'order_reference' => (string) ($row['order_reference'] ?? ''),
+			'full_name' => (string) ($row['full_name'] ?? ''),
+			'email' => (string) ($row['email'] ?? ''),
+			'subject' => (string) ($row['subject'] ?? ''),
+			'last_message_preview' => (string) ($row['last_message_preview'] ?? ''),
+			'message_count' => (int) ($row['message_count'] ?? 0),
+			'unread_count' => (int) ($row['unread_count'] ?? 0),
+			'reply_count' => (int) ($row['reply_count'] ?? 0),
+			'status_label' => (string) ($row['status_label'] ?? ''),
+			'last_date' => (string) ($row['last_date'] ?? ''),
+		];
+	}
+
+	/** @param array<string, mixed> $thread */
+	private static function formatMessageThreadDetail(array $thread): array
+	{
+		$messages = [];
+
+		foreach (($thread['messages'] ?? []) as $msg) {
+			$replies = [];
+
+			foreach (($msg['replies'] ?? []) as $reply) {
+				$replies[] = [
+					'id_reply' => (int) ($reply['id_reply'] ?? 0),
+					'id_admin' => (int) ($reply['id_admin'] ?? 0),
+					'admin_name' => (string) ($reply['admin_name'] ?? ''),
+					'message' => (string) ($reply['message'] ?? ''),
+					'date_add' => (string) ($reply['date_add'] ?? ''),
+				];
+			}
+
+			$messages[] = [
+				'id_message' => (int) ($msg['id_message'] ?? 0),
+				'full_name' => (string) ($msg['full_name'] ?? ''),
+				'email' => (string) ($msg['email'] ?? ''),
+				'phone' => (string) ($msg['phone'] ?? ''),
+				'subject' => (string) ($msg['subject'] ?? ''),
+				'message' => (string) ($msg['message'] ?? ''),
+				'is_read' => (int) ($msg['is_read'] ?? 0) === 1,
+				'date_add' => (string) ($msg['date_add'] ?? ''),
+				'replies' => $replies,
+			];
+		}
+
+		return [
+			'is_order_thread' => !empty($thread['is_order_thread']),
+			'id_order' => (int) ($thread['id_order'] ?? 0),
+			'order_reference' => (string) ($thread['order_reference'] ?? ''),
+			'full_name' => (string) ($thread['full_name'] ?? ''),
+			'email' => (string) ($thread['email'] ?? ''),
+			'phone' => (string) ($thread['phone'] ?? ''),
+			'subject' => (string) ($thread['subject'] ?? ''),
+			'message_count' => (int) ($thread['message_count'] ?? 0),
+			'reply_count' => (int) ($thread['reply_count'] ?? 0),
+			'reply_to_message_id' => (int) ($thread['reply_to_message_id'] ?? 0),
+			'messages' => $messages,
+		];
+	}
+
+	private static function handleNotifications(string $method, int $id, string $sub = ''): void
+	{
+		require_once dirname(__DIR__) . '/core/AdminNotification.php';
+
+		if ($method === 'GET' && $id <= 0 && $sub === '') {
+			ApiKey::requirePermission(ApiKey::PERM_NOTIFICATIONS_READ);
+			self::listNotifications();
+		}
+
+		if ($method === 'POST' && $id > 0 && ($sub === 'read' || $sub === '')) {
+			ApiKey::requirePermission(ApiKey::PERM_NOTIFICATIONS_WRITE);
+			self::markNotificationRead($id);
+		}
+
+		if ($method === 'POST' && $id <= 0 && ($sub === 'read-all' || $sub === 'read_all')) {
+			ApiKey::requirePermission(ApiKey::PERM_NOTIFICATIONS_WRITE);
+			AdminNotification::markAllRead();
+			self::respond(200, [
+				'success' => true,
+				'message' => 'Tüm bildirimler okundu olarak işaretlendi',
+				'unread_total' => 0,
+			]);
+		}
+
+		self::respond(405, ['success' => false, 'message' => 'Desteklenmeyen bildirim işlemi']);
+	}
+
+	private static function listNotifications(): void
+	{
+		$limit = min(100, max(1, (int) Tools::getValue('limit', (int) Tools::getValue('size', 50))));
+		$unreadOnly = in_array(strtolower((string) Tools::getValue('unread', '')), ['1', 'true', 'yes'], true);
+		$rows = AdminNotification::getList($limit, $unreadOnly);
+
+		self::respond(200, [
+			'totalElements' => count($rows),
+			'unread_total' => AdminNotification::countUnread(),
+			'limit' => $limit,
+			'content' => array_map([self::class, 'formatNotification'], $rows),
+		]);
+	}
+
+	private static function markNotificationRead(int $id): void
+	{
+		$ok = AdminNotification::markRead($id);
+
+		if (!$ok) {
+			self::respond(404, ['success' => false, 'message' => 'Bildirim bulunamadı']);
+		}
+
+		self::respond(200, [
+			'success' => true,
+			'message' => 'Bildirim okundu olarak işaretlendi',
+			'unread_total' => AdminNotification::countUnread(),
+		]);
+	}
+
+	/** @param array<string, mixed> $row */
+	private static function formatNotification(array $row): array
+	{
+		$link = (string) ($row['link'] ?? '');
+		$idProduct = 0;
+
+		if (preg_match('/[?&]id=(\d+)/', $link, $m) || preg_match('/product\?id=(\d+)/', $link, $m)) {
+			$idProduct = (int) $m[1];
+		}
+
+		return [
+			'id' => (int) ($row['id_notification'] ?? 0),
+			'id_notification' => (int) ($row['id_notification'] ?? 0),
+			'type' => (string) ($row['type'] ?? 'info'),
+			'title' => (string) ($row['title'] ?? ''),
+			'message' => (string) ($row['message'] ?? ''),
+			'link' => $link,
+			'id_product' => $idProduct > 0 && (($row['type'] ?? '') === 'stock') ? $idProduct : null,
+			'is_read' => (int) ($row['is_read'] ?? 0) === 1,
+			'date_add' => (string) ($row['date_add'] ?? ''),
+		];
+	}
+
+	/** @return int|null */
+	private static function parseReadFilter($value): ?int
+	{
+		if ($value === null || $value === '') {
+			return null;
+		}
+
+		$raw = strtolower(trim((string) $value));
+
+		if (in_array($raw, ['1', 'true', 'yes', 'unread'], true)) {
+			return 0;
+		}
+
+		if (in_array($raw, ['0', 'false', 'no', 'read'], true)) {
+			return 1;
+		}
+
+		if ($raw === 'all') {
+			return null;
+		}
+
+		return null;
 	}
 
 	private static function respond(int $status, array $payload): void

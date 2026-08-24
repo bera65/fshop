@@ -115,7 +115,7 @@
 			<img src="{$mod.logo_url|escape}" alt="" width="48" height="48" class="rounded mb-3">
 			{/if}
 			<a href="{$mod.configure_url}" class="btn btn-primary w-100">{'Configure'|adminT}</a>
-			<p class="small text-muted mt-2 mb-0"><code>/admin/module-{$mod.name|escape}</code></p>
+			<p class="small text-muted mt-2 mb-0"><code>{$mod.configure_url|escape}</code></p>
 		</div>
 		{/if}
 
@@ -125,14 +125,14 @@
 				<input type="hidden" name="moduleAction" value="1">
 				<input type="hidden" name="token" value="{$adminToken}">
 				{if !$mod.installed}
-				<button type="submit" name="action" value="install" class="btn btn-dark">{'Install and enable'|adminT}</button>
+				<button type="submit" name="action" value="install" class="btn btn-dark js-admin-busy">{'Install and enable'|adminT}</button>
 				{else}
 					{if !$mod.active}
-					<button type="submit" name="action" value="enable" class="btn btn-dark">{'Enable'|adminT}</button>
+					<button type="submit" name="action" value="enable" class="btn btn-dark js-admin-busy">{'Enable'|adminT}</button>
 					{else}
-					<button type="submit" name="action" value="disable" class="btn btn-outline-secondary">{'Disable'|adminT}</button>
+					<button type="submit" name="action" value="disable" class="btn btn-outline-secondary js-admin-busy">{'Disable'|adminT}</button>
 					{/if}
-					<button type="submit" name="action" value="uninstall" class="btn btn-outline-danger" onclick="return confirm('{'Uninstall this module? Data may be deleted.'|adminT}');">{'Uninstall'|adminT}</button>
+					<button type="submit" name="action" value="uninstall" class="btn btn-outline-danger js-admin-confirm js-admin-busy" data-confirm-title="{'Uninstall'|adminT}" data-confirm-message="{'Uninstall this module? Data may be deleted.'|adminT}">{'Uninstall'|adminT}</button>
 				{/if}
 			</form>
 		</div>

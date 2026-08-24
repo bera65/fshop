@@ -28,7 +28,7 @@
 			<div class="mb-3">
 				<label class="form-label">{'Phone'|adminT}</label>
 				<input type="text" name="phone" class="form-control" required
-					value="{$customer.phone|escape}" placeholder="05xxxxxxxxx">
+					value="{$customer.phone|escape}" placeholder="{'e.g. +90 532… or +1 202…'|adminT}">
 			</div>
 			<div class="mb-3">
 				<label class="form-label">{'Email'|adminT}</label>

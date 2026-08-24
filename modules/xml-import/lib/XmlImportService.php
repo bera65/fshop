@@ -70,6 +70,10 @@ class XmlImportService
 			return self::fail(adminT('Please enter a valid XML URL'));
 		}
 
+		if (!Security::isSafeOutboundUrl($url)) {
+			return self::fail(adminT('XML URL is not allowed (private or local addresses are blocked)'));
+		}
+
 		$xml = self::fetchUrl($url);
 
 		if ($xml === null) {
@@ -639,19 +643,32 @@ class XmlImportService
 
 	private static function fetchUrl(string $url): ?string
 	{
+		if (!Security::isSafeOutboundUrl($url)) {
+			return null;
+		}
+
 		if (function_exists('curl_init')) {
 			$ch = curl_init($url);
 			curl_setopt_array($ch, [
 				CURLOPT_RETURNTRANSFER => true,
 				CURLOPT_FOLLOWLOCATION => true,
+				CURLOPT_MAXREDIRS => 3,
 				CURLOPT_CONNECTTIMEOUT => 15,
 				CURLOPT_TIMEOUT => 60,
 				CURLOPT_SSL_VERIFYPEER => true,
 				CURLOPT_USERAGENT => 'FShop-XmlImport/1.0',
+				CURLOPT_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
+				CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTP | CURLPROTO_HTTPS,
 			]);
+
 			$body = curl_exec($ch);
 			$code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+			$finalUrl = (string) curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
 			curl_close($ch);
+
+			if ($finalUrl !== '' && !Security::isSafeOutboundUrl($finalUrl)) {
+				return null;
+			}
 
 			if ($body !== false && $code >= 200 && $code < 300) {
 				return (string) $body;
@@ -664,6 +681,7 @@ class XmlImportService
 			'http' => [
 				'timeout' => 60,
 				'header' => "User-Agent: FShop-XmlImport/1.0\r\n",
+				'follow_location' => 0,
 			],
 		]);
 		$body = @file_get_contents($url, false, $ctx);

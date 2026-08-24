@@ -63,10 +63,31 @@
 					</select>
 				</div>
 			</div>
-			<div class="form-check mb-3">
+			<div class="form-check mb-2">
 				<input type="hidden" name="active" value="0">
 				<input class="form-check-input" type="checkbox" name="active" value="1" id="mmActive"{if !$editItem || $editItem.active} checked{/if}>
 				<label class="form-check-label" for="mmActive">Aktif</label>
+			</div>
+			<div class="border rounded p-2 mb-3">
+				<div class="small fw-semibold mb-2">Gösterildiği yerler</div>
+				{assign var=sh value=$editItem.show_header|default:1}
+				{assign var=sm value=$editItem.show_mobile|default:1}
+				{assign var=sf value=$editItem.show_footer|default:0}
+				<div class="form-check">
+					<input type="hidden" name="show_header" value="0">
+					<input class="form-check-input" type="checkbox" name="show_header" value="1" id="mmShowHeader"{if $sh} checked{/if}>
+					<label class="form-check-label" for="mmShowHeader">Header (üst menü)</label>
+				</div>
+				<div class="form-check">
+					<input type="hidden" name="show_mobile" value="0">
+					<input class="form-check-input" type="checkbox" name="show_mobile" value="1" id="mmShowMobile"{if $sm} checked{/if}>
+					<label class="form-check-label" for="mmShowMobile">Mobil menü</label>
+				</div>
+				<div class="form-check">
+					<input type="hidden" name="show_footer" value="0">
+					<input class="form-check-input" type="checkbox" name="show_footer" value="1" id="mmShowFooter"{if $sf} checked{/if}>
+					<label class="form-check-label" for="mmShowFooter">Footer</label>
+				</div>
 			</div>
 			<button type="submit" class="btn btn-dark btn-sm">Kaydet</button>
 			{if $editItem}
@@ -77,11 +98,11 @@
 	<div class="col-lg-7">
 		<div class="admin-panel p-3">
 			<h2 class="h6 mb-3">Menü öğeleri</h2>
-			<p class="small text-muted">Modül etkin ve <code>main_menu</code> hook’una bağlıysa üst menü kategoriler yerine bu listeyi gösterir. <strong>Kategori</strong> tipinde alt kategoriler varsa fareyle üzerine gelince 3 sütunluk açılır menü çıkar.</p>
+			<p class="small text-muted">Her öğe için <strong>Header</strong>, <strong>Mobil</strong> ve <strong>Footer</strong> konumlarını işaretleyin. Header hook’u masaüstü menüyü; mobil drawer <code>$mainMenuItems</code> listesini; footer <code>footer_menu</code> hook’unu kullanır.</p>
 			<div class="table-responsive">
 				<table class="table table-sm align-middle">
 					<thead>
-						<tr><th>Sıra</th><th>Etiket</th><th>Tür</th><th>Değer</th><th></th></tr>
+						<tr><th>Sıra</th><th>Etiket</th><th>Tür</th><th>Konum</th><th></th></tr>
 					</thead>
 					<tbody>
 						{foreach $menuItems as $row}
@@ -89,10 +110,14 @@
 							<td>{$row.position}</td>
 							<td>{$row.label|escape}{if !$row.active} <span class="badge text-bg-secondary">pasif</span>{/if}</td>
 							<td><code>{$row.link_type|escape}</code></td>
-							<td class="small">{$row.link_value|escape}</td>
+							<td class="small text-nowrap">
+								{if $row.show_header|default:1}<span class="badge text-bg-light border">Header</span>{/if}
+								{if $row.show_mobile|default:1}<span class="badge text-bg-light border">Mobil</span>{/if}
+								{if $row.show_footer|default:0}<span class="badge text-bg-light border">Footer</span>{/if}
+							</td>
 							<td class="text-end text-nowrap">
 								<a href="{$adminUrl}module-main-menu?edit={$row.id_menu_item}" class="btn btn-sm btn-outline-dark">Düzenle</a>
-								<form method="post" class="d-inline" onsubmit="return confirm('Silinsin mi?');">
+								<form method="post" class="d-inline" data-confirm-message="Silinsin mi?">
 									<input type="hidden" name="deleteMenuItem" value="1">
 									<input type="hidden" name="token" value="{$adminToken}">
 									<input type="hidden" name="id_menu_item" value="{$row.id_menu_item}">

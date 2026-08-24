@@ -416,7 +416,10 @@ class PaytrModule extends ModuleBase
 		$expected = (int) round((float) $order['total'] * 100);
 
 		if ($totalAmountKurus !== $expected) {
-			error_log('PayTR amount mismatch for order ' . $order['reference']);
+			error_log('PayTR amount mismatch for order ' . $order['reference']
+				. ' expected=' . $expected . ' paid=' . $totalAmountKurus);
+
+			return;
 		}
 
 		if ((int) $order['status'] !== Order::STATUS_PENDING) {

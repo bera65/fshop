@@ -56,6 +56,14 @@ function fshop_configure_smarty(Smarty\Smarty $smarty): void
 			? Performance::versionedUrl((string) $url)
 			: (string) $url;
 	});
+
+	$smarty->registerPlugin('modifier', 'js', static function ($value) {
+		return Security::jsString($value);
+	});
+
+	$smarty->registerPlugin('modifier', 'json_script', static function ($value) {
+		return Security::jsonForHtmlScript($value);
+	});
 }
 
 function fshop_clear_smarty_compile_cache(): int

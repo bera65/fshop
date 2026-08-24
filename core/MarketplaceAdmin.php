@@ -409,14 +409,33 @@ class MarketplaceAdmin
 			$totalPriceValue = self::resolveOrderTotalPrice($ord, $lines, $platformKey);
 			$initials = self::customerInitials((string) ($ord['customer_name'] ?? ''));
 			$statusStep = self::orderStatusStep($status);
+			$costValue = self::estimateOrderCost($platformKey, $items);
+			$profitValue = round($totalPriceValue - $costValue, 2);
+			$profitRate = $totalPriceValue > 0 ? round(($profitValue / $totalPriceValue) * 100, 2) : 0.0;
+			$dateList = trim(($dateParts['day'] ?? '') . ' ' . ($dateParts['time'] ?? ''));
+			if ($dateList === '') {
+				$dateList = '—';
+			}
+
+			$orderNumber = (string) ($ord['order_number'] ?? '');
+			$packageId = (string) ($ord['shipment_package_id'] ?? '');
+			$rowKey = preg_replace(
+				'/[^a-zA-Z0-9_-]+/',
+				'_',
+				$platformKey . '-' . $orderNumber . '-' . $packageId
+			);
+			if (!is_string($rowKey) || $rowKey === '') {
+				$rowKey = $platformKey . '-' . substr(md5($orderNumber . '|' . $packageId), 0, 12);
+			}
 
 			$rowData = [
 				'platform' => $platformKey,
 				'platform_label' => $platformLabel,
 				'platform_icon' => strtoupper($platformKey === 'hepsiburada' ? 'hb' : $platformKey),
 				'platform_icon_file' => $iconFile,
-				'order_number' => (string) ($ord['order_number'] ?? ''),
-				'shipment_package_id' => (string) ($ord['shipment_package_id'] ?? ''),
+				'row_key' => $rowKey,
+				'order_number' => $orderNumber,
+				'shipment_package_id' => $packageId,
 				'customer_name' => (string) ($ord['customer_name'] ?? ''),
 				'customer_initials' => $initials,
 				'customer_sub' => $customerSub,
@@ -424,9 +443,19 @@ class MarketplaceAdmin
 				'status_raw' => $status !== '' ? $status : '—',
 				'status_class' => self::orderStatusClass($status),
 				'status_tone' => $statusTone,
+				'status_pill' => self::statusToneToPill($statusTone),
 				'status_step' => $statusStep,
 				'total_price' => Tools::displayPrice($totalPriceValue),
 				'total_price_value' => $totalPriceValue,
+				'cost_value' => $costValue,
+				'cost_formatted' => Tools::displayPrice($costValue),
+				'profit_value' => $profitValue,
+				'profit_formatted' => Tools::displayPrice($profitValue),
+				'profit_rate' => $profitRate,
+				'profit_rate_formatted' => '%' . number_format(abs($profitRate), 2, ',', '.'),
+				'is_profit' => $profitValue >= 0,
+				'is_packed' => in_array($statusTone, ['navy', 'success', 'done'], true),
+				'ship_tone' => self::statusToneToShip($statusTone),
 				'stock_deducted' => (int) ($ord['stock_deducted'] ?? 0),
 				'stock_label' => self::stockMovementLabel((int) ($ord['stock_deducted'] ?? 0)),
 				'cargo_provider' => $cargoProvider !== '' ? $cargoProvider : '—',
@@ -437,9 +466,11 @@ class MarketplaceAdmin
 				'display_date' => $orderDate !== '' ? Tools::formatDate3($orderDate) : '—',
 				'date_day' => $orderDate !== '' ? $dateParts['day'] : '—',
 				'date_time' => $orderDate !== '' ? $dateParts['time'] : '',
+				'date_list' => $dateList,
 				'items' => $items,
 				'item_count' => count($items),
 				'total_qty' => $totalQty,
+				'payment_label' => 'Pazaryeri ödeme',
 			];
 
 			$rowData['detail_json'] = json_encode($rowData, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
@@ -1280,6 +1311,64 @@ class MarketplaceAdmin
 	private static function orderStatusTone(string $status): string
 	{
 		return self::resolveOrderStatusMeta($status)['tone'];
+	}
+
+	private static function statusToneToPill(string $tone): string
+	{
+		$map = [
+			'pending' => 'pending',
+			'navy' => 'processing',
+			'success' => 'shipped',
+			'done' => 'delivered',
+			'danger' => 'cancelled',
+			'muted' => 'default',
+		];
+
+		return $map[$tone] ?? 'default';
+	}
+
+	private static function statusToneToShip(string $tone): string
+	{
+		$map = [
+			'pending' => 'later',
+			'navy' => 'today',
+			'success' => 'shipped',
+			'done' => 'shipped',
+			'danger' => 'overdue',
+			'muted' => 'none',
+		];
+
+		return $map[$tone] ?? 'none';
+	}
+
+	/**
+	 * @param array<int, array<string, mixed>> $items
+	 */
+	private static function estimateOrderCost(string $platform, array $items): float
+	{
+		$total = 0.0;
+
+		foreach ($items as $item) {
+			$sku = trim((string) ($item['sku'] ?? ''));
+			$qty = max(1, (int) ($item['quantity'] ?? 1));
+			$idProduct = $sku !== '' ? self::findLocalProductId($platform, $sku) : 0;
+
+			if ($idProduct <= 0 && $sku !== '') {
+				$idProduct = (int) (DB::getValue(
+					'SELECT id_product FROM products WHERE stock_code = ? OR barcode = ? LIMIT 1',
+					[$sku, $sku]
+				) ?: 0);
+			}
+
+			if ($idProduct <= 0) {
+				continue;
+			}
+
+			$cost = (float) (DB::getValue('SELECT cost FROM products WHERE id_product = ? LIMIT 1', [$idProduct]) ?: 0);
+			$total += $cost * $qty;
+		}
+
+		return round($total, 2);
 	}
 
 	private static function orderStatusLabel(string $status): string

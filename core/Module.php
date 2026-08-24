@@ -158,9 +158,10 @@ class Module
 	{
 		return [
 			'footer' 			=> 'Footer — {$hooks.footer}',
+			'footer_menu' 		=> 'Footer menü — {$hooks.footer_menu}',
 			'header' 			=> 'Üst bar — {$hooks.header}',
 			'main_menu' 		=> 'Ana menü (kategori menüsü) — {$hooks.main_menu}',
-			'mobile_menu' 		=> 'Mobil menü (drawer) — {$hooks.mobile_menu}',
+			'mobile_menu' 		=> 'Mobil menü (drawer eklenti) — {$hooks.mobile_menu}',
 			'head.top' 			=> 'Head üst alanı — {$hooks.head.top}',
 			'home' 				=> 'Ana sayfa — {$hooks.home}',
 			'home_slider' 		=> 'Ana sayfa üst slayt — {$hooks.home_slider}',
@@ -1010,8 +1011,9 @@ class Module
 	private static function inferAdminMenuSlug(string $url): string
 	{
 		$path = (string) (parse_url($url, PHP_URL_PATH) ?: '');
+		$uri = preg_quote(Admin::uri(), '#');
 
-		if (preg_match('#/admin/([^/?]+)#', $path, $matches)) {
+		if (preg_match('#/' . $uri . '/([^/?]+)#', $path, $matches)) {
 			return $matches[1];
 		}
 

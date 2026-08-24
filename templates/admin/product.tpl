@@ -29,7 +29,7 @@
 					{if $isNew}
 						{'Save first; then you can add images via drag and drop.'|adminT}
 					{else}
-						#{$idProduct} · {'Saved per language tab'|adminT} ({$shopLanguages|@count} {'Language'|adminT})
+						{$product.product_name|default:''|escape|truncate:80:'…'} · {'Saved per language tab'|adminT} ({$shopLanguages|@count} {'Language'|adminT})
 					{/if}
 				</span>
 			</div>
@@ -466,7 +466,8 @@
 						data-token="{$adminToken|escape}"
 						data-product-id="{$idProduct}"
 						data-upload-url="{$adminUrl}product?id={$idProduct}"
-						data-media-api="{$domain}api/admin-media.php">
+						data-media-api="{$domain}api/admin-media.php"
+						data-confirm-delete-image="{'Delete this image?'|adminT|escape}">
 						<div class="pe-card-head">
 							<div>
 								<h2>{'Images'|adminT}</h2>
@@ -585,7 +586,7 @@
 		</div>
 		{if $product.virtual_file_name}
 		<p class="mb-2"><strong>{'Uploaded file:'|adminT}</strong> {$product.virtual_file_name|escape}</p>
-		<form method="post" action="{$adminUrl}product?id={$idProduct}" class="d-inline mb-3" onsubmit="return confirm('{'Digital file'|adminT} silinsin mi?');">
+		<form method="post" action="{$adminUrl}product?id={$idProduct}" class="d-inline mb-3" data-confirm-title="{'Digital file'|adminT}" data-confirm-message="{'Delete this digital file?'|adminT}">
 			<input type="hidden" name="deleteVirtualFile" value="1">
 			<input type="hidden" name="token" value="{$adminToken}">
 			<button type="submit" class="btn btn-sm btn-outline-danger">{'Delete file'|adminT}</button>
@@ -836,6 +837,20 @@ window.productCatalogQuickConfig = {
 })();
 
 (function() {
+	var i18n = {
+		empty: {'License key cannot be empty'|adminT|@json_encode nofilter},
+		updateFail: {'Could not update license key'|adminT|@json_encode nofilter},
+		deleteFail: {'Could not delete license key'|adminT|@json_encode nofilter},
+		deleteConfirm: {'This license key will be deleted. Continue?'|adminT|@json_encode nofilter},
+		deleteTitle: {'Delete'|adminT|@json_encode nofilter}
+	};
+
+	function toast(message, type) {
+		if (window.AdminToast) {
+			AdminToast.show(message, type || 'danger');
+		}
+	}
+
 	document.querySelectorAll('.btn-edit-license').forEach(function(btn) {
 		btn.addEventListener('click', function(e) {
 			e.preventDefault();
@@ -859,7 +874,7 @@ window.productCatalogQuickConfig = {
 			
 			var newKey = row.querySelector('.license-input').value;
 			if (!newKey.trim()) {
-				alert('Lisans anahtarı boş olamaz');
+				toast(i18n.empty, 'warning');
 				return;
 			}
 			
@@ -868,11 +883,16 @@ window.productCatalogQuickConfig = {
 			formData.append('id_license', id);
 			formData.append('license_key', newKey);
 			formData.append('token', document.querySelector('input[name="token"]').value);
-			
+
+			if (window.AdminBusy) {
+				AdminBusy.start(this);
+			}
+
+			var saveBtn = this;
 			fetch('', {
 				method: 'POST',
 				body: formData
-			}).then(res => res.json()).then(data => {
+			}).then(function (res) { return res.json(); }).then(function (data) {
 				if (data.success) {
 					row.querySelector('.license-text').textContent = newKey;
 					row.querySelector('.license-text').classList.remove('d-none');
@@ -880,7 +900,13 @@ window.productCatalogQuickConfig = {
 					row.querySelector('.btn-edit-license').classList.remove('d-none');
 					row.querySelector('.btn-save-license').classList.add('d-none');
 				} else {
-					alert('Güncellenemedi. Anahtar kullanımda veya geçersiz olabilir.');
+					toast(i18n.updateFail, 'danger');
+				}
+			}).catch(function () {
+				toast(i18n.updateFail, 'danger');
+			}).finally(function () {
+				if (window.AdminBusy) {
+					AdminBusy.stop(saveBtn);
 				}
 			});
 		});
@@ -889,25 +915,43 @@ window.productCatalogQuickConfig = {
 	document.querySelectorAll('.btn-delete-license').forEach(function(btn) {
 		btn.addEventListener('click', function(e) {
 			e.preventDefault();
-			if (!confirm('Bu lisans anahtarını silmek istediğinize emin misiniz?')) return;
-			
-			var id = this.getAttribute('data-id');
-			var row = document.getElementById('licenseRow_' + id);
-			
-			var formData = new FormData();
-			formData.append('deleteLicense', '1');
-			formData.append('id_license', id);
-			formData.append('token', document.querySelector('input[name="token"]').value);
-			
-			fetch('', {
-				method: 'POST',
-				body: formData
-			}).then(res => res.json()).then(data => {
-				if (data.success) {
-					row.remove();
-				} else {
-					alert('Silinemedi.');
+			var deleteBtn = this;
+			var id = deleteBtn.getAttribute('data-id');
+			var ask = window.AdminConfirm && AdminConfirm.ask
+				? AdminConfirm.ask({ title: i18n.deleteTitle, message: i18n.deleteConfirm })
+				: Promise.resolve(false);
+
+			ask.then(function (ok) {
+				if (!ok) {
+					return;
 				}
+
+				var row = document.getElementById('licenseRow_' + id);
+				var formData = new FormData();
+				formData.append('deleteLicense', '1');
+				formData.append('id_license', id);
+				formData.append('token', document.querySelector('input[name="token"]').value);
+
+				if (window.AdminBusy) {
+					AdminBusy.start(deleteBtn);
+				}
+
+				fetch('', {
+					method: 'POST',
+					body: formData
+				}).then(function (res) { return res.json(); }).then(function (data) {
+					if (data.success) {
+						row.remove();
+					} else {
+						toast(i18n.deleteFail, 'danger');
+					}
+				}).catch(function () {
+					toast(i18n.deleteFail, 'danger');
+				}).finally(function () {
+					if (window.AdminBusy) {
+						AdminBusy.stop(deleteBtn);
+					}
+				});
 			});
 		});
 	});

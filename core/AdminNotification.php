@@ -91,6 +91,7 @@ class AdminNotification
 			'Yeni iade talebi' => 'New return request',
 			'Yeni iletişim mesajı' => 'New contact message',
 			'Sipariş sorusu' => 'Order question',
+			'Ürün stoku bitti' => 'Product out of stock',
 		];
 
 		if (isset($legacy[$title])) {
@@ -111,6 +112,8 @@ class AdminNotification
 			'/^Sipariş #(.+) için iade talebi oluşturuldu\.$/u' => 'Return request created for order #%s.',
 			'/^Cancel request created for order #(.+)\.$/u' => 'Cancel request created for order #%s.',
 			'/^Return request created for order #(.+)\.$/u' => 'Return request created for order #%s.',
+			'/^(.+) stokta kalmadı\.$/u' => '%s is out of stock.',
+			'/^(.+) is out of stock\.$/u' => '%s is out of stock.',
 		];
 
 		foreach ($patterns as $pattern => $templateKey) {

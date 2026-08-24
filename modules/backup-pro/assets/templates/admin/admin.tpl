@@ -1,7 +1,7 @@
 <script>
-    window.backupProDomain = "{$domain}";
-    window.backupProAdminUrl = "{$adminUrl}";
-    window.backupProApiBase = "{$domain}api/module.php?m=backup-pro&action=";
+    window.backupProDomain = {$domain|js nofilter};
+    window.backupProAdminUrl = {$adminUrl|js nofilter};
+    window.backupProApiBase = window.backupProDomain + 'api/module.php?m=backup-pro&action=';
     window.backupProAdminToken = {$adminToken|@json_encode nofilter};
 </script>
 

@@ -37,7 +37,7 @@
 							{if $row.stock_code}<br><small class="text-muted">{$row.stock_code|escape}</small>{/if}
 						</td>
 						<td>{$row.daily_sales|string_format:'%.2f'}</td>
-						<td><span class="badge bg-warning text-dark">{$row.stock}</span></td>
+						<td><span class="badge bg-warning text-dark">{$row.stock|string_format:"%.2f"}</span></td>
 						<td>{$row.stock_lifetime_label|escape}</td>
 						<td class="text-end">
 							<form method="post" class="d-inline-flex gap-1 align-items-center">

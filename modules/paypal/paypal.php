@@ -358,8 +358,14 @@ class PaypalModule extends ModuleBase
 		$expected = round((float) ($pending['_amount'] ?? 0), 2);
 		$paid = round((float) ($capture['amount'] ?? 0), 2);
 
-		if ($paid > 0 && abs($paid - $expected) > 0.05) {
+		if ($paid <= 0 || abs($paid - $expected) > 0.05) {
 			error_log('PayPal amount mismatch ' . $paypalOrderId . ' expected=' . $expected . ' paid=' . $paid);
+			self::markStatus($paypalOrderId, 'failed');
+
+			return [
+				'ok' => false,
+				'message' => 'PayPal: tutar uyuşmazlığı',
+			];
 		}
 
 		self::markStatus($paypalOrderId, 'paid');

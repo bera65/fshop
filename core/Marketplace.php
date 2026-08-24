@@ -253,6 +253,8 @@ class Marketplace
 		$row['n11_linked'] = N11\ProductSyncService::isLinked($n11);
 		$row['n11_sale_price'] = (float) ($n11['sale_price'] ?? 0);
 		$row['n11_stock_code'] = (string) ($n11['stock_code'] ?? '');
+		$row['stock'] = round((float) ($row['stock'] ?? 0), 2);
+		$row['stock_formatted'] = Tools::displayStock($row['stock']);
 
 		return $row;
 	}

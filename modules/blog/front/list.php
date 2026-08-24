@@ -74,6 +74,7 @@ $smarty->assign([
 	'blogCategory' => $currentCategory,
 	'pageName' => 'blog',
 	'pageTitle' => $pageTitle,
+	'documentTitle' => Seo::formatDocumentTitle($pageTitle, 'blog'),
 	'pageDesc' => $pageDesc,
 	'breadcrumb' => $breadcrumb,
 ]);

@@ -2,20 +2,54 @@
 
 class Customer
 {
+	/**
+	 * Digits-only phone for storage / lookup.
+	 * Keeps Turkish mobile convenience (5xx… / +90 5xx… → 05xxxxxxxxx)
+	 * while accepting international numbers (E.164 digit length).
+	 */
 	public static function normalizePhone(string $phone): string
 	{
-		$digits = preg_replace('/\D/', '', $phone);
+		$digits = preg_replace('/\D+/', '', $phone);
 
-		if (strlen($digits) === 10 && strpos($digits, '5') === 0) {
-			$digits = '0' . $digits;
+		if (!is_string($digits) || $digits === '') {
+			return '';
+		}
+
+		// International dial prefix 00…
+		if (strpos($digits, '00') === 0 && strlen($digits) > 4) {
+			$digits = substr($digits, 2);
+		}
+
+		// Turkey with country code: 905xxxxxxxxx → 05xxxxxxxxx (legacy local storage)
+		if (preg_match('/^90(5[0-9]{9})$/', $digits, $m)) {
+			return '0' . $m[1];
+		}
+
+		// Turkey national mobile without leading 0: 5xxxxxxxxx → 05xxxxxxxxx
+		if (preg_match('/^5[0-9]{9}$/', $digits)) {
+			return '0' . $digits;
 		}
 
 		return $digits;
 	}
 
+	/**
+	 * Accept international numbers (7–15 digits per E.164) and Turkish 05xxxxxxxxx.
+	 */
 	public static function isValidPhone(string $phone): bool
 	{
-		return (bool) preg_match('/^05[0-9]{9}$/', self::normalizePhone($phone));
+		$digits = self::normalizePhone($phone);
+		$len = strlen($digits);
+
+		if ($len < 7 || $len > 15 || !ctype_digit($digits)) {
+			return false;
+		}
+
+		if (preg_match('/^0+$/', $digits)) {
+			return false;
+		}
+
+		return true;
 	}
 
 	public static function hashPassword(string $password): string
@@ -49,7 +83,7 @@ class Customer
 		}
 
 		if (!self::isValidPhone($phone)) {
-			return self::fail('Geçerli bir telefon numarası girin (05xx xxx xx xx)');
+			return self::fail(translate('Please enter a valid phone number'));
 		}
 
 		if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -447,7 +481,7 @@ class Customer
 		}
 
 		if (!self::isValidPhone($phone)) {
-			return self::fail('Geçerli bir telefon numarası girin (05xx xxx xx xx)');
+			return self::fail(translate('Please enter a valid phone number'));
 		}
 
 		if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -633,7 +667,7 @@ class Customer
 		}
 
 		if (!self::isValidPhone($phone)) {
-			return self::fail('Geçerli bir telefon numarası girin (05xx xxx xx xx)');
+			return self::fail(translate('Please enter a valid phone number'));
 		}
 
 		if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -778,7 +812,7 @@ class Customer
 		}
 	}
 
-	public static function authWithGoogle(string $googleId, string $email, string $fullName): array
+	public static function authWithGoogle(string $googleId, string $email, string $fullName, bool $emailVerified = false): array
 	{
 		self::ensureSchema();
 
@@ -788,6 +822,10 @@ class Customer
 
 		if ($googleId === '') {
 			return self::fail(translate('Invalid request, please refresh and try again'));
+		}
+
+		if (!$emailVerified) {
+			return self::fail(translate('Google login failed'));
 		}
 
 		if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {

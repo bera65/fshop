@@ -66,11 +66,20 @@
 					{/foreach}
 				</select>
 			</div>
-			<div class="col-md-6 d-flex align-items-end">
+			<div class="col-md-6 d-flex align-items-end gap-4 flex-wrap">
 				<div class="form-check">
 					<input class="form-check-input" type="checkbox" name="active" value="1" id="catActive"{if $category.active} checked{/if}>
 					<label class="form-check-label" for="catActive">{'Active'|adminT}</label>
 				</div>
+				<div class="form-check">
+					<input class="form-check-input" type="checkbox" name="show_on_home" value="1" id="catShowHome"{if $category.show_on_home|default:0} checked{/if}>
+					<label class="form-check-label" for="catShowHome">{'Show on homepage'|adminT}</label>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<label class="form-label" for="catHomePos">{'Homepage order'|adminT}</label>
+				<input type="number" class="form-control" name="home_position" id="catHomePos" min="0" step="1" value="{$category.home_position|default:0|escape}">
+				<div class="form-text">{'Lower numbers appear first on the homepage category blocks.'|adminT}</div>
 			</div>
 		</div>
 

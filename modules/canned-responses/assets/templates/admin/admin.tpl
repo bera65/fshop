@@ -69,7 +69,7 @@
 								<a href="{$adminUrl}module-canned-responses?edit={$res.id_canned_response}" class="btn btn-sm btn-outline-primary">
 									{'Düzenle'|adminT}
 								</a>
-								<form method="post" action="{$adminUrl}module-canned-responses" class="d-inline-block" onsubmit="return confirm('{'Silmek istediğinize emin misiniz?'|adminT}');">
+								<form method="post" action="{$adminUrl}module-canned-responses" class="d-inline-block" data-confirm-message="{'Silmek istediğinize emin misiniz?'|adminT}">
 									<input type="hidden" name="deleteResponse" value="1">
 									<input type="hidden" name="token" value="{$adminToken}">
 									<input type="hidden" name="id_canned_response" value="{$res.id_canned_response}">

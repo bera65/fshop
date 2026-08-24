@@ -101,21 +101,39 @@ class ExportExcelModule extends ModuleBase
 			exit;
 		}
 
+		$return = str_replace(["\r", "\n", "\0", '\\'], '', $return);
+
 		if (strpos($return, 'http://') === 0 || strpos($return, 'https://') === 0) {
 			if (strpos($return, $adminBase) === 0) {
 				header('Location: ' . $return);
 				exit;
 			}
+
 			header('Location: ' . $fallback);
 			exit;
 		}
 
-		if (strpos($return, '//') === 0) {
+		if (strpos($return, '//') === 0 || $return === '' || $return[0] !== '/') {
 			header('Location: ' . $fallback);
 			exit;
 		}
 
-		header('Location: ' . $return);
+		if (isset($return[1]) && $return[1] === '/') {
+			header('Location: ' . $fallback);
+			exit;
+		}
+
+		$path = (string) (parse_url($return, PHP_URL_PATH) ?: '');
+		$query = parse_url($return, PHP_URL_QUERY);
+		$adminUri = '/' . Admin::uri();
+
+		if ($path === '' || strpos($path, $adminUri) === false) {
+			header('Location: ' . $fallback);
+			exit;
+		}
+
+		$safe = $path . (is_string($query) && $query !== '' ? '?' . $query : '');
+		header('Location: ' . $safe);
 		exit;
 	}
 

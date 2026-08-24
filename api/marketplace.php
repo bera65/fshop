@@ -19,7 +19,7 @@ $actions = [
 	'attributes' => 'attributes.php',
 	'fetch-orders' => 'fetch-orders.php',
 	'fetch-questions' => 'fetch-questions.php',
-		'export-orders' => 'export-orders.php',
+	'export-orders' => 'export-orders.php',
 	'answer-question' => 'answer-question.php',
 	'import-product' => 'import-product.php',
 	'link-existing' => 'link-existing.php',
@@ -27,10 +27,41 @@ $actions = [
 	'order-action' => 'order-action.php',
 ];
 
+// State-changing actions must be POST (CSRF enforced by admin_bootstrap).
+$mutatingActions = [
+	'sync',
+	'update-price',
+	'unlink',
+	'answer-question',
+	'import-product',
+	'link-existing',
+	'update-stock',
+	'order-action',
+	'export-orders',
+	'fetch-orders',
+	'fetch-questions',
+];
+
 if ($action === '' || !isset($actions[$action])) {
 	http_response_code(400);
 	header('Content-Type: application/json; charset=utf-8');
 	echo json_encode(['success' => false, 'message' => 'Geçersiz işlem'], JSON_UNESCAPED_UNICODE);
+	exit;
+}
+
+if ($action !== 'cron' && !Admin::isLoggedIn()) {
+	http_response_code(403);
+	header('Content-Type: application/json; charset=utf-8');
+	echo json_encode(['success' => false, 'message' => 'Yetkisiz erişim'], JSON_UNESCAPED_UNICODE);
+	exit;
+}
+
+$method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+
+if (in_array($action, $mutatingActions, true) && $method !== 'POST') {
+	http_response_code(405);
+	header('Content-Type: application/json; charset=utf-8');
+	echo json_encode(['success' => false, 'message' => 'Yalnızca POST kabul edilir'], JSON_UNESCAPED_UNICODE);
 	exit;
 }
 

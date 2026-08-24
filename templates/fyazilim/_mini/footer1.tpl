@@ -36,10 +36,14 @@
 			<div>
 				<h5>Hizmetlerimiz</h5>
 				<ul>
+					{if $hooks.footer_menu}
+					{$hooks.footer_menu nofilter}
+					{else}
 					{foreach $menuCategories as $cat name=svcCats}
 					{if $smarty.foreach.svcCats.iteration > 5}{break}{/if}
 					<li><a href="{$domain}{$cat.category_link|escape}">{$cat.category_name|escape}</a></li>
 					{/foreach}
+					{/if}
 				</ul>
 			</div>
 

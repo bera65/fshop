@@ -80,6 +80,11 @@ if ($paymentError === '') {
 		$gatewayUrl = (string) $paymentResult['gateway_url'];
 		$gatewayFields = is_array($paymentResult['fields']) ? $paymentResult['fields'] : [];
 		$shouldAutoSubmit = true;
+		NkolaypayModule::rememberGatewayAttempt(
+			$reference,
+			(string) ($gatewayFields['clientRefCode'] ?? ''),
+			(float) ($previewOrder['total'] ?? 0)
+		);
 	} else {
 		$paymentError = $paymentResult['message'] ?? 'N Kolay Pay ödeme başlatılamadı';
 	}

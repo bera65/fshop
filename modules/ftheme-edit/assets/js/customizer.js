@@ -126,14 +126,19 @@
 
 			if (String(block.id).indexOf('custom_') === 0) {
 				actions.appendChild(actionBtn('×', true, function () {
-					if (!window.confirm('Bu bloğu silmek istiyor musunuz?')) {
-						return;
-					}
-					state.blocks.splice(index, 1);
-					closeBlockEditor();
-					renderBlockList();
-					pushLivePreview();
-					markDirty();
+					var ask = window.AdminConfirm && AdminConfirm.ask
+						? AdminConfirm.ask({ message: 'Bu bloğu silmek istiyor musunuz?' })
+						: Promise.resolve(false);
+					ask.then(function (ok) {
+						if (!ok) {
+							return;
+						}
+						state.blocks.splice(index, 1);
+						closeBlockEditor();
+						renderBlockList();
+						pushLivePreview();
+						markDirty();
+					});
 				}));
 			}
 

@@ -28,6 +28,60 @@ class Security
 		return null;
 	}
 
+	/**
+	 * Encode a value as JSON safe to embed inside HTML <script>
+	 * (application/ld+json, application/json, or inline JS).
+	 *
+	 * Context rules:
+	 * - HTML text / attributes: htmlspecialchars / Smarty |escape
+	 * - Inline JavaScript strings: jsString() / Smarty |js  (not HTML escape)
+	 * - JSON in <script>: this method (never JSON_UNESCAPED_SLASHES alone)
+	 *
+	 * Fail-closed: returns JSON null if a script breakout marker remains.
+	 *
+	 * @param mixed $data
+	 */
+	public static function jsonForHtmlScript($data): string
+	{
+		$flags = JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT;
+
+		if (defined('JSON_INVALID_UTF8_SUBSTITUTE')) {
+			$flags |= JSON_INVALID_UTF8_SUBSTITUTE;
+		}
+
+		$json = json_encode($data, $flags);
+
+		if (!is_string($json) || $json === '') {
+			return 'null';
+		}
+
+		$json = str_replace(['<', '>'], ['\u003C', '\u003E'], $json);
+		$json = str_replace(["\xE2\x80\xA8", "\xE2\x80\xA9"], ['\u2028', '\u2029'], $json);
+
+		if (stripos($json, '</script') !== false || stripos($json, '<script') !== false) {
+			return 'null';
+		}
+
+		return $json;
+	}
+
+	/**
+	 * Encode a scalar as a JavaScript string literal, including quotes.
+	 * Use inside <script>: var domain = {$domain|js nofilter};
+	 *
+	 * @param mixed $value
+	 */
+	public static function jsString($value): string
+	{
+		$json = self::jsonForHtmlScript((string) $value);
+
+		if ($json === '' || ($json[0] ?? '') !== '"') {
+			return '""';
+		}
+
+		return $json;
+	}
+
 	public static function isSafeOutboundUrl(string $url): bool
 	{
 		$url = trim($url);
@@ -83,9 +137,36 @@ class Security
 		return true;
 	}
 
+	private const HTML_ALLOW_TAGS = [
+		'p' => true, 'br' => true, 'strong' => true, 'b' => true, 'em' => true, 'i' => true,
+		'u' => true, 's' => true, 'ul' => true, 'ol' => true, 'li' => true, 'a' => true, 'img' => true,
+		'h1' => true, 'h2' => true, 'h3' => true, 'h4' => true, 'h5' => true, 'h6' => true,
+		'blockquote' => true, 'table' => true, 'thead' => true, 'tbody' => true, 'tr' => true,
+		'th' => true, 'td' => true, 'span' => true, 'div' => true, 'hr' => true, 'pre' => true,
+		'code' => true, 'figure' => true, 'figcaption' => true, 'sub' => true, 'sup' => true,
+	];
+
+	private const HTML_DROP_TAGS = [
+		'script' => true, 'style' => true, 'iframe' => true, 'object' => true, 'embed' => true,
+		'applet' => true, 'form' => true, 'input' => true, 'button' => true, 'textarea' => true,
+		'select' => true, 'option' => true, 'link' => true, 'meta' => true, 'base' => true,
+		'svg' => true, 'math' => true, 'noscript' => true, 'template' => true, 'video' => true,
+		'audio' => true, 'source' => true, 'track' => true, 'frame' => true, 'frameset' => true,
+		'noframes' => true, 'canvas' => true, 'xmp' => true, 'listing' => true, 'plaintext' => true,
+		'noembed' => true, 'title' => true, 'head' => true, 'html' => true, 'body' => true,
+	];
+
+	private const HTML_ALLOW_ATTRS = [
+		'a' => ['href' => true, 'title' => true, 'target' => true, 'rel' => true, 'class' => true],
+		'img' => ['src' => true, 'alt' => true, 'width' => true, 'height' => true, 'title' => true, 'class' => true],
+		'td' => ['colspan' => true, 'rowspan' => true, 'class' => true],
+		'th' => ['colspan' => true, 'rowspan' => true, 'class' => true],
+		'blockquote' => ['cite' => true, 'class' => true],
+	];
+
 	/**
 	 * Allowlist HTML for product/CMS/blog editors (XSS hardening).
-	 * Keeps common editor tags; strips scripts, event handlers, javascript: URLs.
+	 * Parses as HTML so slash-separated attributes (<img/src=x/onerror=...>) cannot skip filters.
 	 */
 	public static function sanitizeHtml(string $html): string
 	{
@@ -95,38 +176,190 @@ class Security
 			return '';
 		}
 
-		$allowed = '<p><br><br/><strong><b><em><i><u><s><ul><ol><li><a><img>'
-			. '<h1><h2><h3><h4><h5><h6><blockquote><table><thead><tbody><tr><th><td>'
-			. '<span><div><hr><pre><code><figure><figcaption><sub><sup>';
+		$html = str_replace("\0", '', $html);
 
-		$html = strip_tags($html, $allowed);
-		$html = preg_replace('/\s+on[a-z]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html) ?? '';
-		$html = preg_replace_callback(
-			'/\s(href|src|xlink:href)\s*=\s*("|\')\s*(.*?)\s*\2/is',
-			static function (array $m): string {
-				$attr = strtolower($m[1]);
-				$quote = $m[2];
-				$url = trim(html_entity_decode($m[3], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-				$lower = strtolower($url);
+		if (!class_exists('DOMDocument')) {
+			return strip_tags($html, '<' . implode('><', array_keys(self::HTML_ALLOW_TAGS)) . '>');
+		}
 
-				if (strpos($lower, 'javascript:') === 0 || strpos($lower, 'vbscript:') === 0) {
-					return '';
+		$previous = libxml_use_internal_errors(true);
+		$dom = new DOMDocument();
+		$wrapped = '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>'
+			. '<div id="fshop-html-root">' . $html . '</div></body></html>';
+		$flags = 0;
+
+		if (defined('LIBXML_NONET')) {
+			$flags |= LIBXML_NONET;
+		}
+
+		$loaded = $dom->loadHTML($wrapped, $flags);
+		libxml_clear_errors();
+		libxml_use_internal_errors($previous);
+
+		if ($loaded !== true) {
+			return '';
+		}
+
+		$root = $dom->getElementById('fshop-html-root');
+
+		if (!$root instanceof DOMElement) {
+			$xpath = new DOMXPath($dom);
+			$nodes = $xpath->query('//*[@id="fshop-html-root"]');
+			$root = ($nodes instanceof DOMNodeList && $nodes->length > 0) ? $nodes->item(0) : null;
+		}
+
+		if (!$root instanceof DOMElement) {
+			return '';
+		}
+
+		self::sanitizeDomChildren($root);
+
+		$out = '';
+
+		foreach ($root->childNodes as $child) {
+			$out .= $dom->saveHTML($child);
+		}
+
+		return $out;
+	}
+
+	private static function sanitizeDomChildren(DOMNode $parent): void
+	{
+		$snapshot = [];
+
+		foreach ($parent->childNodes as $child) {
+			$snapshot[] = $child;
+		}
+
+		foreach ($snapshot as $child) {
+			if ($child instanceof DOMElement) {
+				self::sanitizeDomElement($child);
+			} elseif ($child instanceof DOMComment || $child instanceof DOMProcessingInstruction) {
+				if ($child->parentNode) {
+					$child->parentNode->removeChild($child);
+				}
+			}
+		}
+	}
+
+	private static function sanitizeDomElement(DOMElement $el): void
+	{
+		if ($el->parentNode === null) {
+			return;
+		}
+
+		$tag = strtolower($el->tagName);
+
+		if (isset(self::HTML_DROP_TAGS[$tag])) {
+			$el->parentNode->removeChild($el);
+
+			return;
+		}
+
+		self::sanitizeDomChildren($el);
+
+		if ($el->parentNode === null) {
+			return;
+		}
+
+		if (!isset(self::HTML_ALLOW_TAGS[$tag])) {
+			$parent = $el->parentNode;
+
+			while ($el->firstChild) {
+				$parent->insertBefore($el->firstChild, $el);
+			}
+
+			$parent->removeChild($el);
+
+			return;
+		}
+
+		self::sanitizeAllowedAttributes($el, $tag);
+	}
+
+	private static function sanitizeAllowedAttributes(DOMElement $el, string $tag): void
+	{
+		$allowed = self::HTML_ALLOW_ATTRS[$tag] ?? ['class' => true];
+		$remove = [];
+
+		if ($el->hasAttributes()) {
+			foreach ($el->attributes as $attr) {
+				$name = strtolower($attr->name);
+
+				if (strpos($name, 'on') === 0 || strpos($name, 'xmlns') === 0 || !isset($allowed[$name])) {
+					$remove[] = $attr->name;
+					continue;
 				}
 
-				if ($attr === 'href' && strpos($lower, 'data:') === 0) {
-					return '';
+				if (($name === 'href' || $name === 'src' || $name === 'cite') && !self::isSafeHtmlAttrUrl($name, $attr->value)) {
+					$remove[] = $attr->name;
+					continue;
 				}
 
-				if ($attr === 'src' && strpos($lower, 'data:') === 0 && strpos($lower, 'data:image/') !== 0) {
-					return '';
+				if ($name === 'target' && $attr->value !== '_blank' && $attr->value !== '_self') {
+					$remove[] = $attr->name;
+					continue;
 				}
 
-				return ' ' . $attr . '=' . $quote . $m[3] . $quote;
-			},
-			$html
-		) ?? '';
+				if ($name === 'style') {
+					$remove[] = $attr->name;
+				}
+			}
+		}
 
-		return $html;
+		foreach ($remove as $name) {
+			$el->removeAttribute($name);
+		}
+
+		if ($tag === 'a' && strtolower($el->getAttribute('target')) === '_blank') {
+			$rel = strtolower($el->getAttribute('rel'));
+			$tokens = preg_split('/\s+/', $rel, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+			foreach (['noopener', 'noreferrer'] as $need) {
+				if (!in_array($need, $tokens, true)) {
+					$tokens[] = $need;
+				}
+			}
+
+			$el->setAttribute('rel', implode(' ', $tokens));
+		}
+	}
+
+	private static function isSafeHtmlAttrUrl(string $attr, string $value): bool
+	{
+		$value = html_entity_decode(trim($value), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		$value = str_replace("\0", '', $value);
+
+		if ($value === '') {
+			return false;
+		}
+
+		$compact = strtolower((string) preg_replace('/[\s\x00-\x1f\x7f]+/', '', $value));
+
+		if (strpos($compact, 'javascript:') === 0 || strpos($compact, 'vbscript:') === 0
+			|| strpos($compact, 'livescript:') === 0 || strpos($compact, 'mocha:') === 0) {
+			return false;
+		}
+
+		if (strpos($compact, 'data:') === 0) {
+			if ($attr !== 'src') {
+				return false;
+			}
+
+			return (bool) preg_match('#^data:image/(gif|jpe?g|png|webp)(;|,)#i', $compact);
+		}
+
+		$scheme = strtolower((string) (parse_url($value, PHP_URL_SCHEME) ?? ''));
+
+		if ($scheme === '') {
+			return !preg_match('/^[a-z][a-z0-9+.-]*:/i', $compact);
+		}
+
+		if ($attr === 'href') {
+			return in_array($scheme, ['http', 'https', 'mailto', 'tel'], true);
+		}
+
+		return in_array($scheme, ['http', 'https'], true);
 	}
 
 	public static function isBlockedOutboundIp(string $ip): bool
@@ -151,6 +384,20 @@ class Security
 
 		if ($packed === inet_pton('::1')) {
 			return true;
+		}
+
+		// IPv4-mapped IPv6 (::ffff:127.0.0.1) and IPv4-compatible (::127.0.0.1)
+		if (strlen($packed) === 16) {
+			$prefixMapped = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xff";
+			$prefixCompat = "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00";
+
+			if (substr($packed, 0, 12) === $prefixMapped || substr($packed, 0, 12) === $prefixCompat) {
+				$v4 = inet_ntop(substr($packed, 12));
+
+				if (is_string($v4) && $v4 !== '::' && self::isBlockedOutboundIp($v4)) {
+					return true;
+				}
+			}
 		}
 
 		$first = ord($packed[0]);
@@ -301,12 +548,19 @@ class Security
 		}
 
 		// Payment / module webhooks (bank POST back).
-		if (preg_match('#/api/module\.php$#', $script)) {
-			$webhookActions = ['callback', 'notify', 'webhook', 'ipn', 'return', '3d-return', '3dreturn'];
+		$uri = str_replace('\\', '/', (string) ($_SERVER['REQUEST_URI'] ?? ''));
 
-			if (in_array($action, $webhookActions, true)) {
+		if (preg_match('#/api/module\.php(\?|$)#', $script) || preg_match('#/api/module\.php(\?|$)#', $uri)) {
+			$webhookActions = ['callback', 'notify', 'webhook', 'ipn', 'return', '3d-return', '3dreturn'];
+			$queryAction = strtolower(trim((string) ($_GET['action'] ?? '')));
+
+			if (in_array($action, $webhookActions, true) || in_array($queryAction, $webhookActions, true)) {
 				return true;
 			}
+		}
+
+		if (preg_match('#/(iyzico-callback|paytr-callback|parampos-callback|esnekpos-callback|kuveytturk-callback|tami-callback)(/|\?|$)#i', $uri)) {
+			return true;
 		}
 
 		return false;
@@ -318,18 +572,39 @@ class Security
 		$providedList = self::getRequestCsrfTokens();
 
 		// Never treat empty === empty as valid.
-		if ($sessionToken === '' || $providedList === []) {
+		if ($providedList === []) {
+			return false;
+		}
+
+		$candidates = [];
+
+		if ($sessionToken !== '') {
+			$candidates[] = $sessionToken;
+		}
+
+		// Admin UI forms posting to /api/module.php use front bootstrap but send admin_csrf_token.
+		if ($scope === 'front') {
+			$adminToken = (string) ($_SESSION['admin_csrf_token'] ?? '');
+
+			if ($adminToken !== '') {
+				$candidates[] = $adminToken;
+			}
+		}
+
+		if ($candidates === []) {
 			return false;
 		}
 
 		foreach ($providedList as $provided) {
-			if (hash_equals($sessionToken, $provided)) {
-				return true;
-			}
+			foreach ($candidates as $candidate) {
+				if (hash_equals($candidate, $provided)) {
+					return true;
+				}
 
-			// Legacy admin forms sometimes submit md5(token).
-			if ($scope === 'admin' && hash_equals(md5($sessionToken), $provided)) {
-				return true;
+				// Legacy admin forms sometimes submit md5(token).
+				if ($scope === 'admin' && hash_equals(md5($candidate), $provided)) {
+					return true;
+				}
 			}
 		}
 

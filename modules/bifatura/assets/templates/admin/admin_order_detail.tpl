@@ -10,7 +10,7 @@
 		{if !$configured}
 		<div class="alert alert-warning small mb-0">
 			API anahtarları tanımlı değil.
-			<a href="{$domain}admin/module-bifatura">Modül ayarları</a>
+			<a href="{$adminUrl}module-bifatura">Modül ayarları</a>
 		</div>
 		{elseif isset($invoice.invoice_no) && $invoice.invoice_no != ''}
 		<div class="small mb-2">

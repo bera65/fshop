@@ -231,7 +231,7 @@
 									<input type="hidden" name="id_rule" value="{$rule.id_rule}">
 									<button type="submit" name="toggleSmartCampaignRule" value="1" class="btn btn-sm btn-outline-secondary">{if $rule.active}Durdur{else}Aktif et{/if}</button>
 								</form>
-								<form method="post" class="d-inline" onsubmit="return confirm('Kural silinsin mi?');">
+								<form method="post" class="d-inline" data-confirm-message="Kural silinsin mi?">
 									<input type="hidden" name="token" value="{$adminToken}">
 									<input type="hidden" name="id_rule" value="{$rule.id_rule}">
 									<button type="submit" name="deleteSmartCampaignRule" value="1" class="btn btn-sm btn-outline-danger">Sil</button>

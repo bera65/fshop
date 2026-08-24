@@ -14,8 +14,9 @@
 	$categoryBlocks = [];
 	$homeCategories = [];
 	$categoryIcons = ['📱', '💄', '💊', '🏷️', '👕', '⌚', '🎧', '🏠', '⚽', '📦', '✨', '🛒'];
+	$homeCategoryRows = Category::getHomeList();
 
-	foreach (Category::getMenuList() as $index => $cat) {
+	foreach ($homeCategoryRows as $index => $cat) {
 		$homeCategories[] = [
 			'category' => $cat,
 			'url' => Category::getUrl($cat),
@@ -24,7 +25,7 @@
 		];
 	}
 
-	foreach (Category::getMenuList() as $cat) {
+	foreach ($homeCategoryRows as $cat) {
 		$products = Product::getActiveList((int) $cat['id_category'], 5);
 
 		if (!$products) {

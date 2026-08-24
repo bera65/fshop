@@ -179,11 +179,18 @@ class GoogleLoginModule extends ModuleBase
 			return ['success' => false, 'message' => 'Geçersiz Google yanıtı'];
 		}
 
+		$verified = $userData['email_verified'] ?? false;
+
+		if ($verified !== true && $verified !== 'true' && $verified !== 1 && $verified !== '1') {
+			return ['success' => false, 'message' => 'Google e-posta doğrulanmamış'];
+		}
+
 		return [
 			'success' => true,
 			'google_id' => (string) $userData['sub'],
 			'email' => (string) ($userData['email'] ?? ''),
 			'name' => (string) ($userData['name'] ?? ''),
+			'email_verified' => true,
 		];
 	}
 

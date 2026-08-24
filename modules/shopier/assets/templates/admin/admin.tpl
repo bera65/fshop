@@ -4,13 +4,13 @@
 
 <ul class="nav nav-tabs mb-3">
 	<li class="nav-item">
-		<a class="nav-link{if $tab == 'settings' || $tab == ''} active{/if}" href="{$domain}admin/module-shopier?tab=settings">Ayarlar</a>
+		<a class="nav-link{if $tab == 'settings' || $tab == ''} active{/if}" href="{$adminUrl}module-shopier?tab=settings">Ayarlar</a>
 	</li>
 	<li class="nav-item">
-		<a class="nav-link{if $tab == 'categories'} active{/if}" href="{$domain}admin/module-shopier?tab=categories">Kategori Eşleme</a>
+		<a class="nav-link{if $tab == 'categories'} active{/if}" href="{$adminUrl}module-shopier?tab=categories">Kategori Eşleme</a>
 	</li>
 	<li class="nav-item">
-		<a class="nav-link{if $tab == 'syncs'} active{/if}" href="{$domain}admin/module-shopier?tab=syncs">Senkron Kayıtları</a>
+		<a class="nav-link{if $tab == 'syncs'} active{/if}" href="{$adminUrl}module-shopier?tab=syncs">Senkron Kayıtları</a>
 	</li>
 </ul>
 
@@ -141,7 +141,7 @@
 				{foreach $recentSyncs as $row}
 				<tr>
 					<td>
-						<a href="{$domain}admin/product?id={$row.id_product}">{$row.product_name|escape}</a>
+						<a href="{$adminUrl}product?id={$row.id_product}">{$row.product_name|escape}</a>
 					</td>
 					<td class="small">
 						{if $row.shopier_url}

@@ -17,6 +17,24 @@
 			}
 		}
 	}
+
+	if (Tools::isSubmit('toggleHomeCategory')) {
+		$postToken = (string) Tools::getValue('token');
+
+		if (hash_equals((string) $adminToken, $postToken)) {
+			$idCategory = (int) Tools::getValue('idCategory');
+			$show = (int) Tools::getValue('show_on_home') === 1;
+
+			if (Category::setShowOnHome($idCategory, $show)) {
+				$sonuc = $show
+					? adminT('Category added to homepage')
+					: adminT('Category removed from homepage');
+			}
+		} else {
+			$sonuc = adminT('Invalid request');
+		}
+	}
+
 	$activeFilter = Tools::getIsset('active') ? (int) Tools::getValue('active') : -1;
 	$categories = Category::getAdminList($activeFilter);
 

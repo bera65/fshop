@@ -386,12 +386,15 @@
 			});
 	}
 
-	function productAction(action, idImage) {
+	function productAction(action, idImage, triggerBtn) {
 		if (!enabled || busy || !idImage) {
 			return;
 		}
 
 		busy = true;
+		if (window.AdminBusy && triggerBtn) {
+			AdminBusy.start(triggerBtn);
+		}
 		var formData = new FormData();
 		formData.append(action, '1');
 		formData.append('ajax', '1');
@@ -421,6 +424,9 @@
 			})
 			.finally(function () {
 				busy = false;
+				if (window.AdminBusy && triggerBtn) {
+					AdminBusy.stop(triggerBtn);
+				}
 			});
 	}
 
@@ -450,11 +456,17 @@
 			var idImage = card ? Number(card.getAttribute('data-image-id') || 0) : 0;
 			var action = btn.getAttribute('data-action');
 			if (action === 'cover') {
-				productAction('setCover', idImage);
+				productAction('setCover', idImage, btn);
 			} else if (action === 'delete') {
-				if (window.confirm('Görsel silinsin mi?')) {
-					productAction('deleteImage', idImage);
-				}
+				var message = root.getAttribute('data-confirm-delete-image') || 'Delete this image?';
+				var ask = window.AdminConfirm && typeof AdminConfirm.ask === 'function'
+					? AdminConfirm.ask({ message: message })
+					: Promise.resolve(false);
+				ask.then(function (ok) {
+					if (ok) {
+						productAction('deleteImage', idImage, btn);
+					}
+				});
 			}
 		});
 	}

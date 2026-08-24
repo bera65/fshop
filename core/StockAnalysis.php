@@ -28,13 +28,15 @@ class StockAnalysis
 		self::ensureSchema();
 
 		if ($idProduct <= 0) {
-		 return;
+			return;
 		}
 
 		if ($newStock <= 0 && $oldStock > 0) {
 			DB::update('products', [
 				'stock_empty_at' => date('Y-m-d H:i:s'),
 			], 'id_product = :where_id', ['where_id' => $idProduct]);
+
+			self::notifyStockEmpty($idProduct);
 
 			return;
 		}
@@ -44,6 +46,36 @@ class StockAnalysis
 				'stock_empty_at' => null,
 			], 'id_product = :where_id', ['where_id' => $idProduct]);
 		}
+	}
+
+	private static function notifyStockEmpty(int $idProduct): void
+	{
+		if (!class_exists('AdminNotification', false)) {
+			require_once dirname(__FILE__) . '/AdminNotification.php';
+		}
+
+		$product = Product::getByIdAdmin($idProduct);
+
+		if (!$product) {
+			return;
+		}
+
+		$name = trim((string) ($product['product_name'] ?? ''));
+
+		if ($name === '') {
+			$name = '#' . $idProduct;
+		}
+
+		$code = trim((string) ($product['stock_code'] ?? ''));
+		$label = $code !== '' ? $name . ' (' . $code . ')' : $name;
+		$link = class_exists('Admin', false) ? Admin::url('product?id=' . $idProduct) : ('product?id=' . $idProduct);
+
+		AdminNotification::add(
+			'Ürün stoku bitti',
+			$label . ' stokta kalmadı.',
+			$link,
+			'stock'
+		);
 	}
 
 	/** @return array<int, array<string, mixed>> */

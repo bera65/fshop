@@ -154,7 +154,7 @@
 			<div class="card-header bg-white fw-semibold text-warning">Token güvenliği</div>
 			<div class="card-body">
 				<p class="text-muted small mb-3">Feed URL'sindeki token, yetkisiz erişimi engeller. Token yenilerseniz FiyatTrend panelindeki XML linkini de güncellemeniz gerekir.</p>
-				<form method="post" onsubmit="return confirm('Token yenilenirse mevcut feed URL geçersiz olur. Devam edilsin mi?');">
+				<form method="post" data-confirm-message="Token yenilenirse mevcut feed URL geçersiz olur. Devam edilsin mi?">
 					<input type="hidden" name="regenToken" value="1">
 					<input type="hidden" name="token" value="{$adminToken}">
 					<button type="submit" class="btn btn-outline-warning btn-sm">Token'ı Yenile</button>

@@ -103,7 +103,7 @@
 					<td>{if $item.active}<span class="badge text-bg-success">Aktif</span>{else}<span class="badge text-bg-secondary">Pasif</span>{/if}</td>
 					<td class="text-end text-nowrap">
 						<a href="{$adminUrl}module-instagram-gallery?toggle_item={$item.id}&token={$adminToken|escape:url}" class="btn btn-sm btn-outline-secondary">Durum</a>
-						<a href="{$adminUrl}module-instagram-gallery?delete_item={$item.id}&token={$adminToken|escape:url}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Silinsin mi?')">Sil</a>
+						<a href="{$adminUrl}module-instagram-gallery?delete_item={$item.id}&token={$adminToken|escape:url}" class="btn btn-sm btn-outline-danger js-admin-confirm" data-confirm-message="Silinsin mi?">Sil</a>
 					</td>
 				</tr>
 				{/foreach}

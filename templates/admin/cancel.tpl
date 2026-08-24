@@ -70,7 +70,7 @@
 				</div>
 				<div class="d-grid gap-2">
 					<button type="submit" name="approveCancel" value="1" class="btn btn-primary">{'Approve and cancel'|adminT}</button>
-					<button type="submit" name="rejectCancel" value="1" class="btn btn-outline-danger" onclick="return confirm('{'Reject this request?'|adminT}');">{'Reject'|adminT}</button>
+					<button type="submit" name="rejectCancel" value="1" class="btn btn-outline-danger js-admin-confirm" data-confirm-title="{'Reject'|adminT}" data-confirm-message="{'Reject this request?'|adminT}">{'Reject'|adminT}</button>
 				</div>
 			</form>
 		</div>

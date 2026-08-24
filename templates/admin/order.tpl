@@ -41,6 +41,11 @@
 					<button type="button" class="btn btn-sm btn-outline-primary" id="toggleOrderEdit">{'Edit order'|adminT}</button>
 					{/if}
 					<a href="{$adminUrl}order-print?id={$order.id_order}&amp;auto=1" class="btn btn-sm btn-outline-dark" target="_blank" rel="noopener">{'Print'|adminT}</a>
+					<form method="post" class="d-inline" data-confirm-title="{'Delete order'|adminT}" data-confirm-message="{'This order will be permanently deleted. Related items, messages and documents will be removed. Stock will be restored if it was deducted.'|adminT}">
+						<input type="hidden" name="deleteOrder" value="1">
+						<input type="hidden" name="token" value="{$adminToken}">
+						<button type="submit" class="btn btn-sm btn-outline-danger">{'Delete order'|adminT}</button>
+					</form>
 				</div>
 			</div>
 			<div class="row g-2 small" id="orderInfoReadonly">
@@ -293,7 +298,7 @@
 				</select>
 				{else}
 				<input type="text" name="cargo_company" class="form-control mb-3" value="{$order.cargo_company|default:''|escape}" placeholder="{'e.g. domestic carrier'|adminT}">
-				<div class="form-text mb-3"><a href="{$domain}admin/cargos">{'Shipping'|adminT}</a>{' menu to add carriers.'|adminT}</div>
+				<div class="form-text mb-3"><a href="{$adminUrl}cargos">{'Shipping'|adminT}</a>{' menu to add carriers.'|adminT}</div>
 				{/if}
 				<label class="form-label small mb-1">{'Tracking number'|adminT}</label>
 				<input type="text" name="tracking_number" class="form-control mb-2" value="{$order.tracking_number|default:''|escape}" placeholder="YT123456789">
@@ -317,7 +322,7 @@
 			<p class="small text-muted mb-3">
 				{if $order.invoice_type == 'file'}{'Uploaded file'|adminT}{else}{'External link'|adminT}{/if}
 			</p>
-			<form method="post" class="mb-3" onsubmit="return confirm('{'Delete invoice?'|adminT}');">
+			<form method="post" class="mb-3" data-confirm-title="{'Delete invoice'|adminT}" data-confirm-message="{'Delete invoice?'|adminT}">
 				<input type="hidden" name="deleteInvoice" value="1">
 				<input type="hidden" name="token" value="{$adminToken}">
 				<button type="submit" class="btn btn-sm btn-outline-danger">{'Delete invoice'|adminT}</button>
@@ -345,7 +350,7 @@
 	</div>
 </div>
 {if $adminHooks.admin_order_detail}
-<div class="admin-panel mt-4">
+<div class="admin-panel mt-4" id="adminOrderModules">
 	{$adminHooks.admin_order_detail nofilter}
 </div>
 {/if}

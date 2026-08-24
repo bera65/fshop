@@ -25,7 +25,13 @@
 </IfModule>
 
 RewriteEngine On
-RewriteBase /fshop/
+RewriteBase /fshop2/
+
+# Sensitive paths / VCS — never serve from docroot
+RewriteRule ^\.git(/|$) - [F,L]
+RewriteRule ^\.svn(/|$) - [F,L]
+RewriteRule ^(logs|upgrade)(/|$) - [F,L]
+RewriteRule ^install/.*\.sql$ - [F,L]
 
 # PWA — dynamic manifest & service worker (mobil-app module)
 RewriteRule ^manifest\.json$ manifest.php [L]

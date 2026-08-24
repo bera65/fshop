@@ -68,7 +68,9 @@ document.addEventListener('DOMContentLoaded', function () {
 				})
 				.catch(function (err) {
 					select.value = String(previousStatus);
-					window.alert(err.message || 'Durum güncellenemedi');
+					if (window.AdminToast) {
+						AdminToast.show(err.message || 'Durum güncellenemedi', 'danger');
+					}
 				})
 				.finally(function () {
 					select.disabled = false;

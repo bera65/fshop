@@ -35,32 +35,54 @@ if ($mode === 'dry_run') {
         exit;
     }
 
-    $rootPath = $restoreService->getRootPath();
     $storageService = new StorageService();
     $fullZipPath = $storageService->resolveFilePath($backup['file_path']);
 
-    // Extract zip files
-    $count = $restoreService->restoreZipChunk($fullZipPath, 0, 100000, $rootPath);
-
-    // Extract & execute database.sql if exists
-    $zip = new \ZipArchive();
-    if ($zip->open($fullZipPath) === true) {
-        $tempDb = $storageService->getBackupDir() . 'restore_temp_db.sql';
-        if ($zip->extractTo(dirname($tempDb), 'database.sql')) {
-            rename(dirname($tempDb) . '/database.sql', $tempDb);
-            $restoreService->executeSqlDumpChunk($tempDb);
-            @unlink($tempDb);
-        }
-        $zip->close();
+    if (!$storageService->isSafeBackupArchive($fullZipPath)) {
+        if (ob_get_length()) { @ob_clean(); }
+        echo json_encode(['success' => false, 'message' => 'Yedek arşivi doğrulanamadı.']);
+        exit;
     }
 
-    LogRepository::log($backupId, 'success', 'RESTORE', "Geri yükleme işlemi başarıyla tamamlandı. Dosya sayısı: {$count}");
+    $staging = $storageService->createRestoreStagingDir();
+    if ($staging === null) {
+        if (ob_get_length()) { @ob_clean(); }
+        echo json_encode(['success' => false, 'message' => 'Geri yükleme klasörü oluşturulamadı.']);
+        exit;
+    }
 
-    if (ob_get_length()) { @ob_clean(); }
-    echo json_encode([
-        'success' => true,
-        'message' => 'Geri yükleme işlemi başarıyla tamamlandı.',
-        'extracted_files' => $count
-    ]);
-    exit;
+    $ok = false;
+    try {
+        $dumpPath = $restoreService->extractVerifiedSqlDump($fullZipPath, $staging);
+        if ($dumpPath === null) {
+            if (ob_get_length()) { @ob_clean(); }
+            echo json_encode(['success' => false, 'message' => 'Arşiv kökünde geçerli database.sql bulunamadı.']);
+            exit;
+        }
+
+        $ok = $restoreService->executeSqlDumpChunk($dumpPath);
+        if (!$ok) {
+            LogRepository::log($backupId, 'error', 'RESTORE', 'Veritabanı geri yüklemesi başarısız.');
+            if (ob_get_length()) { @ob_clean(); }
+            echo json_encode(['success' => false, 'message' => 'Veritabanı geri yüklemesi başarısız.']);
+            exit;
+        }
+
+        LogRepository::log($backupId, 'success', 'RESTORE', 'Veritabanı yedeği geri yüklendi. ZIP içindeki uygulama dosyaları yazılmadı.');
+
+        if (ob_get_length()) { @ob_clean(); }
+        echo json_encode([
+            'success' => true,
+            'message' => 'Veritabanı yedeği geri yüklendi. Uygulama dosyaları ZIP içinden yazılmaz.',
+            'extracted_files' => 0
+        ]);
+        exit;
+    } catch (\Throwable $e) {
+        LogRepository::log($backupId, 'error', 'RESTORE', 'Veritabanı geri yüklemesi başarısız.');
+        if (ob_get_length()) { @ob_clean(); }
+        echo json_encode(['success' => false, 'message' => 'Veritabanı geri yüklemesi başarısız.']);
+        exit;
+    } finally {
+        $storageService->removeRestoreStagingDir($staging);
+    }
 }

@@ -49,7 +49,7 @@
 				{elseif $row.answer}
 				<button type="submit" name="action" value="publish" class="btn btn-sm btn-outline-dark">Yayınla</button>
 				{/if}
-				<button type="submit" name="action" value="delete" class="btn btn-sm btn-outline-danger" onclick="return confirm('Silinsin mi?');">Sil</button>
+				<button type="submit" name="action" value="delete" class="btn btn-sm btn-outline-danger js-admin-confirm" data-confirm-message="Silinsin mi?">Sil</button>
 			</div>
 		</form>
 	</div>

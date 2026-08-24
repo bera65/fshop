@@ -85,7 +85,7 @@
 				<div class="d-flex flex-wrap gap-2">
 					<button type="submit" class="btn btn-dark">{if $editKey}{'Update'|adminT}{else}{'Create'|adminT}{/if}</button>
 					{if $editKey}
-					<a href="{$domain}admin/api" class="btn btn-outline-secondary">{'Cancel'|adminT}</a>
+					<a href="{$adminUrl}api" class="btn btn-outline-secondary">{'Cancel'|adminT}</a>
 					{/if}
 				</div>
 			</form>
@@ -111,14 +111,14 @@
 							{/if}
 						</div>
 						<div class="d-flex flex-wrap gap-1">
-							<a href="{$domain}admin/api?edit={$key.id_api_key}" class="btn btn-sm btn-outline-primary">{'Edit'|adminT}</a>
-							<form method="post" class="d-inline" onsubmit="return confirm('{'The key will be regenerated. The old key will become invalid.'|adminT}');">
+							<a href="{$adminUrl}api?edit={$key.id_api_key}" class="btn btn-sm btn-outline-primary">{'Edit'|adminT}</a>
+							<form method="post" class="d-inline" data-confirm-title="{'Regenerate key'|adminT}" data-confirm-message="{'The key will be regenerated. The old key will become invalid.'|adminT}">
 								<input type="hidden" name="regenApiKey" value="1">
 								<input type="hidden" name="token" value="{$adminToken}">
 								<input type="hidden" name="id_api_key" value="{$key.id_api_key}">
 								<button type="submit" class="btn btn-sm btn-outline-warning">{'Regenerate key'|adminT}</button>
 							</form>
-							<form method="post" class="d-inline" onsubmit="return confirm('{'Delete this API key?'|adminT}');">
+							<form method="post" class="d-inline" data-confirm-title="{'Delete'|adminT}" data-confirm-message="{'Delete this API key?'|adminT}">
 								<input type="hidden" name="deleteApiKey" value="1">
 								<input type="hidden" name="token" value="{$adminToken}">
 								<input type="hidden" name="id_api_key" value="{$key.id_api_key}">

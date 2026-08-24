@@ -497,34 +497,55 @@ var BackupPro = window.BackupPro || {
     },
 
     startRestore(backupId) {
-        if (!confirm('Bu yedeği geri yüklemek istediğinize emin misiniz? Mevcut verilerin üzerine yazılacaktır.')) return;
-
-        fetch(getBackupApiUrl('restore&backup_id=' + backupId + '&mode=dry_run'))
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    if (confirm(`Simülasyon Tamamlandı:\n${data.simulation_status}\n\nGerçek geri yüklemeyi başlatmak istiyor musunuz?`)) {
-                        fetch(getBackupApiUrl('restore&backup_id=' + backupId + '&mode=execute'))
-                            .then(r => r.json())
-                            .then(resData => {
-                                alert(resData.message);
-                                this.loadDashboard();
-                                this.loadBackups(1);
-                                this.loadLogs();
-                            });
-                    }
-                } else {
-                    alert(data.message);
-                }
-            });
+        const self = this;
+        this.showConfirm(
+            'Geri yükle',
+            'Bu yedeği geri yüklemek istediğinize emin misiniz? Mevcut verilerin üzerine yazılacaktır.',
+            function () {
+                fetch(getBackupApiUrl('restore&backup_id=' + backupId + '&mode=dry_run'))
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            self.showConfirm(
+                                'Simülasyon tamamlandı',
+                                (data.simulation_status || '') + '\n\nGerçek geri yüklemeyi başlatmak istiyor musunuz?',
+                                function () {
+                                    fetch(getBackupApiUrl('restore&backup_id=' + backupId + '&mode=execute'))
+                                        .then(r => r.json())
+                                        .then(resData => {
+                                            if (window.AdminToast) {
+                                                AdminToast.show(resData.message || '', resData.success ? 'success' : 'danger');
+                                            } else {
+                                                self.showToast(resData.message, resData.success ? 'success' : 'danger');
+                                            }
+                                            self.loadDashboard();
+                                            self.loadBackups(1);
+                                            self.loadLogs();
+                                        });
+                                }
+                            );
+                        } else if (window.AdminToast) {
+                            AdminToast.show(data.message || '', 'danger');
+                        } else {
+                            self.showToast(data.message, 'danger');
+                        }
+                    });
+            }
+        );
     },
 
     showConfirm(title, message, callback) {
+        if (window.AdminConfirm && typeof AdminConfirm.ask === 'function') {
+            AdminConfirm.ask({ title: title, message: message }).then(function (ok) {
+                if (ok && typeof callback === 'function') {
+                    callback();
+                }
+            });
+            return;
+        }
+
         const modalEl = document.getElementById('bp-confirm-modal');
         if (!modalEl) {
-            if (window.confirm(message)) {
-                callback();
-            }
             return;
         }
 
@@ -604,18 +625,22 @@ var BackupPro = window.BackupPro || {
     },
 
     clearLogs() {
-        if (!confirm('Tüm işlem günlükleri silinecek. Devam etmek istiyor musunuz?')) return;
-        fetch(getBackupApiUrl('clean&type=clear_logs'))
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    this.showToast('🗑️ Günlükler başarıyla temizlendi.', 'success');
-                    this.loadLogs();
-                } else {
-                    this.showToast('❌ ' + (data.message || 'Günlükler temizlenemedi.'), 'danger');
-                }
-            })
-            .catch(() => this.showToast('❌ Günlük temizleme isteği başarısız.', 'danger'));
+        const self = this;
+        this.showConfirm('Günlükleri sil', 'Tüm işlem günlükleri silinecek. Devam etmek istiyor musunuz?', function () {
+            fetch(getBackupApiUrl('clean&type=clear_logs'))
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        self.showToast('🗑️ Günlükler başarıyla temizlendi.', 'success');
+                        self.loadLogs();
+                    } else {
+                        self.showToast('❌ ' + (data.message || 'Günlükler temizlenemedi.'), 'danger');
+                    }
+                })
+                .catch(function () {
+                    self.showToast('❌ Günlük temizleme isteği başarısız.', 'danger');
+                });
+        });
     },
 
     loadLogs() {

@@ -21,6 +21,39 @@ class Category
 				 ADD COLUMN `meta_description` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' AFTER `meta_title`"
 			);
 		}
+
+		$showOnHome = DB::execute("SHOW COLUMNS FROM `categories` LIKE 'show_on_home'");
+
+		if (empty($showOnHome)) {
+			DB::execute(
+				"ALTER TABLE `categories`
+				 ADD COLUMN `show_on_home` tinyint(1) NOT NULL DEFAULT 0 AFTER `active`,
+				 ADD COLUMN `home_position` int(11) NOT NULL DEFAULT 0 AFTER `show_on_home`"
+			);
+		}
+	}
+
+	/**
+	 * Ana sayfada gösterilecek kategoriler (show_on_home=1).
+	 * Hiçbiri seçili değilse menü kategorilerine düşer (geriye uyumluluk).
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	public static function getHomeList(): array
+	{
+		self::ensureSchema();
+
+		$rows = DB::execute(
+			'SELECT * FROM categories
+			 WHERE active = 1 AND show_on_home = 1
+			 ORDER BY home_position ASC, category_name ASC'
+		) ?: [];
+
+		if ($rows === []) {
+			return self::getMenuList();
+		}
+
+		return array_map(static fn(array $row): array => Lang::applyCategory($row), $rows);
 	}
 
 	public static function getByLink(string $link): ?array
@@ -277,6 +310,8 @@ class Category
 
 	public static function getAdminList(int $activeFilter = -1, int $limit = 50, int $offset = 0): array
 	{
+		self::ensureSchema();
+
 		$sql = 'SELECT c.*, p.category_name AS parent_name
 			FROM categories c
 			LEFT JOIN categories p ON c.id_parent = p.id_category
@@ -288,9 +323,26 @@ class Category
 			$params[] = $activeFilter;
 		}
 
-		$sql .= ' ORDER BY c.id_category ASC LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
+		$sql .= ' ORDER BY c.show_on_home DESC, c.home_position ASC, c.id_category ASC LIMIT ' . (int) $limit . ' OFFSET ' . (int) $offset;
 
 		return DB::execute($sql, $params) ?: [];
+	}
+
+	/** Ana sayfa vitrin bayrağını aç/kapat */
+	public static function setShowOnHome(int $idCategory, bool $show): bool
+	{
+		self::ensureSchema();
+
+		if ($idCategory <= 0) {
+			return false;
+		}
+
+		return DB::update(
+			'categories',
+			['show_on_home' => $show ? 1 : 0],
+			'id_category = :where_id',
+			['where_id' => $idCategory]
+		) !== false;
 	}
 
 	public static function countAdmin(int $activeFilter = -1): int
@@ -423,6 +475,8 @@ class Category
 		$link = trim((string) ($defaultEntry['category_link'] ?? $data['category_link'] ?? ''));
 		$idParent = (int) ($data['id_parent'] ?? 0);
 		$active = !empty($data['active']) ? 1 : 0;
+		$showOnHome = !empty($data['show_on_home']) ? 1 : 0;
+		$homePosition = (int) ($data['home_position'] ?? 0);
 		$metaTitle = mb_substr(trim(strip_tags((string) ($defaultEntry['meta_title'] ?? $data['meta_title'] ?? ''))), 0, 255);
 		$metaDescription = mb_substr(trim(strip_tags((string) ($defaultEntry['meta_description'] ?? $data['meta_description'] ?? ''))), 0, 512);
 
@@ -458,6 +512,8 @@ class Category
 			'meta_description' => $metaDescription,
 			'id_parent' => max(0, $idParent),
 			'active' => $active,
+			'show_on_home' => $showOnHome,
+			'home_position' => max(0, $homePosition),
 		];
 
 		if ($id > 0) {

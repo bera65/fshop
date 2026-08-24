@@ -1,8 +1,9 @@
 <h6 class="footer-title">Bültene Abone Ol</h6>
 <p class="footer-newsletter-text">Kampanyalar, yeni ürünler ve indirimlerden haberdar olun.</p>
 <form class="footer-newsletter" id="footerNewsletterForm" data-api-url="{$newsletterApiUrl|escape}" method="post" action="#">
+	<input type="hidden" name="token" value="{$token|escape}">
 	<div class="input-group">
-		<input type="email" name="email" class="form-control" placeholder="E-posta adresiniz" required>
+		<input type="email" name="email" class="form-control" placeholder="E-posta adresiniz" required autocomplete="email">
 		<button type="submit" class="btn btn-footer-submit">
 			<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send-horizontal-icon lucide-send-horizontal"><path d="M3.714 3.048a.498.498 0 0 0-.683.627l2.843 7.627a2 2 0 0 1 0 1.396l-2.842 7.627a.498.498 0 0 0 .682.627l18-8.5a.5.5 0 0 0 0-.904z"/><path d="M6 12h16"/></svg>
 		</button>

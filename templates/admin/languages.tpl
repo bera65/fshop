@@ -55,7 +55,7 @@
 									<input type="hidden" name="token" value="{$adminToken}">
 									<button type="submit" class="btn btn-sm btn-outline-primary">{'Set as default'|adminT}</button>
 								</form>
-								<form method="post" class="d-inline" onsubmit="return confirm('{'Remove this language? CMS and translation records will be deleted.'|adminT}');">
+								<form method="post" class="d-inline" data-confirm-title="{'Delete'|adminT}" data-confirm-message="{'Remove this language? CMS and translation records will be deleted.'|adminT}">
 									<input type="hidden" name="langAction" value="1">
 									<input type="hidden" name="action" value="remove">
 									<input type="hidden" name="code" value="{$lang.code|escape}">

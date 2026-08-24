@@ -4,10 +4,10 @@
 
 <ul class="nav nav-tabs mb-3">
 	<li class="nav-item">
-		<a class="nav-link{if $tab == 'settings'} active{/if}" href="{$domain}admin/module-bizimhesap?tab=settings">Ayarlar</a>
+		<a class="nav-link{if $tab == 'settings'} active{/if}" href="{$adminUrl}module-bizimhesap?tab=settings">Ayarlar</a>
 	</li>
 	<li class="nav-item">
-		<a class="nav-link{if $tab == 'recent'} active{/if}" href="{$domain}admin/module-bizimhesap?tab=recent">Son Faturalar</a>
+		<a class="nav-link{if $tab == 'recent'} active{/if}" href="{$adminUrl}module-bizimhesap?tab=recent">Son Faturalar</a>
 	</li>
 </ul>
 
@@ -58,7 +58,7 @@
 				{foreach from=$recent item=row}
 				<tr>
 					<td>
-						<a href="{$domain}admin/order?id={$row.id_order}">{$row.reference|escape}</a>
+						<a href="{$adminUrl}order?id={$row.id_order}">{$row.reference|escape}</a>
 					</td>
 					<td class="small">{$row.customer_name|escape}</td>
 					<td class="small">{$row.invoice_no|escape}</td>

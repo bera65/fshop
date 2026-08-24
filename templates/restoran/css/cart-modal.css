@@ -1,0 +1,350 @@
+/* Blue tema — ortalanmış sepet modalı */
+
+body.cart-modal-open {
+	overflow: hidden;
+}
+
+.blue-cart-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(15, 23, 42, 0.45);
+	z-index: 1040;
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.blue-cart-overlay.show {
+	opacity: 1;
+	visibility: visible;
+}
+
+.blue-cart-modal {
+	position: fixed;
+	inset: 0;
+	z-index: 1050;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+	pointer-events: none;
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.blue-cart-modal.show {
+	pointer-events: auto;
+	opacity: 1;
+	visibility: visible;
+}
+
+.blue-cart-modal__dialog {
+	width: 100%;
+	max-width: 560px;
+	max-height: calc(100vh - 40px);
+	background: #fff;
+	border-radius: 16px;
+	box-shadow: 0 24px 48px rgba(0, 0, 0, 0.18);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	transform: translateY(12px) scale(0.98);
+	transition: transform 0.25s ease;
+}
+
+.blue-cart-modal.show .blue-cart-modal__dialog {
+	transform: translateY(0) scale(1);
+}
+
+.blue-cart-modal__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 16px;
+	border-bottom: 1px solid #e8ecf1;
+}
+
+.blue-cart-modal__title {
+	margin: 0;
+	font-size: 20px;
+	font-weight: 700;
+	color: #111827;
+}
+
+.blue-cart-modal__close {
+	border: 0;
+	background: #f3f4f6;
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	color: #6b7280;
+	transition: background 0.2s, color 0.2s;
+}
+
+.blue-cart-modal__close:hover {
+	background: #e5e7eb;
+	color: #111827;
+}
+
+.blue-cart-modal__body {
+	flex: 1;
+	overflow-y: auto;
+	padding: 8px 24px;
+}
+
+.blue-cart-empty {
+	text-align: center;
+	padding: 48px 16px;
+	color: #6b7280;
+}
+
+.blue-cart-empty svg {
+	color: #d1d5db;
+	margin-bottom: 12px;
+}
+
+.blue-cart-empty p {
+	margin: 0 0 16px;
+	font-size: 15px;
+}
+
+.blue-cart-item {
+	display: flex;
+	gap: 16px;
+	padding: 18px 0;
+	border-bottom: 1px solid #eef1f5;
+}
+
+.blue-cart-item:last-child {
+	border-bottom: 0;
+}
+
+.blue-cart-item__thumb {
+	flex: 0 0 88px;
+	width: 88px;
+	height: 88px;
+	border-radius: 10px;
+	overflow: hidden;
+	background: #f8fafc;
+	border: 1px solid #eef1f5;
+	display: block;
+}
+
+.blue-cart-item__thumb img {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.blue-cart-item__content {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.blue-cart-item__top {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 12px;
+}
+
+.blue-cart-item__name {
+	display: block;
+	font-size: 14px;
+	font-weight: 600;
+	color: #111827;
+	text-decoration: none;
+	line-height: 1.4;
+	margin-bottom: 6px;
+}
+
+.blue-cart-item__name:hover {
+	color: var(--prime-primary, #213c8b);
+}
+
+.blue-cart-item__stock {
+	display: inline-block;
+	font-size: 12px;
+	font-weight: 600;
+	color: #15803d;
+	background: #dcfce7;
+	padding: 3px 8px;
+	border-radius: 999px;
+	margin-top: 4px;
+}
+
+.blue-cart-item__stock--out {
+	color: #b91c1c;
+	background: #fee2e2;
+}
+
+.blue-cart-item__remove {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	border: 0;
+	background: #fee2e2;
+	color: #dc2626;
+	font-size: 12px;
+	font-weight: 500;
+	padding: 3px 8px;
+	border-radius: 999px;
+	cursor: pointer;
+	margin-top: 4px;
+	transition: .2s;
+}
+
+.blue-cart-item__remove:hover {
+	background: #ff6363;
+	color: #dc2626;
+}
+
+.blue-cart-item__price {
+	font-size: 15px;
+	font-weight: 700;
+	color: #111827;
+	white-space: nowrap;
+}
+
+.blue-cart-item__bottom {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.blue-cart-item__line {
+	font-size: 12px;
+	color: #9ca3af;
+}
+
+.blue-cart-item__qty {
+	display: inline-flex;
+	align-items: center;
+	border: 1px solid #e5e7eb;
+	border-radius: 8px;
+	overflow: hidden;
+	background: #fff;
+}
+
+.blue-cart-item__qty .cart-qty-btn {
+	width: 32px;
+	height: 32px;
+	border: 0;
+	background: transparent;
+	font-size: 16px;
+	line-height: 1;
+	cursor: pointer;
+	color: #374151;
+}
+
+.blue-cart-item__qty .cart-qty-btn:hover {
+	background: #f3f4f6;
+}
+
+.blue-cart-item__qty .cart-qty-value {
+	min-width: 32px;
+	text-align: center;
+	font-size: 14px;
+	font-weight: 600;
+	color: #111827;
+}
+
+.blue-cart-modal__summary {
+	padding: 16px 24px;
+	border-top: 1px solid #e8ecf1;
+	background: #fafbfc;
+}
+
+.blue-cart-summary-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 14px;
+	color: #6b7280;
+	padding: 4px 0;
+}
+
+.blue-cart-summary-row--total {
+	margin-top: 8px;
+	padding-top: 12px;
+	border-top: 1px solid #e5e7eb;
+	font-size: 16px;
+	color: #111827;
+}
+
+.blue-cart-summary-row--total strong {
+	font-size: 20px;
+	font-weight: 800;
+	color: #111827;
+}
+
+.blue-cart-modal__footer {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 16px 24px 24px;
+	border-top: 1px solid #e8ecf1;
+}
+
+.blue-cart-checkout {
+	background: var(--prime-primary, #213c8b) !important;
+	border-color: var(--prime-primary, #213c8b) !important;
+	font-weight: 600;
+	padding: 12px 20px;
+	border-radius: 10px;
+}
+
+.blue-cart-checkout:hover {
+	background: #1a3070 !important;
+	border-color: #1a3070 !important;
+}
+
+.blue-cart-modal__footer .btn-outline-secondary {
+	border-radius: 10px;
+	padding: 11px 20px;
+	font-weight: 600;
+	color: #6b7280;
+	border-color: #d1d5db;
+}
+
+.blue-cart-modal__footer .btn-outline-secondary:hover {
+	background: #f9fafb;
+	color: #374151;
+}
+
+@media (max-width: 575.98px) {
+	.blue-cart-modal {
+		padding: 0;
+		align-items: flex-end;
+	}
+
+	.blue-cart-modal__dialog {
+		max-width: 100%;
+		max-height: 92vh;
+		border-radius: 16px 16px 0 0;
+	}
+
+	.blue-cart-modal__header,
+	.blue-cart-modal__body,
+	.blue-cart-modal__summary,
+	.blue-cart-modal__footer {
+		padding-left: 16px;
+		padding-right: 16px;
+	}
+
+	.blue-cart-item__thumb {
+		flex: 0 0 72px;
+		width: 72px;
+		height: 72px;
+	}
+}

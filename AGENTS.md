@@ -71,7 +71,7 @@ fshop/
 
 | Endpoint | Amaç |
 |----------|------|
-| `GET/POST /api/v1/...` | Web API (sipariş, ürün, kategori, marka) — bkz. [docs/WEBAPI.md](docs/WEBAPI.md) |
+| `GET/POST /api/v1/...` | Web API (sipariş, ürün, kategori, marka, mesaj, bildirim) — bkz. [docs/WEBAPI.md](docs/WEBAPI.md) |
 | `POST /api/module.php?m={modul}&action={islem}` | Modül API |
 | `GET /api/cron.php?action=currency&token=SHOP_TOKEN` | Döviz fiyat güncelleme |
 
@@ -85,7 +85,7 @@ fshop/
 2. Benzer bir modüle bak:
    - Footer hook → `modules/whatsapp/`
    - Ürün sekmesi → `modules/reviews/`
-   - Ödeme → `modules/paytr/` veya `modules/bankwire/`
+   - Ödeme → `modules/paytr/` veya `modules/iyzico/` veya `modules/bankwire/`
    - Admin CRUD → `modules/slider/`
 3. `modules/{ad}/{ad}.php` içinde `ModuleBase` extend et
 4. Gerekirse `install.sql` / `uninstall.sql` ekle

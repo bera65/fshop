@@ -4,6 +4,14 @@ class Theme
 {
 	private const MAX_ZIP_BYTES = 52428800;
 
+	/** Allowed file extensions inside an uploaded theme ZIP (no executables). */
+	private const THEME_ZIP_ALLOWED_EXTENSIONS = [
+		'tpl', 'css', 'js', 'json', 'map',
+		'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'ico', 'avif', 'bmp',
+		'woff', 'woff2', 'ttf', 'otf', 'eot',
+		'txt', 'md', 'xml', 'less', 'scss', 'sass',
+	];
+
 	private const DEFAULT_COLOR_GROUPS = [
 		'marka' => 'Marka',
 		'yuzey' => 'Yüzey',
@@ -1020,43 +1028,14 @@ class Theme
 			return ['success' => false, 'message' => 'Geçici klasör oluşturulamadı'];
 		}
 
-		for ($i = 0; $i < $zip->numFiles; $i++) {
-			$entry = (string) $zip->getNameIndex($i);
-
-			if (!self::isSafeZipEntry($entry, $rootPrefix)) {
-				self::removeDirectory($tempDir);
-				$zip->close();
-
-				return ['success' => false, 'message' => 'ZIP içinde güvenli olmayan dosya yolu: ' . $entry];
-			}
-
-			$relative = substr($entry, strlen($rootPrefix));
-
-			if ($relative === '' || substr($relative, -1) === '/') {
-				continue;
-			}
-
-			$dest = $tempDir . '/' . $relative;
-			$destDir = dirname($dest);
-
-			if (!is_dir($destDir) && !mkdir($destDir, 0755, true) && !is_dir($destDir)) {
-				self::removeDirectory($tempDir);
-				$zip->close();
-
-				return ['success' => false, 'message' => 'Tema dosyaları çıkarılamadı'];
-			}
-
-			$contents = $zip->getFromIndex($i);
-
-			if ($contents === false || file_put_contents($dest, $contents) === false) {
-				self::removeDirectory($tempDir);
-				$zip->close();
-
-				return ['success' => false, 'message' => 'Tema dosyaları yazılamadı'];
-			}
-		}
-
+		$extractError = self::extractSafeThemeEntries($zip, $rootPrefix, $tempDir);
 		$zip->close();
+
+		if ($extractError !== null) {
+			self::removeDirectory($tempDir);
+
+			return ['success' => false, 'message' => $extractError];
+		}
 
 		if (!is_file($tempDir . '/header.tpl')) {
 			self::removeDirectory($tempDir);
@@ -1202,15 +1181,92 @@ class Theme
 		return null;
 	}
 
+	/**
+	 * Write ZIP members into $tempDir. Returns an error message, or null on success.
+	 */
+	private static function extractSafeThemeEntries(ZipArchive $zip, string $rootPrefix, string $tempDir): ?string
+	{
+		$tempReal = realpath($tempDir);
+
+		if ($tempReal === false) {
+			return 'Geçici klasör oluşturulamadı';
+		}
+
+		for ($i = 0; $i < $zip->numFiles; $i++) {
+			$entry = str_replace('\\', '/', (string) $zip->getNameIndex($i));
+
+			if ($entry === '' || strpos($entry, '__MACOSX/') === 0) {
+				continue;
+			}
+
+			$baseName = basename($entry);
+
+			if ($baseName === '.DS_Store') {
+				continue;
+			}
+
+			if (self::isZipEntrySymlink($zip, $i) || !self::isSafeZipEntry($entry, $rootPrefix)) {
+				return 'ZIP içinde güvenli olmayan dosya yolu: ' . $entry;
+			}
+
+			$relative = substr($entry, strlen($rootPrefix));
+			$relative = ltrim(str_replace('\\', '/', (string) $relative), '/');
+
+			if ($relative === '' || substr($relative, -1) === '/') {
+				continue;
+			}
+
+			$ext = strtolower((string) pathinfo($relative, PATHINFO_EXTENSION));
+
+			if ($ext === '') {
+				$stat = $zip->statIndex($i);
+				if (is_array($stat) && (int) ($stat['size'] ?? 0) === 0) {
+					continue;
+				}
+
+				return 'ZIP içinde güvenli olmayan dosya yolu: ' . $entry;
+			}
+
+			$dest = $tempReal . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative);
+			$destDir = dirname($dest);
+
+			if (!is_dir($destDir) && !mkdir($destDir, 0755, true) && !is_dir($destDir)) {
+				return 'Tema dosyaları çıkarılamadı';
+			}
+
+			$destDirReal = realpath($destDir);
+
+			if ($destDirReal === false || !self::isPathInside($destDirReal, $tempReal)) {
+				return 'ZIP içinde güvenli olmayan dosya yolu: ' . $entry;
+			}
+
+			$contents = $zip->getFromIndex($i);
+
+			if ($contents === false || file_put_contents($dest, $contents) === false) {
+				return 'Tema dosyaları yazılamadı';
+			}
+
+			$writtenReal = realpath($dest);
+
+			if ($writtenReal === false || !self::isPathInside($writtenReal, $tempReal)) {
+				@unlink($dest);
+
+				return 'ZIP içinde güvenli olmayan dosya yolu: ' . $entry;
+			}
+		}
+
+		return null;
+	}
+
 	private static function isSafeZipEntry(string $entry, string $rootPrefix): bool
 	{
 		$entry = str_replace('\\', '/', $entry);
 
-		if ($entry === '' || strpos($entry, "\0") !== false) {
+		if ($entry === '' || strpos($entry, "\0") !== false || strpos($entry, ':') !== false) {
 			return false;
 		}
 
-		if ($entry[0] === '/' || strpos($entry, '../') !== false || substr($entry, -3) === '/..') {
+		if ($entry[0] === '/' || strpos($entry, '//') === 0 || preg_match('#^[a-zA-Z]:#', $entry)) {
 			return false;
 		}
 
@@ -1222,7 +1278,73 @@ class Theme
 			return false;
 		}
 
+		$parts = explode('/', $entry);
+		$last = count($parts) - 1;
+
+		foreach ($parts as $i => $part) {
+			if ($part === '.' || $part === '..') {
+				return false;
+			}
+
+			if ($part === '' && $i !== $last) {
+				return false;
+			}
+		}
+
+		if (substr($entry, -1) === '/') {
+			return true;
+		}
+
+		$base = strtolower(basename($entry));
+
+		if ($base === '.htaccess' || $base === '.htpasswd' || $base === 'web.config') {
+			return false;
+		}
+
+		$ext = strtolower((string) pathinfo($base, PATHINFO_EXTENSION));
+
+		if ($ext === '' || !in_array($ext, self::THEME_ZIP_ALLOWED_EXTENSIONS, true)) {
+			return false;
+		}
+
 		return true;
+	}
+
+	private static function isZipEntrySymlink(ZipArchive $zip, int $index): bool
+	{
+		if (!method_exists($zip, 'getExternalAttributesIndex')) {
+			return false;
+		}
+
+		$opsys = 0;
+		$attr = 0;
+
+		if (!$zip->getExternalAttributesIndex($index, $opsys, $attr)) {
+			return false;
+		}
+
+		$unix = defined('ZipArchive::OPSYS_UNIX') ? ZipArchive::OPSYS_UNIX : 3;
+
+		if ((int) $opsys !== (int) $unix) {
+			return false;
+		}
+
+		$mode = ($attr >> 16) & 0xFFFF;
+
+		return ($mode & 0170000) === 0120000;
+	}
+
+	private static function isPathInside(string $path, string $root): bool
+	{
+		$path = rtrim(str_replace('\\', '/', $path), '/');
+		$root = rtrim(str_replace('\\', '/', $root), '/');
+
+		if (DIRECTORY_SEPARATOR === '\\') {
+			$path = strtolower($path);
+			$root = strtolower($root);
+		}
+
+		return $path === $root || strpos($path, $root . '/') === 0;
 	}
 
 	private static function copyDirectory(string $source, string $target): bool

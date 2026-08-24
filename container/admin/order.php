@@ -125,6 +125,25 @@
 		}
 	}
 
+	if (Tools::isSubmit('deleteOrder')) {
+		$postToken = (string) Tools::getValue('token');
+
+		if (!hash_equals($adminToken, $postToken)) {
+			$flash = adminT('Invalid request');
+			$flashType = 'danger';
+		} else {
+			$result = Order::deleteByAdmin($idOrder);
+
+			if (!empty($result['success'])) {
+				header('Location: ' . Admin::url('orders?deleted=1'));
+				exit;
+			}
+
+			$flash = $result['message'];
+			$flashType = 'danger';
+		}
+	}
+
 	$order = Order::getByIdAdmin($idOrder) ?: $order;
 
 	$trackingUrl = '';

@@ -142,7 +142,7 @@
 				<div class="d-flex flex-wrap gap-2">
 					<button type="submit" class="btn btn-dark">{if $editCargo}{'Update'|adminT}{else}{'Save'|adminT}{/if}</button>
 					{if $editCargo}
-					<a href="{$domain}admin/cargos" class="btn btn-outline-secondary">{'Cancel'|adminT}</a>
+					<a href="{$adminUrl}cargos" class="btn btn-outline-secondary">{'Cancel'|adminT}</a>
 					{/if}
 				</div>
 			</form>
@@ -173,8 +173,8 @@
 							{/if}
 						</div>
 						<div class="d-flex gap-1">
-							<a href="{$domain}admin/cargos?edit={$cargo.id_cargo}" class="btn btn-sm btn-outline-primary">{'Edit'|adminT}</a>
-							<form method="post" class="d-inline" onsubmit="return confirm('{'Delete this carrier?'|adminT}');">
+							<a href="{$adminUrl}cargos?edit={$cargo.id_cargo}" class="btn btn-sm btn-outline-primary">{'Edit'|adminT}</a>
+							<form method="post" class="d-inline" data-confirm-title="{'Delete'|adminT}" data-confirm-message="{'Delete this carrier?'|adminT}">
 								<input type="hidden" name="deleteCargo" value="1">
 								<input type="hidden" name="token" value="{$adminToken}">
 								<input type="hidden" name="id_cargo" value="{$cargo.id_cargo}">

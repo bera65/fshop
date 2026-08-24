@@ -13,14 +13,14 @@
 	if ($container === '') {
 		$container = 'dashboard';
 	}
-	$publicPages = ['login'];
+	$publicPages = ['login', 'forgot-password', 'reset-password'];
 
 	if (!in_array($container, $publicPages, true) && !Admin::isLoggedIn()) {
 		header('Location: ' . Admin::url('login'));
 		exit;
 	}
 
-	if ($container === 'login' && Admin::isLoggedIn()) {
+	if (in_array($container, $publicPages, true) && Admin::isLoggedIn()) {
 		header('Location: ' . Admin::url());
 		exit;
 	}

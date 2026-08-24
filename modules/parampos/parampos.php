@@ -229,6 +229,8 @@ class ParamposModule extends ModuleBase
 		$dekontId = (string) ($post['TURKPOS_RETVAL_Dekont_ID'] ?? $post['Dekont_ID'] ?? '0');
 		$sonucStr = trim((string) ($post['TURKPOS_RETVAL_Sonuc_Str'] ?? $post['Sonuc_Str'] ?? ''));
 		$paidRaw = (string) ($post['TURKPOS_RETVAL_Tahsilat_Tutari'] ?? $post['TURKPOS_RETVAL_Odeme_Tutari'] ?? '');
+		$siparisId = trim((string) ($post['TURKPOS_RETVAL_Siparis_ID'] ?? $post['Siparis_ID'] ?? $reference));
+		$islemId = trim((string) ($post['TURKPOS_RETVAL_Islem_ID'] ?? $post['Islem_ID'] ?? $reference));
 
 		if ($reference === '') {
 			self::redirectAfterPayment(false, 'Sipariş referansı alınamadı');
@@ -245,6 +247,13 @@ class ParamposModule extends ModuleBase
 			return;
 		}
 
+		if (!self::verifyReturnHash($post, $dekontId, $paidRaw, $siparisId, $islemId)) {
+			error_log('ParamPOS return hash mismatch for ' . $reference);
+			self::redirectAfterPayment(false, 'ParamPOS: güvenlik doğrulaması başarısız', $reference);
+
+			return;
+		}
+
 		$paidAmount = self::parseParamAmount($paidRaw);
 
 		if ($paidAmount <= 0) {
@@ -255,6 +264,59 @@ class ParamposModule extends ModuleBase
 		self::completeOrderAfterPayment($reference, $paidAmount);
 		Order::clearPendingPayment();
 		self::redirectAfterPayment(true, '', $reference);
+	}
+
+	/**
+	 * Param docs: SHA1(UTF-8(CLIENT_CODE + GUID + Dekont_ID + Tutar + Siparis_ID + Islem_ID)) → Base64
+	 * compared to TURKPOS_RETVAL_Hash.
+	 */
+	private static function verifyReturnHash(
+		array $post,
+		string $dekontId,
+		string $paidRaw,
+		string $siparisId,
+		string $islemId
+	): bool {
+		$provided = trim((string) ($post['TURKPOS_RETVAL_Hash'] ?? $post['Hash'] ?? ''));
+
+		if ($provided === '') {
+			return false;
+		}
+
+		$clientCode = trim((string) Settings::get('PARAMPOS_CLIENT_CODE'));
+		$guid = trim((string) Settings::get('PARAMPOS_GUID'));
+
+		if ($clientCode === '' || $guid === '') {
+			return false;
+		}
+
+		$tutar = trim($paidRaw);
+
+		if ($tutar === '') {
+			$tutar = trim((string) ($post['TURKPOS_RETVAL_Odeme_Tutari'] ?? ''));
+		}
+
+		$payload = $clientCode . $guid . $dekontId . $tutar . $siparisId . $islemId;
+		$expected = base64_encode(sha1($payload, true));
+
+		if (hash_equals($expected, $provided)) {
+			return true;
+		}
+
+		// Some Param environments hash with ISO-8859-9 bytes.
+		if (function_exists('iconv')) {
+			$latin = @iconv('UTF-8', 'ISO-8859-9//TRANSLIT', $payload);
+
+			if (is_string($latin) && $latin !== '') {
+				$expectedLatin = base64_encode(sha1($latin, true));
+
+				if (hash_equals($expectedLatin, $provided)) {
+					return true;
+				}
+			}
+		}
+
+		return false;
 	}
 
 	public static function ensurePendingStorage(): void
@@ -288,11 +350,13 @@ class ParamposModule extends ModuleBase
 	{
 		self::ensurePendingStorage();
 
+		$summary = Coupon::getCheckoutSummary((float) ($cart['total'] ?? 0), $cart);
 		$payload = json_encode([
 			'checkout' => $checkoutData,
 			'cart' => $cart,
 			'coupon_code' => (string) ($_SESSION[Coupon::SESSION_KEY] ?? ''),
 			'id_user' => Customer::getId(),
+			'expected_total' => round((float) ($summary['total'] ?? 0), 2),
 		], JSON_UNESCAPED_UNICODE);
 
 		DB::execute(
@@ -372,6 +436,26 @@ class ParamposModule extends ModuleBase
 
 		if ($cart === [] || !empty($cart['empty'])) {
 			error_log('ParamPOS: empty cart snapshot for ' . $reference);
+
+			return;
+		}
+
+		$expected = (float) ($pending['expected_total'] ?? 0);
+
+		if ($expected <= 0) {
+			$summary = Coupon::getCheckoutSummary((float) ($cart['total'] ?? 0), $cart);
+			$expected = (float) ($summary['total'] ?? 0);
+		}
+
+		$meta = self::loadTransactionMeta($reference);
+
+		if ($expected <= 0 && !empty($meta['amount'])) {
+			$expected = self::parseParamAmount((string) $meta['amount']);
+		}
+
+		if ($paidAmount <= 0 || ($expected > 0 && abs($paidAmount - $expected) > 0.05)) {
+			error_log('ParamPOS: refusing order create for ' . $reference
+				. ' expected=' . $expected . ' paid=' . $paidAmount);
 
 			return;
 		}
@@ -517,8 +601,11 @@ class ParamposModule extends ModuleBase
 	{
 		$expected = (float) $order['total'];
 
-		if ($paidAmount > 0 && abs($paidAmount - $expected) > 0.05) {
-			error_log('ParamPOS amount mismatch for order ' . $order['reference']);
+		if ($paidAmount <= 0 || abs($paidAmount - $expected) > 0.05) {
+			error_log('ParamPOS amount mismatch for order ' . $order['reference']
+				. ' expected=' . $expected . ' paid=' . $paidAmount);
+
+			return;
 		}
 
 		if ((int) $order['status'] !== Order::STATUS_PENDING) {

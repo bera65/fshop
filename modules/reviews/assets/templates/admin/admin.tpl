@@ -57,7 +57,7 @@
 							<button type="submit" name="action" value="approve" class="btn btn-sm btn-dark">Onayla</button>
 						</form>
 						{/if}
-						<form method="post" class="d-inline" onsubmit="return confirm('Silinsin mi?');">
+						<form method="post" class="d-inline" data-confirm-message="Silinsin mi?">
 							<input type="hidden" name="reviewAction" value="1">
 							<input type="hidden" name="token" value="{$adminToken}">
 							<input type="hidden" name="id_review" value="{$row.id_review}">

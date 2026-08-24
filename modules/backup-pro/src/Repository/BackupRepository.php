@@ -49,8 +49,36 @@ class BackupRepository
         }
 
         $whereClause = implode(' AND ', $where);
-        $sql = "SELECT * FROM `backup_pro_backups` WHERE {$whereClause} ORDER BY {$sort} LIMIT {$limit} OFFSET {$offset}";
+        $sortSql = self::sanitizeSort($sort);
+        $sql = "SELECT * FROM `backup_pro_backups` WHERE {$whereClause} ORDER BY {$sortSql} LIMIT {$limit} OFFSET {$offset}";
         return DB::execute($sql, $params) ?: [];
+    }
+
+    private static function sanitizeSort(string $sort): string
+    {
+        $sort = trim($sort);
+        $allowed = [
+            'id ASC',
+            'id DESC',
+            'created_at ASC',
+            'created_at DESC',
+            'updated_at ASC',
+            'updated_at DESC',
+            'file_size ASC',
+            'file_size DESC',
+            'backup_name ASC',
+            'backup_name DESC',
+            'type ASC',
+            'type DESC',
+        ];
+
+        foreach ($allowed as $ok) {
+            if (strcasecmp($sort, $ok) === 0) {
+                return $ok;
+            }
+        }
+
+        return 'id DESC';
     }
 
     public static function countAll(?string $search = null, ?string $type = null): int

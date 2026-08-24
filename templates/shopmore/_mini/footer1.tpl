@@ -62,6 +62,9 @@
             <div class="col-lg-3 col-md-6 col-6">
                 <h5 class="text-white fw-bold mb-4 h6">{'Popular Categories'|translate}</h5>
                 <ul class="list-unstyled d-flex flex-column gap-2 small">
+                    {if $hooks.footer_menu}
+                    {$hooks.footer_menu nofilter}
+                    {else}
                     {foreach $menuCategories as $cat name=footerCats}
                     {if $smarty.foreach.footerCats.iteration > 6}{break}{/if}
                     <li><a href="{$domain}{$cat.category_link|escape}" title="{$cat.category_name|escape}" class="text-decoration-none text-secondary hover-text-white d-flex align-items-center gap-2 transition">
@@ -71,6 +74,7 @@
                     <li><a href="{$domain}special" title="{'Specilas'|translate}" class="text-decoration-none text-secondary hover-text-white d-flex align-items-center gap-2 transition">
                         <span class="bg-primary rounded-circle" style="width: 4px; height: 4px;"></span> {'Specilas'|translate}
                     </a></li>
+                    {/if}
                 </ul>
             </div>
 
@@ -79,6 +83,7 @@
                 <h5 class="text-white fw-bold mb-4 h6">{'Subscribe to newsletter'|translate}</h5>
                 <p class="small text-secondary mb-3">{'Newsletter description'|translate}</p>
                 <form id="footerNewsletterForm" data-api-url="{$newsletterApiUrl|escape}" method="post" action="#">
+                    <input type="hidden" name="token" value="{$token|escape}">
                     <div class="input-group">
                         <input type="email" name="email" class="form-control text-light placeholder-secondary small" placeholder="{'Your Email'|translate}" required>
                         <button class="btn bg-primary text-white fw-bold small" type="submit">{'Register'|translate}</button>

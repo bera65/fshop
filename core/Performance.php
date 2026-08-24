@@ -381,7 +381,7 @@ class Performance
 			return false;
 		}
 
-		self::sendHtmlResponse($html);
+		self::sendHtmlResponse(self::injectLiveCsrfToken($html));
 
 		return true;
 	}
@@ -397,7 +397,7 @@ class Performance
 				mkdir($dir, 0755, true);
 			}
 
-			file_put_contents($file, $html);
+			file_put_contents($file, self::stripCsrfTokenForCache($html));
 		}
 
 		$html = self::minifyHtml($html);
@@ -408,6 +408,67 @@ class Performance
 
 			return (string) gzencode($html, 6);
 		}
+
+		return $html;
+	}
+
+	/** Placeholder so shared page cache never embeds another visitor's CSRF token. */
+	private static function csrfCachePlaceholder(): string
+	{
+		return '%%FSHOP_CSRF_TOKEN%%';
+	}
+
+	private static function stripCsrfTokenForCache(string $html): string
+	{
+		$token = (string) ($_SESSION['csrf_token'] ?? '');
+
+		if ($token !== '') {
+			$html = str_replace($token, self::csrfCachePlaceholder(), $html);
+		}
+
+		return $html;
+	}
+
+	private static function injectLiveCsrfToken(string $html): string
+	{
+		$token = Security::getCsrfToken('front');
+		$placeholder = self::csrfCachePlaceholder();
+
+		if (strpos($html, $placeholder) !== false) {
+			$html = str_replace($placeholder, $token, $html);
+		}
+
+		// Legacy cache files that still contain a raw hex token.
+		$html = preg_replace(
+			'/(var\s+csrfToken\s*=\s*["\'])[a-fA-F0-9]{32,128}(["\'])/',
+			'${1}' . $token . '${2}',
+			$html
+		) ?? $html;
+
+		$html = preg_replace(
+			'/(name=["\']token["\'][^>]*value=["\'])[a-fA-F0-9]{32,128}(["\'])/',
+			'${1}' . $token . '${2}',
+			$html
+		) ?? $html;
+
+		$html = preg_replace(
+			'/(value=["\'])[a-fA-F0-9]{32,128}(["\'][^>]*name=["\']token["\'])/',
+			'${1}' . $token . '${2}',
+			$html
+		) ?? $html;
+
+		// Empty token fields left by older templates / hook timing.
+		$html = preg_replace(
+			'/(name=["\']token["\'][^>]*value=["\'])(["\'])/',
+			'${1}' . $token . '${2}',
+			$html
+		) ?? $html;
+
+		$html = preg_replace(
+			'/(var\s+csrfToken\s*=\s*["\'])(["\'])/',
+			'${1}' . $token . '${2}',
+			$html
+		) ?? $html;
 
 		return $html;
 	}

@@ -60,7 +60,7 @@
 									<input type="hidden" name="token" value="{$adminToken}">
 									<button type="submit" class="btn btn-sm btn-outline-primary">{'Set as default'|adminT}</button>
 								</form>
-								<form method="post" class="d-inline" onsubmit="return confirm('{'Delete this tax rate? Products using it will move to the default rate.'|adminT}');">
+								<form method="post" class="d-inline" data-confirm-title="{'Delete'|adminT}" data-confirm-message="{'Delete this tax rate? Products using it will move to the default rate.'|adminT}">
 									<input type="hidden" name="taxAction" value="1">
 									<input type="hidden" name="action" value="delete">
 									<input type="hidden" name="id_tax" value="{$tax.id_tax}">

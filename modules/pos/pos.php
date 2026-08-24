@@ -240,16 +240,10 @@ class PosModule extends ModuleBase
 			'prepared_at' => time(),
 		];
 
-		global $domain, $adminUrl;
-
-		$path = !empty($_SESSION['id_admin'])
-			? rtrim($adminUrl, '/') . '/pos-card-payment'
-			: rtrim($domain, '/') . '/pos-card-payment';
-
 		return [
 			'success' => true,
 			'message' => 'Kart ödeme sayfasına yönlendiriliyorsunuz',
-			'redirect' => $path,
+			'redirect' => $this->resolvePosPageUrl('pos-card-payment'),
 		];
 	}
 
@@ -649,6 +643,55 @@ class PosModule extends ModuleBase
 	public function resolveCardUrl(): string
 	{
 		return trim((string) Settings::get(self::SET_CARD_URL, ''));
+	}
+
+	/**
+	 * Absolute POS page URL (shop or admin). Safe when called from api/module.php
+	 * where $adminUrl global may be unset.
+	 */
+	public function resolvePosPageUrl(string $slug): string
+	{
+		global $domain, $adminUrl;
+
+		$slug = trim($slug, '/');
+		if ($slug === '') {
+			$slug = 'pos';
+		}
+
+		if (!empty($_SESSION['id_admin'])) {
+			if (class_exists('Admin', false)) {
+				$adminBase = rtrim(Admin::baseUrl(), '/');
+				if ($adminBase !== '') {
+					return $adminBase . '/' . $slug;
+				}
+			}
+
+			$adminBase = rtrim((string) ($adminUrl ?? ''), '/');
+			if ($adminBase !== '') {
+				return $adminBase . '/' . $slug;
+			}
+		}
+
+		$shopBase = rtrim((string) ($domain ?? ''), '/');
+		if ($shopBase === '') {
+			$shopBase = rtrim((string) Settings::get('DOMAIN'), '/');
+		}
+
+		$folder = trim((string) Settings::get('FOLDER'), '/');
+		if ($shopBase === '') {
+			$https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+			$host = trim((string) ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+			$shopBase = ($https ? 'https' : 'http') . '://' . $host
+				. ($folder !== '' ? '/' . $folder : '');
+		} elseif ($folder !== '') {
+			$path = (string) (parse_url($shopBase, PHP_URL_PATH) ?? '');
+			$path = rtrim($path, '/');
+			if ($path === '' || $path === '/') {
+				$shopBase = rtrim($shopBase, '/') . '/' . $folder;
+			}
+		}
+
+		return rtrim($shopBase, '/') . '/' . $slug;
 	}
 
 	public function isFullscreenAuto(): bool

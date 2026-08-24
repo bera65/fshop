@@ -102,7 +102,7 @@
 		'relatedProductsTitle' => $relatedData['title'],
 		'hasVariations'     => !empty($variationData['has_variations']),
 		'variationGroups'   => $variationData['groups'],
-		'variationItemsJson' => json_encode($variationData['items'], JSON_UNESCAPED_UNICODE),
+		'variationItemsJson' => Security::jsonForHtmlScript($variationData['items']),
 		'hasOptions'        => !empty($optionData['has_options']),
 		'optionGroups'      => $optionData['groups'],
 		'requiredOptionGroups' => count(array_filter($optionData['groups'], static function (array $group): bool {

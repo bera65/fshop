@@ -90,7 +90,7 @@
 					</div>
 					<div class="mb-3">
 						<label class="form-label" for="new_customer_phone">{'Phone'|adminT}</label>
-						<input type="text" class="form-control" id="new_customer_phone" name="phone" required placeholder="05xx xxx xx xx" autocomplete="off">
+						<input type="text" class="form-control" id="new_customer_phone" name="phone" required placeholder="{'e.g. +90 532… or +1 202…'|adminT}" autocomplete="off">
 					</div>
 					<div class="mb-0">
 						<label class="form-label" for="new_customer_email">{'Email'|adminT}</label>

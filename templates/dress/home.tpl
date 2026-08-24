@@ -36,7 +36,7 @@
 
 	{if $featuredProducts|@count}
 	<section class="fl-section">
-		{assign var="cName" value='Specilas'|translate}
+		{assign var="cName" value='Showcase'|translate}
 		{include file='./partials/sm-category-products-section.tpl' title=$cName products=$featuredProducts listId=0}
 	</section>
 	{/if}

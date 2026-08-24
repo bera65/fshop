@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $token = Tools::getValue('token') ?: ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
 
-if (!hash_equals($_SESSION['csrf_token'] ?? '', (string) $token)) {
+if (!Security::validateCsrf('front') && !hash_equals((string) ($_SESSION['csrf_token'] ?? ''), (string) $token)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'message' => 'Geçersiz istek']);
     exit;

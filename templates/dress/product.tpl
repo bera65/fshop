@@ -244,8 +244,19 @@
         <h5 class="modal-title fs-5" id="imageModalLabel">{$productName|escape}</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{'Close'|translate}"></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body product-lightbox">
+		{if $images|@count > 1}
+		<button type="button" class="product-lightbox__nav product-lightbox__nav--prev" id="imageModalPrev" aria-label="{'Previous image'|translate}">
+			<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+		</button>
+		{/if}
         <img id="modal-display" src="{$imageUrl|escape}" class="imageFull" alt="{$productName|escape}" />
+		{if $images|@count > 1}
+		<button type="button" class="product-lightbox__nav product-lightbox__nav--next" id="imageModalNext" aria-label="{'Next image'|translate}">
+			<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+		</button>
+		<div class="product-lightbox__counter"><span id="imageModalCounter">1</span> / {$images|@count}</div>
+		{/if}
       </div>
     </div>
   </div>

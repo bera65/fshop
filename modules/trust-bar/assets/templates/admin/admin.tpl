@@ -52,7 +52,7 @@
 							<input type="checkbox" name="items[{$smarty.foreach.tbRows.index}][active]" value="1"{if $item.active} checked{/if}>
 						</td>
 						<td>
-							<a href="?delete_item={$item.id_item}&amp;token={$adminToken|escape:url}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Silinsin mi?')">Sil</a>
+							<a href="?delete_item={$item.id_item}&amp;token={$adminToken|escape:url}" class="btn btn-sm btn-outline-danger js-admin-confirm" data-confirm-message="Silinsin mi?">Sil</a>
 						</td>
 					</tr>
 					{/foreach}

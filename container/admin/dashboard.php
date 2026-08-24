@@ -3,6 +3,8 @@
 		exit;
 	}
 
+	$period = Admin::normalizeDashboardPeriod((string) Tools::getValue('period', 'month'));
+	$analytics = Admin::getDashboardAnalytics($period);
 	$stats = Admin::getDashboardStats();
 	$stats['revenue_month_formatted'] = Tools::displayPrice($stats['revenue_month']);
 	$charts = Admin::getDashboardCharts();
@@ -26,58 +28,16 @@
 		);
 	}
 
-	$opsMax = max(
-		1,
-		(int) $stats['orders_pending'],
-		(int) $stats['orders_processing'],
-		(int) $stats['orders_cargo'],
-		(int) $stats['products_low_stock']
-	);
-
-	$opsRings = [
-		'pending' => (int) round(((int) $stats['orders_pending'] / $opsMax) * 100),
-		'processing' => (int) round(((int) $stats['orders_processing'] / $opsMax) * 100),
-		'shipped' => (int) round(((int) $stats['orders_cargo'] / $opsMax) * 100),
-		'stock' => (int) round(((int) $stats['products_low_stock'] / $opsMax) * 100),
+	$periodPills = [
+		['key' => 'month', 'label' => 'This month'],
+		['key' => '7', 'label' => 'Last 7 days'],
+		['key' => '15', 'label' => 'Last 15 days'],
+		['key' => '30', 'label' => 'Last 30 days'],
 	];
-
-	$activity = [];
-	foreach (array_slice($recentOrders, 0, 4) as $orderRow) {
-		$activity[] = [
-			'type' => 'order',
-			'title' => 'New order',
-			'meta' => ($orderRow['reference'] ?? '') . ' · ' . ($orderRow['customer_name'] ?? ''),
-			'time' => $orderRow['date_full'] ?? '',
-		];
-	}
-	if ((int) $stats['users_today'] > 0) {
-		$activity[] = [
-			'type' => 'customer',
-			'title' => 'Customer registered',
-			'meta' => '+' . (int) $stats['users_today'] . ' today',
-			'time' => '',
-		];
-	}
-	if ((int) $stats['products_low_stock'] > 0) {
-		$activity[] = [
-			'type' => 'stock',
-			'title' => 'Stock warning',
-			'meta' => (int) $stats['products_low_stock'] . ' products low',
-			'time' => '',
-		];
-	}
-	if ((int) $stats['pending_reviews'] > 0) {
-		$activity[] = [
-			'type' => 'review',
-			'title' => 'Review added',
-			'meta' => (int) $stats['pending_reviews'] . ' awaiting approval',
-			'time' => '',
-		];
-	}
-	$activity = array_slice($activity, 0, 8);
 
 	$dashboardContext = [
 		'stats' => $stats,
+		'analytics' => $analytics,
 		'recentOrders' => $recentOrders,
 		'topProducts' => $charts['top_products'],
 		'chartStatus' => $charts['status'],
@@ -92,16 +52,32 @@
 		'admin_dashboard_bottom',
 	];
 
+	$dailySalesChart = $analytics['daily_sales_chart'] ?? [
+		'labels' => [],
+		'data' => [],
+		'marketplace_data' => [],
+		'colors' => [],
+		'marketplace_color' => '#F97316',
+		'store_label' => 'Store sales',
+		'marketplace_label' => 'Marketplace sales',
+	];
+	$dailySalesChart['store_label'] = adminT((string) ($dailySalesChart['store_label'] ?? 'Store sales'));
+	$dailySalesChart['marketplace_label'] = adminT((string) ($dailySalesChart['marketplace_label'] ?? 'Marketplace sales'));
+
+	$mpSalesChart = $analytics['mp_sales_chart'] ?? ['items' => [], 'total' => 0];
+
 	$smarty->assign([
 		'stats' => $stats,
+		'analytics' => $analytics,
+		'period' => $period,
+		'periodPills' => $periodPills,
 		'revenueTrend' => $revenueTrend,
 		'ordersTrend' => $ordersTrend,
 		'chartDaily' => json_encode($charts['daily'], JSON_UNESCAPED_UNICODE),
+		'chartDailySales' => json_encode($dailySalesChart, JSON_UNESCAPED_UNICODE),
+		'chartMpSales' => json_encode($mpSalesChart, JSON_UNESCAPED_UNICODE),
 		'topProducts' => $charts['top_products'],
 		'lowStockProducts' => $lowStockProducts,
-		'activityFeed' => $activity,
-		'opsMax' => $opsMax,
-		'opsRings' => $opsRings,
 		'recentOrders' => $recentOrders,
 		'recentMarketplaceOrders' => $recentMarketplaceOrders,
 		'orders' => $recentOrders,

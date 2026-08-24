@@ -92,7 +92,7 @@ class FacebookPixelModule extends ModuleBase
 			}
 
 			$html = $this->renderFrontTemplate('view-content', [
-				'eventJson' => json_encode($event, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+				'eventJson' => Security::jsonForHtmlScript($event),
 			]);
 
 			return $html !== '' ? $html : null;
@@ -100,9 +100,9 @@ class FacebookPixelModule extends ModuleBase
 
 		if ($hook === 'footer') {
 			$config = FacebookPixelService::getFooterClientConfig();
-			$json = json_encode($config, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+			$json = Security::jsonForHtmlScript($config);
 
-			if ($json === false) {
+			if ($json === 'null') {
 				return null;
 			}
 

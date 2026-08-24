@@ -13,6 +13,7 @@ class Schema
 		self::$ready = true;
 		Product::ensureSchema();
 		Supplier::ensureSchema();
+		Category::ensureSchema();
 
 		if (is_file(dirname(__DIR__) . '/core/Tax.php')) {
 			require_once dirname(__DIR__) . '/core/Tax.php';
@@ -98,6 +99,8 @@ class Schema
 			);
 		}
 
+		Admin::ensureSchema();
+
 		self::ensureSetting('THEME', 'blue');
 		self::ensureSetting('MAIL_DRIVER', 'php');
 		self::ensureSetting('MAIL_HEADER', '');
@@ -134,6 +137,12 @@ class Schema
 		self::ensureSetting('SHOP_CURRENCY', 'try');
 		self::ensureSetting('GIFT_WRAP_ENABLED', '0');
 		self::ensureSetting('GIFT_WRAP_FEE', '0');
+		self::ensureSetting('SEO_TITLE_SUFFIX', '');
+		self::ensureSetting('ORDER_GOAL_TARGET', '0');
+		// Eski kurulumlar: bilinmeyen sürüm 2.4.0 kabul (tüm 2.5.x migration aday).
+		// Taze kurulum schema.sql ile güncel FS_VERSION yazar.
+		self::ensureSetting('FS_VERSION', '2.4.0');
+		self::ensureSetting('FS_MAINTENANCE', '0');
 
 		if (!class_exists('Currency', false)) {
 			require_once dirname(__DIR__) . '/core/Currency.php';
@@ -195,6 +204,59 @@ class Schema
 
 		if (class_exists('MarketplaceTables', false)) {
 			MarketplaceTables::ensureSchema();
+		}
+	}
+
+	/**
+	 * Bootstrap’ta bir kez çalışmış ensure’i upgrade sırasında yeniden uygular.
+	 * (static $ready / $schemaReady bayraklarını sıfırlar)
+	 */
+	public static function forceEnsure(): void
+	{
+		self::$ready = false;
+
+		$classes = [
+			'Product', 'Supplier', 'Order', 'Coupon', 'VirtualProduct', 'ProductLog',
+			'Customer', 'CustomerGroup', 'StockAnalysis', 'ProductVariation', 'Lang',
+			'Contact', 'Cms', 'Category', 'Tax', 'Brand', 'CartPromotion', 'RateLimit',
+			'ProductOption', 'Address', 'MarketplaceTables', 'MarketplaceLog',
+			'Cargo', 'ReturnRequest', 'CancelRequest', 'AdminNotification', 'ApiKey',
+			'Admin',
+		];
+
+		foreach ($classes as $class) {
+			if (!class_exists($class, false) && is_file(dirname(__DIR__) . '/core/' . $class . '.php')) {
+				require_once dirname(__DIR__) . '/core/' . $class . '.php';
+			}
+
+			if (!class_exists($class, false)) {
+				continue;
+			}
+
+			try {
+				$ref = new ReflectionClass($class);
+
+				foreach (['schemaReady', 'ready'] as $propName) {
+					if (!$ref->hasProperty($propName)) {
+						continue;
+					}
+
+					$prop = $ref->getProperty($propName);
+					$prop->setAccessible(true);
+
+					if ($prop->isStatic()) {
+						$prop->setValue(null, false);
+					}
+				}
+			} catch (ReflectionException $e) {
+				// ignore
+			}
+		}
+
+		self::ensure();
+
+		if (class_exists('Marketplace', false) && method_exists('Marketplace', 'ensureSchema')) {
+			Marketplace::ensureSchema();
 		}
 	}
 

@@ -6,7 +6,7 @@
 	<title>{if $pageTitle}{$pageTitle|escape} | {/if}Admin — {$siteName|escape}</title>
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 	<link rel="stylesheet" href="{$adminCssDir|default:''}bootstrap.min.css">
 	<link rel="stylesheet" href="{$adminCssDir|default:''}admin.css?v={$smarty.now}">
 	{if $pageName == 'dashboard' || $pageName == 'marketplace-products' || $pageName == 'marketplace-orders' || $pageName == 'marketplace-questions' || $pageName == 'marketplace-logs' || $pageName == 'marketplace-settings' || $pageName == 'marketplace-help'}
@@ -58,8 +58,9 @@ try {
 		<nav class="sidebar-menu" id="adminSidebarMenu" data-accordion="1">
 			<div class="nav-accordion is-open" data-accordion-group="general">
 				<button type="button" class="nav-accordion__toggle" aria-expanded="true">
-					<span>{'General'|adminT}</span>
-					<svg class="nav-accordion__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+					<span class="nav-accordion__icon"><i data-lucide="layout-dashboard"></i></span>
+					<span class="nav-accordion__label">{'General'|adminT}</span>
+					<svg class="nav-accordion__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
 				</button>
 				<div class="nav-accordion__body">
 					<a href="{$adminUrl}dashboard" class="menu-item {if $pageName == 'dashboard'}active{/if}">
@@ -92,8 +93,9 @@ try {
 
 			<div class="nav-accordion" data-accordion-group="sales">
 				<button type="button" class="nav-accordion__toggle" aria-expanded="false">
-					<span>{'Sales'|adminT}</span>
-					<svg class="nav-accordion__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+					<span class="nav-accordion__icon"><i data-lucide="shopping-bag"></i></span>
+					<span class="nav-accordion__label">{'Sales'|adminT}</span>
+					<svg class="nav-accordion__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
 				</button>
 				<div class="nav-accordion__body">
 					<a href="{$adminUrl}orders" class="menu-item {if $pageName == 'orders' || $pageName == 'order'}active{/if}">
@@ -131,8 +133,9 @@ try {
 
 			<div class="nav-accordion" data-accordion-group="catalog">
 				<button type="button" class="nav-accordion__toggle" aria-expanded="false">
-					<span>{'Catalog'|adminT}</span>
-					<svg class="nav-accordion__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+					<span class="nav-accordion__icon"><i data-lucide="package"></i></span>
+					<span class="nav-accordion__label">{'Catalog'|adminT}</span>
+					<svg class="nav-accordion__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
 				</button>
 				<div class="nav-accordion__body">
 					<a href="{$adminUrl}products" class="menu-item {if $pageName == 'products' || $pageName == 'product'}active{/if}">
@@ -183,8 +186,9 @@ try {
 
 			<div class="nav-accordion" data-accordion-group="marketplace">
 				<button type="button" class="nav-accordion__toggle" aria-expanded="false">
-					<span>{'Marketplace'|adminT}</span>
-					<svg class="nav-accordion__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+					<span class="nav-accordion__icon"><i data-lucide="store"></i></span>
+					<span class="nav-accordion__label">{'Marketplace'|adminT}</span>
+					<svg class="nav-accordion__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
 				</button>
 				<div class="nav-accordion__body">
 					<a href="{$adminUrl}marketplace-products" class="menu-item {if $pageName == 'marketplace-products'}active{/if}">
@@ -215,8 +219,9 @@ try {
 
 			<div class="nav-accordion" data-accordion-group="system">
 				<button type="button" class="nav-accordion__toggle" aria-expanded="false">
-					<span>{'System'|adminT}</span>
-					<svg class="nav-accordion__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+					<span class="nav-accordion__icon"><i data-lucide="settings-2"></i></span>
+					<span class="nav-accordion__label">{'System'|adminT}</span>
+					<svg class="nav-accordion__chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
 				</button>
 				<div class="nav-accordion__body">
 					{if $adminMenuItems.system|@count}
@@ -237,6 +242,11 @@ try {
 					<a href="{$adminUrl}settings" class="menu-item {if $pageName == 'settings'}active{/if}">
 						<span class="menu-item__icon"><i data-lucide="settings"></i></span>
 						<span class="menu-item__label">{'Settings'|adminT}</span>
+					</a>
+					<a href="{$adminUrl}upgrade" class="menu-item {if $pageName == 'upgrade'}active{/if}">
+						<span class="menu-item__icon"><i data-lucide="arrow-up-circle"></i></span>
+						<span class="menu-item__label">{'System update'|adminT}</span>
+						{if $adminNavBadges.upgrade|default:0 > 0}<span class="nav-badge bg-warning">1</span>{/if}
 					</a>
 					<a href="{$adminUrl}account" class="menu-item {if $pageName == 'account'}active{/if}">
 						<span class="menu-item__icon"><i data-lucide="user-cog"></i></span>
@@ -286,8 +296,56 @@ try {
 					<span class="header-cmdk-trigger__label">{'Search'|adminT}…</span>
 					<kbd class="header-cmdk-trigger__kbd">Ctrl K</kbd>
 				</button>
+
+				<div class="dropdown header-add-dropdown">
+					<button class="header-add-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+						<span class="header-add-btn__plus" aria-hidden="true">+</span>
+						<span>{'Add'|adminT}</span>
+						<svg class="header-add-btn__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+					</button>
+					<ul class="dropdown-menu dropdown-menu-end shadow header-add-menu">
+						<li><h6 class="dropdown-header">{'Add new'|adminT}</h6></li>
+						<li>
+							<a class="dropdown-item" href="{$adminUrl}product">
+								<span class="header-add-menu__icon"><i data-lucide="package"></i></span>
+								{'Product'|adminT}
+							</a>
+						</li>
+						<li>
+							<a class="dropdown-item" href="{$adminUrl}brand">
+								<span class="header-add-menu__icon"><i data-lucide="award"></i></span>
+								{'Brand'|adminT}
+							</a>
+						</li>
+						<li>
+							<a class="dropdown-item" href="{$adminUrl}category">
+								<span class="header-add-menu__icon"><i data-lucide="tag"></i></span>
+								{'Category'|adminT}
+							</a>
+						</li>
+						<li>
+							<a class="dropdown-item" href="{$domain}" target="_blank" rel="noopener">
+								<span class="header-add-menu__icon"><i data-lucide="store"></i></span>
+								{'Store'|adminT}
+							</a>
+						</li>
+						<li><hr class="dropdown-divider"></li>
+						<li>
+							<a class="dropdown-item" href="{$adminUrl}marketplace-orders">
+								<span class="header-add-menu__icon"><i data-lucide="download"></i></span>
+								{'Order import'|adminT}
+							</a>
+						</li>
+						<li>
+							<a class="dropdown-item" href="{$adminUrl}cargos">
+								<span class="header-add-menu__icon"><i data-lucide="truck"></i></span>
+								{'Shipping brackets'|adminT}
+							</a>
+						</li>
+					</ul>
+				</div>
 				<div class="dropdown">
-					<button class="header-icon-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="{'Language'|adminT}">
+					<button class="header-icon-btn header-icon-btn--round dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="{'Language'|adminT}">
 						<i data-lucide="globe"></i>
 					</button>
 					<ul class="dropdown-menu dropdown-menu-end shadow-sm">
@@ -296,14 +354,24 @@ try {
 						{/foreach}
 					</ul>
 				</div>
-				<a href="{$adminUrl}notifications" class="header-icon-btn" title="{'Notifications'|adminT}">
+
+				<a href="{$adminUrl}notifications" class="header-icon-btn header-icon-btn--round" title="{'Notifications'|adminT}">
 					<i data-lucide="bell"></i>
 					{if $adminNavBadges.notifications > 0}<span class="header-icon-btn__badge">{$adminNavBadges.notifications}</span>{/if}
 				</a>
+
+				<a href="{$adminUrl}messages" class="header-icon-btn header-icon-btn--round" title="{'Messages'|adminT}">
+					<i data-lucide="mail"></i>
+					{if $adminNavBadges.messages > 0}<span class="header-icon-btn__badge header-icon-btn__badge--green">{$adminNavBadges.messages}</span>{/if}
+				</a>
+
 				<div class="dropdown">
 					<button class="header-user dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
 						<span class="header-user__avatar">{$adminInitial|escape}</span>
-						<span class="header-user__name d-none d-lg-inline">{$adminUser.full_name|default:'Admin'|escape}</span>
+						<span class="header-user__meta d-none d-lg-flex">
+							<span class="header-user__name">{$adminUser.full_name|default:'Admin'|escape}</span>
+							<span class="header-user__sub">{'My Account'|adminT}</span>
+						</span>
 					</button>
 					<ul class="dropdown-menu dropdown-menu-end shadow-sm">
 						<li class="dropdown-header small">{$adminUser.email|default:''|escape}</li>

@@ -34,29 +34,50 @@
 		btn.addEventListener('click', function () {
 			var wrap = btn.closest('.shopier-product-actions');
 			var msgEl = wrap ? wrap.querySelector('.shopier-action-msg') : null;
-			btn.disabled = true;
+			if (window.AdminBusy) {
+				AdminBusy.start(btn);
+			} else {
+				btn.disabled = true;
+			}
 			if (msgEl) msgEl.textContent = 'Gönderiliyor…';
 			postAction(btn.getAttribute('data-url'), btn.getAttribute('data-id'), msgEl, function () {
 				setTimeout(function () { location.reload(); }, 700);
 			}).finally(function () {
-				btn.disabled = false;
+				if (window.AdminBusy) {
+					AdminBusy.stop(btn);
+				} else {
+					btn.disabled = false;
+				}
 			});
 		});
 	});
 
 	document.querySelectorAll('.shopier-delete-btn').forEach(function (btn) {
 		btn.addEventListener('click', function () {
-			if (!window.confirm('Bu ürün Shopier mağazanızdan silinecek. Devam edilsin mi?')) {
-				return;
-			}
+			var ask = window.AdminConfirm && AdminConfirm.ask
+				? AdminConfirm.ask({ message: 'Bu ürün Shopier mağazanızdan silinecek. Devam edilsin mi?' })
+				: Promise.resolve(false);
+			ask.then(function (ok) {
+				if (!ok) {
+					return;
+				}
 			var wrap = btn.closest('.shopier-product-actions');
 			var msgEl = wrap ? wrap.querySelector('.shopier-action-msg') : null;
-			btn.disabled = true;
+			if (window.AdminBusy) {
+				AdminBusy.start(btn);
+			} else {
+				btn.disabled = true;
+			}
 			if (msgEl) msgEl.textContent = 'Siliniyor…';
 			postAction(btn.getAttribute('data-url'), btn.getAttribute('data-id'), msgEl, function () {
 				setTimeout(function () { location.reload(); }, 700);
 			}).finally(function () {
-				btn.disabled = false;
+				if (window.AdminBusy) {
+					AdminBusy.stop(btn);
+				} else {
+					btn.disabled = false;
+				}
+			});
 			});
 		});
 	});

@@ -27,21 +27,40 @@
 		}
 	}
 
-	// Referansla veya ID ile eşleşen sipariş → ödeme dönüşü erişimi (oturum/cookie kaybına karşı)
+	// Payment return: grant only when this browser session started the checkout.
+	// Knowing a public order reference is not enough (IDOR).
 	if ($idOrder > 0) {
-		Order::grantGuestOrderAccess($idOrder);
+		$orderRef = (string) DB::getValue('SELECT reference FROM orders WHERE id_order = ? LIMIT 1', [$idOrder]);
+		$pending = $_SESSION['pending_order_data'] ?? null;
+		$allowGrant = false;
+
+		if (is_array($pending) && $orderRef !== '') {
+			foreach ($pending as $key => $value) {
+				if (!is_scalar($value)) {
+					continue;
+				}
+
+				$keyName = strtolower((string) $key);
+
+				if ($keyName !== 'reference' && substr($keyName, -10) !== '_reference') {
+					continue;
+				}
+
+				$candidate = trim((string) $value);
+
+				if ($candidate !== '' && hash_equals($orderRef, $candidate)) {
+					$allowGrant = true;
+					break;
+				}
+			}
+		}
+
+		if ($allowGrant) {
+			Order::grantGuestOrderAccess($idOrder);
+		}
 	}
 
 	$order = Order::getByIdForViewer($idOrder);
-
-	if (!$order && $reference !== '') {
-		$idOrder = (int) DB::getValue('SELECT id_order FROM orders WHERE reference = ? LIMIT 1', [$reference]);
-
-		if ($idOrder > 0) {
-			Order::grantGuestOrderAccess($idOrder);
-			$order = Order::getByIdForViewer($idOrder);
-		}
-	}
 
 	if ($order) {
 		Order::clearPendingPayment();

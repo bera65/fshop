@@ -165,6 +165,8 @@ class KuveytturkModule extends ModuleBase
 	{
 		self::ensurePendingStorage();
 		$now = date('Y-m-d H:i:s');
+		$summary = Coupon::getCheckoutSummary((float) ($cartSummary['total'] ?? 0), $cartSummary);
+		$pendingData['_expected_total'] = round((float) ($summary['total'] ?? 0), 2);
 		$cartJson = json_encode($cartSummary, JSON_UNESCAPED_UNICODE);
 		$checkoutJson = json_encode($pendingData, JSON_UNESCAPED_UNICODE);
 
@@ -207,9 +209,12 @@ class KuveytturkModule extends ModuleBase
 
 	public static function buildPreviewOrder(array $pendingData, array $cart): array
 	{
+		$summary = Coupon::getCheckoutSummary((float) ($cart['total'] ?? 0), $cart);
+		$expected = (float) ($pendingData['_expected_total'] ?? $summary['total'] ?? 0);
+
 		return [
 			'reference' => (string) ($pendingData['_kuveytturk_reference'] ?? $pendingData['reference'] ?? 'ORD-' . time()),
-			'total' => (float) ($cart['total'] ?? 0),
+			'total' => round($expected, 2),
 			'currency_symbol' => (string) ($cart['currency_symbol'] ?? 'TL'),
 			'items' => is_array($cart['items'] ?? null) ? $cart['items'] : [],
 			'customer_name' => (string) ($pendingData['customer_name'] ?? ''),

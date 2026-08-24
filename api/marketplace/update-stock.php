@@ -6,6 +6,12 @@ if (!defined('IN_SCRIPT')) {
 
 header('Content-Type: application/json; charset=utf-8');
 
+if (!Admin::isLoggedIn()) {
+	http_response_code(403);
+	echo json_encode(['success' => false, 'message' => 'Yetkisiz erişim'], JSON_UNESCAPED_UNICODE);
+	exit;
+}
+
 $idProduct = (int) Tools::getValue('id_product');
 $stock = (int) Tools::getValue('stock');
 $syncMarketplaces = !empty(Tools::getValue('sync_marketplaces'));

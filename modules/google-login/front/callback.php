@@ -29,7 +29,8 @@ if (empty($exchange['success'])) {
 $result = Customer::authWithGoogle(
 	(string) $exchange['google_id'],
 	(string) $exchange['email'],
-	(string) $exchange['name']
+	(string) $exchange['name'],
+	!empty($exchange['email_verified'])
 );
 
 if (empty($result['success'])) {

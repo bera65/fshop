@@ -5,13 +5,13 @@
 
 <ul class="nav nav-tabs mb-3">
 	<li class="nav-item">
-		<a class="nav-link{if $tab == 'settings'} active{/if}" href="{$domain}admin/module-bifatura?tab=settings">Ayarlar</a>
+		<a class="nav-link{if $tab == 'settings'} active{/if}" href="{$adminUrl}module-bifatura?tab=settings">Ayarlar</a>
 	</li>
 	<li class="nav-item">
-		<a class="nav-link{if $tab == 'inbox'} active{/if}" href="{$domain}admin/module-bifatura?tab=inbox">Gelen Kutusu</a>
+		<a class="nav-link{if $tab == 'inbox'} active{/if}" href="{$adminUrl}module-bifatura?tab=inbox">Gelen Kutusu</a>
 	</li>
 	<li class="nav-item">
-		<a class="nav-link{if $tab == 'recent'} active{/if}" href="{$domain}admin/module-bifatura?tab=recent">Son Faturalar</a>
+		<a class="nav-link{if $tab == 'recent'} active{/if}" href="{$adminUrl}module-bifatura?tab=recent">Son Faturalar</a>
 	</li>
 </ul>
 
@@ -167,7 +167,7 @@ document.querySelectorAll('.bifatura-inbox-pdf').forEach(function (btn) {
 			<tbody>
 				{foreach $recentInvoices as $inv}
 				<tr>
-					<td><a href="{$domain}admin/order?id={$inv.id_order}">{$inv.reference|escape}</a></td>
+					<td><a href="{$adminUrl}order?id={$inv.id_order}">{$inv.reference|escape}</a></td>
 					<td>{$inv.customer_name|escape}</td>
 					<td>{$inv.invoice_no|escape}</td>
 					<td>{$inv.system_type|escape}</td>

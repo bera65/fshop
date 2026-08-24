@@ -4,6 +4,7 @@ class RateLimit
 {
 	const SCOPE_CUSTOMER_LOGIN = 'customer_login';
 	const SCOPE_ADMIN_LOGIN = 'admin_login';
+	const SCOPE_ADMIN_PASSWORD_RESET = 'admin_password_reset';
 	const SCOPE_POS_LOGIN = 'pos_login';
 	const SCOPE_WEBAPI = 'webapi';
 

@@ -63,7 +63,7 @@
 							<td>{if $row.active}{'Active'|adminT}{else}<span class="text-danger">{'Inactive'|adminT}</span>{/if}</td>
 							<td class="text-end">
 								<a href="{$adminUrl}coupon?id={$row.id_coupon}" class="btn btn-sm btn-outline-dark">{'Edit'|adminT}</a>
-								<form method="post" class="d-inline" onsubmit="return confirm('{'Delete this coupon?'|adminT}');">
+								<form method="post" class="d-inline" data-confirm-title="{'Delete'|adminT}" data-confirm-message="{'Delete this coupon?'|adminT}">
 									<input type="hidden" name="deleteCoupon" value="1">
 									<input type="hidden" name="token" value="{$adminToken}">
 									<input type="hidden" name="id_coupon" value="{$row.id_coupon}">
@@ -121,7 +121,7 @@
 							<td>{if $row.active}{'Active'|adminT}{else}<span class="text-danger">{'Inactive'|adminT}</span>{/if}</td>
 							<td class="text-end">
 								<a href="{$adminUrl}cart-promotion?id={$row.id_promotion}" class="btn btn-sm btn-outline-dark">{'Edit'|adminT}</a>
-								<form method="post" class="d-inline" onsubmit="return confirm('{'Delete this promotion?'|adminT}');">
+								<form method="post" class="d-inline" data-confirm-title="{'Delete'|adminT}" data-confirm-message="{'Delete this promotion?'|adminT}">
 									<input type="hidden" name="deletePromotion" value="1">
 									<input type="hidden" name="token" value="{$adminToken}">
 									<input type="hidden" name="id_promotion" value="{$row.id_promotion}">

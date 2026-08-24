@@ -40,15 +40,23 @@
 					<td><code>{$page.slug|escape}</code></td>
 					<td>{if $page.active}<span class="badge bg-success">{'Active'|adminT}</span>{else}<span class="badge bg-secondary">{'Inactive'|adminT}</span>{/if}</td>
 					<td>{if $page.show_footer}{'Yes'|adminT}{else}{'No'|adminT}{/if}</td>
-					<td class="text-end">
-						<a href="{$page.edit_url}" class="btn btn-sm btn-outline-dark">{'Edit'|adminT}</a>
-						<a href="{$domain}{$page.slug|escape}" class="btn btn-sm btn-outline-secondary" target="_blank" rel="noopener">{'View'|adminT}</a>
-						<form method="post" class="d-inline" onsubmit="return confirm('{'Delete this page?'|adminT}');">
-							<input type="hidden" name="deleteCms" value="1">
-							<input type="hidden" name="id" value="{$page.id_cms}">
-							<input type="hidden" name="token" value="{$adminToken}">
-							<button type="submit" class="btn btn-sm btn-outline-danger">{'Delete'|adminT}</button>
-						</form>
+					<td class="text-end text-nowrap">
+						<div class="adm-row-actions">
+							<a href="{$page.edit_url}" class="adm-icon-btn" title="{'Edit'|adminT}" aria-label="{'Edit'|adminT}">
+								<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
+							</a>
+							<a href="{$domain}{$page.slug|escape}" class="adm-icon-btn" target="_blank" rel="noopener" title="{'View'|adminT}" aria-label="{'View'|adminT}">
+								<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" x2="21" y1="14" y2="3"/></svg>
+							</a>
+							<form method="post" class="d-inline">
+								<input type="hidden" name="deleteCms" value="1">
+								<input type="hidden" name="id" value="{$page.id_cms}">
+								<input type="hidden" name="token" value="{$adminToken}">
+								<button type="submit" class="adm-icon-btn adm-icon-btn--danger js-admin-confirm" title="{'Delete'|adminT}" aria-label="{'Delete'|adminT}" data-confirm-title="{'Delete'|adminT}" data-confirm-message="{'Delete this page?'|adminT}">
+									<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+								</button>
+							</form>
+						</div>
 					</td>
 				</tr>
 				{foreachelse}

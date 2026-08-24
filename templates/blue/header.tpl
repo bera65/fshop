@@ -3,17 +3,17 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="x-ua-compatible" content="ie=edge">
-	<title>{if $pageTitle && $pageTitle != $siteName}{$pageTitle|escape} | {$siteName|escape}{else}{$siteName|escape}{/if}</title>
+	<title>{$documentTitle|default:$siteName|escape}</title>
 	{if $pageDesc}
 	<meta name="description" content="{$pageDesc|escape}">
 	<meta property="og:description" content="{$pageDesc|escape}">
 	{/if}
-	<meta property="og:title" content="{if $pageTitle && $pageTitle != $siteName}{$pageTitle|escape} | {$siteName|escape}{else}{$siteName|escape}{/if}">
+	<meta property="og:title" content="{$documentTitle|default:$siteName|escape}">
 	<meta property="og:type" content="website">
 	<meta property="og:site_name" content="{$siteName|escape}">
 	<meta name="application-name" content="{$siteName|escape}">
 	<meta property="og:url" content="{$domain|escape}">
-	<meta name="twitter:title" content="{if $pageTitle && $pageTitle != $siteName}{$pageTitle|escape} | {$siteName|escape}{else}{$siteName|escape}{/if}">
+	<meta name="twitter:title" content="{$documentTitle|default:$siteName|escape}">
 	{if $pageDesc}
 	<meta name="twitter:description" content="{$pageDesc|escape}">
 	{/if}
@@ -34,7 +34,7 @@
 	<script>
 		if ('serviceWorker' in navigator) {
 			window.addEventListener('load', () => {
-				navigator.serviceWorker.register('{$domain}sw.php');
+				navigator.serviceWorker.register({($domain|cat:'sw.php')|js nofilter});
 			});
 		}
 	</script>
@@ -51,105 +51,19 @@
 	{/foreach}
 	<meta name="google-site-verification" content="MNQB2QJp9cJvMR43vYAINFytBAfaulEHfSciKyWz7Nw" />
 	<script>
-		var domain = "{$domain}";
-		var csrfToken = "{$token}";
-		var cartApiUrl = "{$domain}api/cart.php";
-		var couponApiUrl = "{$domain}api/coupon.php";
-		var authApiUrl = "{$domain}api/auth.php";
-		var favoriteApiUrl = "{$domain}api/favorite.php";
-		var accountApiUrl = "{$domain}api/account.php";
+		var domain = {$domain|js nofilter};
+		var csrfToken = {$token|js nofilter};
+		window.csrfToken = csrfToken;
+		var cartApiUrl = domain + 'api/cart.php';
+		var couponApiUrl = domain + 'api/coupon.php';
+		var authApiUrl = domain + 'api/auth.php';
+		var favoriteApiUrl = domain + 'api/favorite.php';
+		var accountApiUrl = domain + 'api/account.php';
 		var isLoggedIn = {if $isLoggedIn}true{else}false{/if};
-		var baseDir = '{$domain}';
-		window.baseDir = '{$domain}';
-		window.imgDir = '{$domain}img/';
-		window.cssDir = '{$css_dir}';
-	</script>
-	<script type="application/ld+json">
-	{
-	  "@context": "https://schema.org",
-	  "@type": "WebPage",
-	  "url": "{$domain}",
-	  "name": "{if $pageTitle && $pageTitle != $siteName}{$pageTitle|escape} | {$siteName|escape}{else}{$siteName|escape}{/if}",
-	  "description": "{$pageDesc|escape}"
-	},
-	{
-	 "@type":"SoftwareApplication",
-	 "name":"FriSay",
-	 "applicationCategory":"BusinessApplication"
-	}
-	</script>
-	<script type="application/ld+json">
-	{
-	  "@context": "https://schema.org",
-	  "@type": "Organization",
-	  "name": "{$siteName}",
-	  "legalName": "{$siteName}",
-	  "url": "{$domain}",
-	  "logo": "{$domain}img/logo.png",
-	  "email": "{$contactEmail}",
-	  "address": {
-		"@type": "PostalAddress",
-		"streetAddress": "{$contactAddress}",
-		"addressLocality": "{$contactCity}",
-		"postalCode": "{$postalCode}",
-		"addressCountry": "{$addressCountry}"
-	  },
-	  "contactPoint": [
-		{
-		  "@type": "ContactPoint",
-		  "telephone": "{$contactPhone}",
-		  "contactType": "customer service",
-		  "availableLanguage": ["{$selectLang}"]
-		}
-	  ],
-	  "geo": {
-		"@type": "GeoCoordinates",
-		"latitude": {$latitude},
-		"longitude": {$longitude}
-	  },
-	  "openingHoursSpecification": {
-		"@type": "OpeningHoursSpecification",
-		"dayOfWeek": [
-		  "Monday",
-		  "Tuesday",
-		  "Wednesday",
-		  "Thursday",
-		  "Friday",
-		  "Saturday",
-		  "Sunday"
-		],
-		"opens": "{$openHour}",
-		"closes": "{$closeHour}"
-	  },
-	  "sameAs": [
-		{if $facebookLink}
-			"{$facebookLink}",
-		{/if}
-		{if $xLink}
-			"{$xLink}",
-		{/if}
-		{if $instagramLink}
-			"{$instagramLink}"
-		{/if}
-		{if $youtubeLink}
-			"{$youtubeLink}"
-		{/if}
-	  ]
-	}
-	</script>
-
-	<script type="application/ld+json">
-	{
-	  "@context": "https://schema.org",
-	  "@type": "WebSite",
-	  "name": "{$siteName}", 
-	  "url": "{$domain}",
-	  "potentialAction": {
-		"@type": "SearchAction",
-		"target": "{$domain}search?query={literal}{search_term_string}{/literal}",
-		"query-input": "required name=search_term_string"
-	  }
-	}
+		var baseDir = domain;
+		window.baseDir = domain;
+		window.imgDir = domain + 'img/';
+		window.cssDir = {$css_dir|js nofilter};
 	</script>
 
 </head>

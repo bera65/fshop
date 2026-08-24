@@ -98,6 +98,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	initSidebarAccordion();
 	initModuleListFilters();
 	initAdminConfirmBindings();
+	initAdminBusyBindings();
 	initAutoHideAlerts();
 	initLivePoll();
 });
@@ -128,6 +129,10 @@ function initSidebarAccordion() {
 	}
 
 	groups.forEach(function (group) {
+		if (group.querySelector('.menu-item.active')) {
+			group.classList.add('has-active');
+		}
+
 		var btn = group.querySelector('.nav-accordion__toggle');
 		if (!btn) {
 			return;
@@ -410,60 +415,240 @@ function initLivePoll() {
 	setInterval(poll, parseInt(cfg.intervalMs, 10) || 30000);
 }
 
-window.AdminConfirm = {
-	show: function (title, message, onConfirm) {
-		var modalEl = document.getElementById('admin-confirm-modal');
-		if (!modalEl) {
-			if (window.confirm(message || title)) {
-				if (typeof onConfirm === 'function') {
-					onConfirm();
-				}
-			}
+function adminI18n(key, fallback) {
+	var pack = window.__adminI18n || {};
+	return pack[key] || fallback;
+}
+
+function ensureSubmitterField(form, submitter) {
+	if (!form || !submitter || submitter.tagName === 'A') {
+		return;
+	}
+
+	var name = submitter.getAttribute('name');
+
+	if (!name) {
+		return;
+	}
+
+	var value = submitter.getAttribute('value');
+
+	if (value === null) {
+		value = '1';
+	}
+
+	var safeName = name.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+	var existing = form.querySelector('input[type="hidden"][data-admin-confirm-proxy="1"][name="' + safeName + '"]');
+
+	if (!existing) {
+		existing = document.createElement('input');
+		existing.type = 'hidden';
+		existing.name = name;
+		existing.setAttribute('data-admin-confirm-proxy', '1');
+		form.appendChild(existing);
+	}
+
+	existing.value = value;
+}
+
+window.AdminBusy = {
+	start: function (el) {
+		if (!el || el.dataset.adminBusy === '1') {
 			return;
 		}
 
-		if (modalEl.parentNode !== document.body) {
-			document.body.appendChild(modalEl);
+		var form = el.form || (el.closest ? el.closest('form') : null);
+
+		if (form) {
+			ensureSubmitterField(form, el);
 		}
 
-		var titleEl = document.getElementById('admin-confirm-title');
-		var messageEl = document.getElementById('admin-confirm-message');
-		var confirmBtn = document.getElementById('admin-confirm-btn');
+		el.dataset.adminBusy = '1';
+		el.classList.add('is-busy');
 
-		if (titleEl) {
-			titleEl.textContent = title || (window.__adminI18n && window.__adminI18n.confirmTitle) || 'Confirm action';
-		}
-		if (messageEl) {
-			messageEl.textContent = message || (window.__adminI18n && window.__adminI18n.confirmMessage) || 'Are you sure you want to perform this action?';
+		if ('disabled' in el) {
+			el.disabled = true;
 		}
 
-		var newBtn = confirmBtn.cloneNode(true);
-		confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+		if (!el.querySelector('.adm-btn-spinner')) {
+			var spin = document.createElement('span');
+			spin.className = 'adm-btn-spinner';
+			spin.setAttribute('aria-hidden', 'true');
+			el.insertBefore(spin, el.firstChild);
+		}
+	},
+	stop: function (el) {
+		if (!el || el.dataset.adminBusy !== '1') {
+			return;
+		}
 
-		newBtn.addEventListener('click', function () {
-			var instance = window.bootstrap && bootstrap.Modal
-				? bootstrap.Modal.getInstance(modalEl)
-				: null;
-			if (instance) {
-				instance.hide();
-			}
-			if (typeof onConfirm === 'function') {
-				onConfirm();
-			}
-		});
+		delete el.dataset.adminBusy;
+		el.classList.remove('is-busy');
 
-		if (window.bootstrap && bootstrap.Modal) {
-			bootstrap.Modal.getOrCreateInstance(modalEl).show();
-		} else {
-			modalEl.classList.add('show');
-			modalEl.style.display = 'block';
+		if ('disabled' in el) {
+			el.disabled = false;
+		}
+
+		var spin = el.querySelector('.adm-btn-spinner');
+
+		if (spin) {
+			spin.remove();
 		}
 	}
 };
 
+window.AdminToast = {
+	show: function (message, type) {
+		showAdminLiveToast({
+			message: message || '',
+			type: type || 'info'
+		});
+	}
+};
+
+window.AdminConfirm = {
+	_pending: null,
+	_bound: false,
+	ensureModal: function () {
+		var modalEl = document.getElementById('admin-confirm-modal');
+
+		if (modalEl) {
+			if (modalEl.parentNode !== document.body) {
+				document.body.appendChild(modalEl);
+			}
+		} else {
+			modalEl = document.createElement('div');
+			modalEl.className = 'modal fade';
+			modalEl.id = 'admin-confirm-modal';
+			modalEl.tabIndex = -1;
+			modalEl.setAttribute('aria-hidden', 'true');
+			modalEl.innerHTML =
+				'<div class="modal-dialog modal-dialog-centered">' +
+					'<div class="modal-content">' +
+						'<div class="modal-header py-2 bg-light">' +
+							'<h5 class="modal-title h6 mb-0 text-dark" id="admin-confirm-title"></h5>' +
+							'<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>' +
+						'</div>' +
+						'<div class="modal-body py-3" id="admin-confirm-message"></div>' +
+						'<div class="modal-footer py-2">' +
+							'<button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" id="admin-confirm-cancel">' +
+								adminI18n('confirmCancel', 'Cancel') +
+							'</button>' +
+							'<button type="button" class="btn btn-danger btn-sm" id="admin-confirm-btn">' +
+								adminI18n('confirmYes', 'Yes, confirm') +
+							'</button>' +
+						'</div>' +
+					'</div>' +
+				'</div>';
+			document.body.appendChild(modalEl);
+		}
+
+		if (!AdminConfirm._bound) {
+			AdminConfirm._bound = true;
+			modalEl.addEventListener('hidden.bs.modal', function () {
+				var pending = AdminConfirm._pending;
+				AdminConfirm._pending = null;
+
+				if (pending && typeof pending.resolve === 'function') {
+					pending.resolve(false);
+				}
+			});
+		}
+
+		return modalEl;
+	},
+	ask: function (opts) {
+		if (typeof opts === 'string') {
+			opts = { message: opts };
+		}
+
+		opts = opts || {};
+
+		return new Promise(function (resolve) {
+			var modalEl = AdminConfirm.ensureModal();
+			var titleEl = document.getElementById('admin-confirm-title');
+			var messageEl = document.getElementById('admin-confirm-message');
+			var confirmBtn = document.getElementById('admin-confirm-btn');
+
+			if (AdminConfirm._pending && typeof AdminConfirm._pending.resolve === 'function') {
+				AdminConfirm._pending.resolve(false);
+			}
+
+			AdminConfirm._pending = { resolve: resolve };
+
+			if (titleEl) {
+				titleEl.textContent = opts.title || adminI18n('confirmTitle', 'Confirm action');
+			}
+
+			if (messageEl) {
+				messageEl.textContent = opts.message || adminI18n('confirmMessage', 'Are you sure you want to perform this action?');
+			}
+
+			if (confirmBtn) {
+				confirmBtn.textContent = opts.confirmLabel || adminI18n('confirmYes', 'Yes, confirm');
+				confirmBtn.className = 'btn btn-sm ' + (opts.danger === false ? 'btn-dark' : 'btn-danger');
+				var freshBtn = confirmBtn.cloneNode(true);
+				confirmBtn.parentNode.replaceChild(freshBtn, confirmBtn);
+				confirmBtn = freshBtn;
+				confirmBtn.addEventListener('click', function () {
+					var pending = AdminConfirm._pending;
+					AdminConfirm._pending = null;
+
+					if (window.bootstrap && bootstrap.Modal) {
+						var instance = bootstrap.Modal.getInstance(modalEl);
+
+						if (instance) {
+							instance.hide();
+						}
+					} else {
+						modalEl.classList.remove('show');
+						modalEl.style.display = 'none';
+					}
+
+					if (pending && typeof pending.resolve === 'function') {
+						pending.resolve(true);
+					}
+				});
+			}
+
+			if (window.bootstrap && bootstrap.Modal) {
+				bootstrap.Modal.getOrCreateInstance(modalEl).show();
+			} else {
+				modalEl.classList.add('show');
+				modalEl.style.display = 'block';
+			}
+		});
+	},
+	show: function (title, message, onConfirm) {
+		return AdminConfirm.ask({ title: title, message: message }).then(function (ok) {
+			if (ok && typeof onConfirm === 'function') {
+				onConfirm();
+			}
+
+			return ok;
+		});
+	}
+};
+
+function submitAdminForm(form, submitter) {
+	if (!form) {
+		return;
+	}
+
+	form.dataset.adminConfirmed = '1';
+
+	if (submitter) {
+		ensureSubmitterField(form, submitter);
+		AdminBusy.start(submitter);
+	}
+
+	form.submit();
+}
+
 function initAdminConfirmBindings() {
 	document.addEventListener('click', function (e) {
 		var btn = e.target.closest('.js-admin-confirm');
+
 		if (!btn) {
 			return;
 		}
@@ -471,37 +656,80 @@ function initAdminConfirmBindings() {
 		e.preventDefault();
 		e.stopPropagation();
 
-		var title = btn.getAttribute('data-confirm-title') || (window.__adminI18n && window.__adminI18n.confirmTitle) || 'Confirm action';
-		var message = btn.getAttribute('data-confirm-message') || (window.__adminI18n && window.__adminI18n.confirmMessage) || 'Are you sure you want to perform this action?';
+		var requireChecked = btn.getAttribute('data-confirm-require-checked');
+
+		if (requireChecked) {
+			var scope = btn.form || document;
+			if (!scope.querySelectorAll(requireChecked + ':checked').length) {
+				if (window.AdminToast) {
+					AdminToast.show(btn.getAttribute('data-confirm-empty-message') || adminI18n('confirmMessage', 'Select at least one item'), 'warning');
+				}
+				return;
+			}
+		}
+
+		var title = btn.getAttribute('data-confirm-title') || adminI18n('confirmTitle', 'Confirm action');
+		var message = btn.getAttribute('data-confirm-message') || adminI18n('confirmMessage', 'Are you sure you want to perform this action?');
 		var form = btn.form || btn.closest('form');
 
-		AdminConfirm.show(title, message, function () {
-			if (!form) {
+		AdminConfirm.ask({ title: title, message: message }).then(function (ok) {
+			if (!ok) {
 				return;
 			}
 
-			if (typeof form.requestSubmit === 'function') {
-				btn.classList.remove('js-admin-confirm');
-				form.requestSubmit(btn);
-				btn.classList.add('js-admin-confirm');
+			if (btn.tagName === 'A' && btn.getAttribute('href')) {
+				AdminBusy.start(btn);
+				window.location.href = btn.getAttribute('href');
 				return;
 			}
 
-			var name = btn.getAttribute('name');
-			var value = btn.getAttribute('value') || '1';
-			if (name) {
-				var existing = form.querySelector('input[type="hidden"][data-admin-confirm-proxy="1"][name="' + name + '"]');
-				if (!existing) {
-					existing = document.createElement('input');
-					existing.type = 'hidden';
-					existing.name = name;
-					existing.setAttribute('data-admin-confirm-proxy', '1');
-					form.appendChild(existing);
-				}
-				existing.value = value;
-			}
-			form.submit();
+			submitAdminForm(form, btn);
 		});
+	}, true);
+}
+
+function initAdminBusyBindings() {
+	document.addEventListener('submit', function (e) {
+		var form = e.target;
+
+		if (!form || form.tagName !== 'FORM') {
+			return;
+		}
+
+		var submitter = e.submitter || null;
+		var confirmMessage = form.getAttribute('data-confirm-message');
+
+		if (form.dataset.adminConfirmed === '1') {
+			if (submitter && (submitter.classList.contains('js-admin-busy') || confirmMessage)) {
+				AdminBusy.start(submitter);
+			}
+
+			return;
+		}
+
+		if (submitter && submitter.classList.contains('js-admin-confirm')) {
+			return;
+		}
+
+		if (confirmMessage) {
+			e.preventDefault();
+			AdminConfirm.ask({
+				title: form.getAttribute('data-confirm-title') || adminI18n('confirmTitle', 'Confirm action'),
+				message: confirmMessage
+			}).then(function (ok) {
+				if (!ok) {
+					return;
+				}
+
+				submitAdminForm(form, submitter && form.contains(submitter) ? submitter : null);
+			});
+
+			return;
+		}
+
+		if (submitter && submitter.classList.contains('js-admin-busy')) {
+			AdminBusy.start(submitter);
+		}
 	}, true);
 }
 

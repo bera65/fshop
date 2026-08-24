@@ -488,19 +488,26 @@ function showToast(message, cl) {
 
 	var $toast = $('#tostAlert');
 	if (!$toast.length) {
+		window.alert(message);
 		return;
 	}
 
 	var title = $toast.attr('data-title-' + type) || (type === 'danger' ? 'Error!' : 'Success!');
 	$toast
-		.removeClass('is-success is-danger is-warning is-info danger success')
-		.addClass('is-' + type);
+		.removeClass('is-success is-danger is-warning is-info danger success hide')
+		.addClass('is-' + type + ' show')
+		.css({ 'z-index': 20000, display: 'flex', opacity: 1 });
 	$toast.find('.sm-toast__title').text(title);
 	$toast.find('.sm-toast__message, .toast-body').html(message);
 
-	var toast = bootstrap.Toast.getOrCreateInstance($toast[0], { delay: 3500 });
-	toast.show();
+	try {
+		var toast = bootstrap.Toast.getOrCreateInstance($toast[0], { delay: 3500 });
+		toast.show();
+	} catch (err) {
+		window.alert(message);
+	}
 }
+window.showToast = showToast;
 
 $(document).on('click', '.toggle-favorite', function (e) {
 	e.preventDefault();
@@ -571,4 +578,90 @@ $('.priceAllertButton').click(function () {
 	var price = $(this).data('price');
 	$('#selectedProductId').val(idProduct);
 	$('#selectedPrice').val(price);
+});
+
+$(document).on('click', '.priceAllertButton', function () {
+	var idProduct = $(this).data('id');
+	var price = $(this).data('price');
+	$('#selectedProductId').val(idProduct);
+	$('#selectedPrice').val(price);
+});
+
+// Theme fallback when alert-price module JS is missing/cached
+$(document).on('submit', '#alertPrice', function (e) {
+	if (window.__fshopAlertPriceBound) {
+		return;
+	}
+
+	e.preventDefault();
+
+	var $form = $(this);
+	var url = $form.attr('data-api-url') || $form.data('api-url');
+	var productId = $form.find('[name="selectedProductId"]').val();
+	var $messageBox = $('#alertPriceMessage');
+	var $submitBtn = $form.find('button[type="submit"]');
+	var modalEl = document.getElementById('priceModal');
+	var email = $.trim($form.find('[name="userEmail"]').val() || '');
+	var price = $form.find('[name="price"]').val();
+	var token = (window.csrfToken || (typeof csrfToken !== 'undefined' ? csrfToken : '') || $form.find('[name="token"]').val() || '');
+
+	function notify(message, ok) {
+		if (typeof window.showToast === 'function') {
+			window.showToast(message, ok ? 'success' : 'danger');
+		} else if (typeof showToast === 'function') {
+			showToast(message, ok ? 'success' : 'danger');
+		} else {
+			window.alert(message);
+		}
+
+		if ($messageBox.length) {
+			$messageBox
+				.removeClass('d-none alert-success alert-danger')
+				.addClass(ok ? 'alert alert-success' : 'alert alert-danger')
+				.text(message)
+				.show();
+		}
+	}
+
+	if (!url || !token) {
+		notify('Sayfayı yenileyip tekrar deneyin.', false);
+		return;
+	}
+
+	$submitBtn.prop('disabled', true);
+
+	$.ajax({
+		url: url,
+		method: 'POST',
+		dataType: 'json',
+		headers: {
+			'X-CSRF-TOKEN': token,
+			'X-Requested-With': 'XMLHttpRequest'
+		},
+		data: {
+			token: token,
+			idProduct: productId,
+			email: email,
+			price: price
+		}
+	}).done(function (data) {
+		var ok = !!(data && data.success);
+		notify((data && data.message) || (ok ? 'Talebiniz alındı.' : 'İşlem başarısız.'), ok);
+		if (ok) {
+			$form[0].reset();
+			if (modalEl && typeof bootstrap !== 'undefined') {
+				setTimeout(function () {
+					var modal = bootstrap.Modal.getInstance(modalEl);
+					if (modal) modal.hide();
+				}, 1600);
+			}
+		}
+	}).fail(function (xhr) {
+		var message = (xhr.responseJSON && xhr.responseJSON.message)
+			? xhr.responseJSON.message
+			: (xhr.status === 403 ? 'Gecersiz istek. Sayfayı yenileyip tekrar deneyin.' : 'Bir hata oluştu.');
+		notify(message, false);
+	}).always(function () {
+		$submitBtn.prop('disabled', false);
+	});
 });

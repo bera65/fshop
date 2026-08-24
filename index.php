@@ -8,6 +8,15 @@
 	define('IN_SCRIPT', true);
 	require_once dirname(__FILE__) . '/config/settings.php';
 
+	if (UpdateInstaller::isMaintenance()) {
+		http_response_code(503);
+		header('Retry-After: 120');
+		header('Content-Type: text/html; charset=utf-8');
+		echo '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Bakım</title></head><body style="font-family:sans-serif;text-align:center;padding:4rem;">';
+		echo '<h1>Güncelleme yapılıyor</h1><p>Lütfen kısa süre sonra tekrar deneyin.</p></body></html>';
+		exit;
+	}
+
 	if (StoreStatus::shouldBlockFront()) {
 		StoreStatus::renderMaintenance();
 	}
@@ -25,7 +34,7 @@
 	$protected = Routes::protectedPages();
 
 	$siteVisibility = Settings::get('SITE_VISIBILITY');
-	$allowedGuests = ['login', 'register', 'forgot-password', 'reset-password', 'gate', 'google-login-callback'];
+	$allowedGuests = ['login', 'register', 'forgot-password', 'reset-password', 'gate', 'google-login-callback', 'iyzico-callback', 'iyzico-payment'];
 
 	if ($siteVisibility === 'members_only' && !Customer::isLoggedIn() && !in_array($container, $allowedGuests, true) && strpos($container, 'api/') !== 0) {
 		$redirectUrl = rtrim($domain, '/') . '/' . $container;

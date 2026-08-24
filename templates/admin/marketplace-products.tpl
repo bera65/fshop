@@ -46,7 +46,7 @@
 							 · {'Store'|adminT} {$row.price_formatted}
 							<span class="cursor-pointer quick-stock-btn px-2 py-1 float-right" role="button" data-id="{$row.id_product}" data-name="{$row.product_name|escape}" data-stock="{$row.stock}" title="{'Add Stock'|adminT}" style="cursor:pointer;">
 							<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil-line-icon lucide-pencil-line"><path d="M13 21h8"/><path d="m15 5 4 4"/><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg>
-							{'Stock'|adminT} <strong class="stock-display-val">{$row.stock}</strong></span>
+							{'Stock'|adminT} <strong class="stock-display-val">{$row.stock_formatted|default:$row.stock}</strong></span>
 						</div>
 					</div>
 				</div>
@@ -216,6 +216,7 @@ window.trendyolBrandsApiUrl = {$brandsUrl|@json_encode nofilter};
 window.trendyolCategoriesApiUrl = {$categoriesUrl|@json_encode nofilter};
 window.trendyolAttributesApiUrl = {$attributesUrl|@json_encode nofilter};
 window.trendyolUpdateStockApiUrl = {$updateStockUrl|@json_encode nofilter};
+window.__adminCsrfToken = {$adminToken|@json_encode nofilter};
 </script>
 <script src="{$importJsUrl|escape}"></script>
 <script>

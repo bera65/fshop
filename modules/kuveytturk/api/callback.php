@@ -102,6 +102,20 @@ $helper->updateTransactionLog($merchantOrderId, [
 if (!empty($result['success']) && $responseCode === '00') {
 	$checkoutData = $pendingCheckout['checkout_data'];
 	$cartSummary = $pendingCheckout['cart_summary'];
+	$expectedKurus = (int) round((float) ($checkoutData['_expected_total'] ?? 0) * 100);
+	$paidKurus = (int) $amount;
+
+	if ($expectedKurus <= 0) {
+		$summary = Coupon::getCheckoutSummary((float) ($cartSummary['total'] ?? 0), is_array($cartSummary) ? $cartSummary : null);
+		$expectedKurus = (int) round((float) ($summary['total'] ?? 0) * 100);
+	}
+
+	if ($expectedKurus > 0 && abs($paidKurus - $expectedKurus) > 5) {
+		error_log('KuveytTurk amount mismatch expected=' . $expectedKurus . ' paid=' . $paidKurus);
+		$_SESSION['kuveytturk_payment_error'] = 'Ödeme tutarı sipariş tutarı ile uyuşmuyor.';
+		header('Location: ' . $baseUrl . 'kuveytturk-payment?fail=1');
+		exit;
+	}
 
 	$checkoutData['_payment_done'] = true;
 	$checkoutData['_payment_reference'] = $merchantOrderId;
@@ -113,6 +127,7 @@ if (!empty($result['success']) && $responseCode === '00') {
 
 		if (!empty($createResult['success']) && !empty($createResult['id_order'])) {
 			$idOrder = (int) $createResult['id_order'];
+			Order::updateStatus($idOrder, Order::STATUS_PROCESSING);
 
 			$helper->updateTransactionLog($merchantOrderId, ['id_order' => $idOrder]);
 			KuveytturkModule::removePendingCheckout($merchantOrderId);

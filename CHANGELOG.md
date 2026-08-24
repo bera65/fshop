@@ -5,14 +5,56 @@ Version numbers follow [Semantic Versioning](https://semver.org/).
 
 | Durum | Sürüm |
 |--------|--------|
-| **Yayında (canlı)** | **2.5.5** |
-| **Geliştirme / bir sonraki yayın** | **2.5.6** (henüz yayınlanmadı) |
+| **Yayında (canlı)** | **2.5.6** |
+| **Geliştirme / bir sonraki yayın** | **2.5.7** (henüz yayınlanmadı) |
 | **İleride** | 3.0.0 |
 
-2.5.5 yayımlandı. Yeni düzeltme ve küçük iyileştirmeler **2.5.6** altında toplanır. Daha büyük yeni işler 2.6.0 veya 3.0.0 altında planlanır.
+2.5.6 yayımlandı. Yeni düzeltme ve küçük iyileştirmeler **2.5.7** altında toplanır. Daha büyük yeni işler 2.6.0 veya 3.0.0 altında planlanır.
 
 ---
-## [2.5.6] — WIP
+## [2.5.6] — 2026-08-22
+
+### Added
+- **Admin order delete** — Order detail and orders list (⋮ menu) can permanently delete an order (CSRF + confirm); restores stock unless already cancelled/returned; releases coupon use, virtual licenses, invoice file, and related messages/returns
+- **iyzico payment module** — Checkout Form (PayTR-style pending checkout): API key/secret, live/sandbox, callback + signed webhook; installment off option; amount mismatch cancels payment
+- **Web API messages & notifications** — `GET/POST /api/v1/messages` (list, detail, reply, mark read); `GET/POST /api/v1/notifications` (list, mark read, read-all); API key perms `messages.*` / `notifications.*`; stock hitting zero creates admin `stock` notification (also on order stock decrease)
+- **SEO title suffix** — Admin → SEO: homepage uses full site title; other pages use short `SEO_TITLE_SUFFIX` (`Sayfa | Sonek`); empty suffix falls back to `SITE_NAME`
+- **Main menu locations** — Header / Mobile / Footer per item (`show_header`, `show_mobile`, `show_footer`); `footer_menu` display hook wired in store themes; upgrades auto-bind the hook
+- **Theme customize tabs** — Brand (logos, colors, font) / Homepage (header & messaging, footer text) / Advanced (width & extras); Theme4 schema `edit: theme4` opens the Theme4 module builder
+- **Admin system update** — `FS_VERSION` + `upgrade/migrations/*.php`; Admin → Güncelleme applies pending DB/settings steps and shows CHANGELOG between installed and code version (`docs/UPGRADE.md`)
+- **Admin forgot password** — login screen “Şifremi unuttum?” → email reset link (1 hour); pages `forgot-password` / `reset-password`; `admins.reset_token` + `reset_expires` (schema + auto-migrate); hashed token, rate limit, CSRF; `Mail::sendAdminPasswordReset`
+- **One-click core update (WordPress-style)** — Admin → Güncelleme: fixed channel `bera65/frisay` GitHub Releases; WAMP SSL via `core/cacert.pem`; package names `frisay-*.zip` / `fs-*.zip`; admin menu badge when update available
+
+### Fixed
+- **Security (audit)** — unauthenticated marketplace stock write (`update-stock`); marketplace mutating actions require admin + POST; ParamPOS return hash + amount abort; PayTR/EsnekPOS/PayPal amount mismatch no longer marks paid; backup-pro `ORDER BY` whitelist; XML import SSRF (`isSafeOutboundUrl`); product `variationItemsJson` `JSON_HEX_*`; AdminLang/export-excel open redirect hardening; Theme4 HTML widget uses `sanitizeHtml`; checkout-success guest grant only with matching reference; coupon `max_uses` atomic update; `.git` / `install/*.sql` / `logs` / `upgrade` denied in `.htaccess`
+- **Production security hardening** — N Kolay Pay requires `hashDataV2` + `RESPONSE_CODE=2` + `AUTH_CODE` and PaymentList inquiry; amount mismatch aborts; stored XSS (JSON-LD script-context encode with `JSON_HEX_*` plus leftover `<>` encoding; HTML allowlist via DOM so `onerror`/`img/onerror` cannot skip filters; `javascript:`/`vbscript:`/`data:` URL checks); checkout-success IDOR (session pending only; logged-in users cannot inherit another customer's `guest_order_ids`); Google Login requires `email_verified`; coupon `max_uses` reserved inside the order transaction; `orders.stock_restored` prevents double restore and restores on return; theme ZIP uses an extension allowlist plus zip-slip/absolute/symlink/NTFS-ADS (`:`) rejection (no PHP written under `templates/`); Backup Pro restore extracts only root `database.sql` into a unique `sys_get_temp_dir()/fshop-restore-*` staging dir (outside the docroot), runs SQL only from that staging `database.sql`, and always deletes staging via try/finally; IPv6-mapped SSRF; KuveytTürk/ParamPOS payable total; Tami hash required; iyzico webhook HMAC required; HSTS in production; `display_errors` never on when `APP_ENV=production`
+- **Script-context XSS encoding** — `Security::jsonForHtmlScript` / `jsString` (and Smarty `|js`) for HTML script / JSON-LD / inline JS; theme header Organization/WebSite JSON-LD removed in favor of `SchemaOrg`; Facebook Pixel, reCAPTCHA, customer-notify, and iyzico redirect no longer use `JSON_UNESCAPED_SLASHES` in `<script>`
+- **Marketplace order actions CSRF** — refresh / delete / cancel / import `fetch` posts now send `token` + `X-CSRF-TOKEN` (was “Geçersiz istek (CSRF)”)
+- **Marketplace orders Orion table CSS** — legacy `.mp-order-row { display:grid }` no longer breaks `<tr>` rows; scoped to `.mp-order-list > .mp-order-row`
+- **POS card payment redirect** — `prepare-card` no longer returns root `/pos-card-payment` when `$adminUrl` is unset in `api/module.php`; builds shop/admin URL via `Admin::baseUrl()` / `DOMAIN`+`FOLDER`
+- **Phone validation (global)** — `Customer::isValidPhone` no longer requires Turkish `05xxxxxxxxx` only; accepts E.164-length international numbers (7–15 digits); TR mobile shortcuts kept; admin/front placeholders updated
+- **Admin products stock display** — stock shown with 2 decimal places (`2,00` not `2.000`); column migrated toward `decimal(12,2)`
+- **Export Excel CSRF** — admin export POST to `/api/module.php` now accepts `admin_csrf_token` under front CSRF gate
+- **Hardcoded `/admin/` panel links** — cargos (edit/cancel), API keys, order shipping hint, Shopier/Bifatura/BizimHesap module templates, and contact notification links now use `$adminUrl` / `Admin::url()` so custom `ADMIN_URI` works
+- **Newsletter CSRF** — dress/shopmore/blue/restoran footer forms lacked CSRF `token` and `newsletter.js` was not registered as a front asset (native POST → “Geçersiz istek (CSRF)”); page-cache still injects live tokens on hit
+- **Price-alert toast (dress)** — theme-owned AJAX + toast fallback; message box always visible; toast z-index above modal
+- **Dress product cards** — homepage/category hover shows Add to cart (or “Select options” when variations exist); always visible on touch devices
+- **Admin module install/enable** — button spinner no longer disables the submit control before POST, which dropped `action=install` and showed “Geçersiz işlem”
+- **iyzico callback stuck** — browser return uses `/iyzico-callback` with 303 + HTML/JS (iframe breakout); CSRF exemption also matches `REQUEST_URI`; pending checkout can be resolved by iyzico `token`
+
+### Changed
+- **Admin confirmations** — native `alert`/`confirm` replaced with the admin modal (`AdminConfirm`); loading actions show a spinner on the button (`AdminBusy`) instead of a blocking dialog
+- **Admin orders list** — Orion-style layout: Filters card with order-goal progress (green fill), expanded filters (payment, SKU, product, tracking, channel Store/POS, cargo, sort), bulk bar (print selected), table with Channel / Actions / Cost / Total, row expand for line items; profit column removed; `ORDER_GOAL_TARGET` setting
+- **Marketplace orders + Dashboard lists** — same Orion table (platform icon + name, action icons, status pills, cost/total, ⋮ menu, row expand); profit column removed; dashboard “Last 50” and “Marketplace Orders” reuse the same row partials
+- **Admin list row actions** — products, categories, brands, and CMS pages use soft icon buttons (edit / view / trash) instead of outline + solid danger buttons
+- **Admin Dashboard analytics** — marketplace-style layout: top KPI strip, period pills (`month` / 7 / 15 / 30), ciro→kâr waterfall (Chart.js), period metric grid, marketplace/Frisay question counts, product performance cards, platform revenue bars; recent + marketplace orders kept below; `Admin::getDashboardAnalytics()`
+- **Dashboard KPI strip** — placeholder “Competition analysis” replaced with active customer count (links to Customers)
+- **Dashboard sales revenue chart** — Orion-style horizontal waterfall (Chart.js floating bars) by marketplace / store / POS with in-bar labels and total row
+- **Admin UI accents** — White surfaces, vibrant orange (`#FF5B22`) for CTAs / active nav, royal purple (`#5B2CDE`) for secondary accents; softer cards & pill buttons
+- **Admin sidebar accordion** — section headers are icon+label menu rows with chevron; click expands nested items downward (active group highlighted)
+- **Admin buttons** — Configure / Install / Dashboard actions use pastel lavender / mint / slate (no orange, no box-shadow); selected menu background lightened
+- **Newsletter + alert-price UX** — subscribe success/error via toast; price-alert admin save uses Frisay toast; Theme4 admin flash also toast
+- **Site version** — `FShop::VERSION` 2.5.6 (admin footer)
 
 ---
 ## [2.5.5] — 2026-08-03

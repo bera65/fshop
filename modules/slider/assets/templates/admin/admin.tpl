@@ -148,7 +148,7 @@
 									<input type="hidden" name="id_slide" value="{$slide.id_slide}">
 									<button type="submit" class="btn btn-sm btn-outline-secondary">{if $slide.active}Pasif yap{else}Aktif yap{/if}</button>
 								</form>
-								<form method="post" class="d-inline" onsubmit="return confirm('Bu slayt silinsin mi?');">
+								<form method="post" class="d-inline" data-confirm-message="Bu slayt silinsin mi?">
 									<input type="hidden" name="deleteSlide" value="1">
 									<input type="hidden" name="token" value="{$adminToken}">
 									<input type="hidden" name="id_slide" value="{$slide.id_slide}">

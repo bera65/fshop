@@ -11,15 +11,16 @@ class MainMenuModule extends ModuleBase
 {
 	public string $name = 'main-menu';
 	public string $title = 'Ana Menü';
-	public string $version = '1.2.0';
-	public string $description = 'Üst menü; tam genişlik alt kategori mega menü, mobil tıklayınca açılır';
+	public string $version = '1.3.0';
+	public string $description = 'Header, mobil ve footer menü konumları; mega menü desteği';
 	public string $author = 'FShop';
 
 	public array $displayHooks = [
-		'main_menu' => 'Ana navigasyon menüsü',
+		'main_menu' => 'Üst (header) navigasyon',
+		'footer_menu' => 'Footer menü bağlantıları',
 	];
 
-	public array $defaultDisplayHooks = ['main_menu'];
+	public array $defaultDisplayHooks = ['main_menu', 'footer_menu'];
 
 	public array $frontStylesheets = ['main-menu.css'];
 	public array $frontScripts = ['main-menu.js'];
@@ -42,6 +43,7 @@ class MainMenuModule extends ModuleBase
 	public function boot(): void
 	{
 		MainMenuService::ensureSchema();
+		$this->ensureFooterMenuHook();
 
 		Module::registerHook('smarty.assign', static function (): void {
 			global $smarty;
@@ -50,31 +52,43 @@ class MainMenuModule extends ModuleBase
 				return;
 			}
 
-			$items = MainMenuService::getActiveItems();
+			$headerItems = MainMenuService::getActiveItems('header');
+			$mobileItems = MainMenuService::getActiveItems('mobile');
+			$footerItems = MainMenuService::getActiveItems('footer');
+
 			$smarty->assign([
-				'mainMenuItems' => $items,
-				'mainMenuActive' => $items !== [],
+				'mainMenuItems' => $mobileItems,
+				'mainMenuActive' => $mobileItems !== [],
+				'headerMenuItems' => $headerItems,
+				'footerMenuItems' => $footerItems,
+				'footerMenuActive' => $footerItems !== [],
 			]);
 		});
 	}
 
 	public function renderDisplayHook(string $hook, array $context = []): ?string
 	{
-		if ($hook !== 'main_menu') {
-			return null;
+		if ($hook === 'main_menu') {
+			$items = MainMenuService::getActiveItems('header');
+			if ($items === []) {
+				return null;
+			}
+			$html = $this->renderFrontTemplate('main_menu', ['items' => $items]);
+
+			return $html !== '' ? $html : null;
 		}
 
-		$items = MainMenuService::getActiveItems();
+		if ($hook === 'footer_menu') {
+			$items = MainMenuService::getActiveItems('footer');
+			if ($items === []) {
+				return null;
+			}
+			$html = $this->renderFrontTemplate('footer_menu', ['items' => $items]);
 
-		if ($items === []) {
-			return null;
+			return $html !== '' ? $html : null;
 		}
 
-		$html = $this->renderFrontTemplate('main_menu', [
-			'items' => $items,
-		]);
-
-		return $html !== '' ? $html : null;
+		return null;
 	}
 
 	public function adminPage(): void
@@ -101,6 +115,9 @@ class MainMenuModule extends ModuleBase
 					'target' => (string) Tools::getValue('target'),
 					'position' => (int) Tools::getValue('position'),
 					'active' => (int) Tools::getValue('active') === 1,
+					'show_header' => (int) Tools::getValue('show_header') === 1,
+					'show_mobile' => (int) Tools::getValue('show_mobile') === 1,
+					'show_footer' => (int) Tools::getValue('show_footer') === 1,
 				], $id);
 				$flash = $result['message'];
 				$flashType = !empty($result['success']) ? 'success' : 'danger';
@@ -138,5 +155,22 @@ class MainMenuModule extends ModuleBase
 			'categoryOptions' => Category::getMenuList(),
 			'cmsOptions' => $cmsOptions,
 		]);
+	}
+
+	/** Ensure upgraded installs also bind footer_menu without wiping custom hook picks. */
+	private function ensureFooterMenuHook(): void
+	{
+		if (!Module::isInstalled($this->name) || !Module::isEnabled($this->name)) {
+			return;
+		}
+
+		$assigned = Module::getAssignedDisplayHooks($this->name);
+
+		if (in_array('footer_menu', $assigned, true)) {
+			return;
+		}
+
+		$merged = array_values(array_unique(array_merge($assigned, ['footer_menu'])));
+		Module::setDisplayHooks($this->name, $merged);
 	}
 }

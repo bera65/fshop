@@ -492,7 +492,7 @@ class EsnekposModule extends ModuleBase
 		$transactions = $query['TRANSACTIONS'] ?? [];
 
 		if (!is_array($transactions) || $transactions === []) {
-			return true;
+			return false;
 		}
 
 		foreach ($transactions as $transaction) {
@@ -650,7 +650,10 @@ class EsnekposModule extends ModuleBase
 		$expected = (float) $order['total'];
 
 		if (abs($paidAmount - $expected) > 0.05) {
-			error_log('EsnekPOS amount mismatch for order ' . $order['reference']);
+			error_log('EsnekPOS amount mismatch for order ' . $order['reference']
+				. ' expected=' . $expected . ' paid=' . $paidAmount);
+
+			return;
 		}
 
 		if ((int) $order['status'] !== Order::STATUS_PENDING) {

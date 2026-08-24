@@ -81,6 +81,9 @@ function updateQty(val) {
 	var thumbs = Array.prototype.slice.call(document.querySelectorAll('.product-gallery__thumb'));
 	var prevBtn = document.querySelector('.product-gallery__nav--prev');
 	var nextBtn = document.querySelector('.product-gallery__nav--next');
+	var modalPrev = document.getElementById('imageModalPrev');
+	var modalNext = document.getElementById('imageModalNext');
+	var modalCounter = document.getElementById('imageModalCounter');
 	var currentIndex = 0;
 
 	function getImageUrls() {
@@ -118,6 +121,10 @@ function updateQty(val) {
 		thumbs.forEach(function (thumb, i) {
 			thumb.classList.toggle('active', i === index);
 		});
+
+		if (modalCounter) {
+			modalCounter.textContent = String(index + 1);
+		}
 	}
 
 	thumbs.forEach(function (thumb, index) {
@@ -126,21 +133,21 @@ function updateQty(val) {
 		});
 	});
 
-	if (prevBtn) {
-		prevBtn.addEventListener('click', function (event) {
+	function bindNav(btn, delta) {
+		if (!btn) {
+			return;
+		}
+		btn.addEventListener('click', function (event) {
 			event.preventDefault();
 			event.stopPropagation();
-			setActiveIndex(currentIndex - 1);
+			setActiveIndex(currentIndex + delta);
 		});
 	}
 
-	if (nextBtn) {
-		nextBtn.addEventListener('click', function (event) {
-			event.preventDefault();
-			event.stopPropagation();
-			setActiveIndex(currentIndex + 1);
-		});
-	}
+	bindNav(prevBtn, -1);
+	bindNav(nextBtn, 1);
+	bindNav(modalPrev, -1);
+	bindNav(modalNext, 1);
 
 	if (mainImg) {
 		mainImg.addEventListener('click', function () {
@@ -156,8 +163,37 @@ function updateQty(val) {
 			if (modalImg && mainImg && mainImg.src) {
 				modalImg.src = mainImg.src;
 			}
+			if (modalCounter) {
+				modalCounter.textContent = String(currentIndex + 1);
+			}
+		});
+
+		imageModal.addEventListener('keydown', function (event) {
+			if (getImageUrls().length < 2) {
+				return;
+			}
+			if (event.key === 'ArrowLeft') {
+				event.preventDefault();
+				setActiveIndex(currentIndex - 1);
+			} else if (event.key === 'ArrowRight') {
+				event.preventDefault();
+				setActiveIndex(currentIndex + 1);
+			}
 		});
 	}
+
+	document.addEventListener('keydown', function (event) {
+		if (!imageModal || !imageModal.classList.contains('show') || getImageUrls().length < 2) {
+			return;
+		}
+		if (event.key === 'ArrowLeft') {
+			event.preventDefault();
+			setActiveIndex(currentIndex - 1);
+		} else if (event.key === 'ArrowRight') {
+			event.preventDefault();
+			setActiveIndex(currentIndex + 1);
+		}
+	});
 })();
 
 (function () {

@@ -92,9 +92,10 @@ class SchemaOrg
 			$org['email'] = $email;
 		}
 
-		$street = trim((string) Settings::get('SCHEMA_ORG_STREET'));
-		$city = trim((string) Settings::get('SCHEMA_ORG_CITY'));
-		$postal = trim((string) Settings::get('SCHEMA_ORG_POSTAL'));
+		$street = self::firstSetting('SCHEMA_ORG_STREET', 'CONTACT_ADDRESS');
+		$city = self::firstSetting('SCHEMA_ORG_CITY', 'CONTACT_CITY');
+		$postal = self::firstSetting('SCHEMA_ORG_POSTAL', 'POSTAL_CODE');
+		$country = self::firstSetting('CONTACT_COUNTRY') ?: 'TR';
 
 		if ($street !== '' || $city !== '') {
 			$org['address'] = array_filter([
@@ -102,7 +103,7 @@ class SchemaOrg
 				'streetAddress' => $street,
 				'addressLocality' => $city,
 				'postalCode' => $postal,
-				'addressCountry' => 'TR',
+				'addressCountry' => $country,
 			]);
 		}
 
@@ -115,14 +116,14 @@ class SchemaOrg
 			]];
 		}
 
-		$lat = trim((string) Settings::get('SCHEMA_ORG_LAT'));
-		$lng = trim((string) Settings::get('SCHEMA_ORG_LNG'));
+		$lat = self::numericCoord(self::firstSetting('SCHEMA_ORG_LAT', 'LATITUDE'));
+		$lng = self::numericCoord(self::firstSetting('SCHEMA_ORG_LNG', 'LONGITUDE'));
 
-		if ($lat !== '' && $lng !== '') {
+		if ($lat !== null && $lng !== null) {
 			$org['geo'] = [
 				'@type' => 'GeoCoordinates',
-				'latitude' => (float) $lat,
-				'longitude' => (float) $lng,
+				'latitude' => $lat,
+				'longitude' => $lng,
 			];
 		}
 
@@ -131,8 +132,8 @@ class SchemaOrg
 			'dayOfWeek' => [
 				'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
 			],
-			'opens' => '00:00',
-			'closes' => '23:59',
+			'opens' => self::hourSpec(self::firstSetting('OPEN_HOUR'), '00:00'),
+			'closes' => self::hourSpec(self::firstSetting('CLOSE_HOUR'), '23:59'),
 		];
 
 		$sameAs = self::socialLinks();
@@ -401,17 +402,69 @@ class SchemaOrg
 	/** @return string[] */
 	private static function socialLinks(): array
 	{
+		$pairs = [
+			['SCHEMA_FACEBOOK_URL', 'FACEBOOK_LINK'],
+			['SCHEMA_INSTAGRAM_URL', 'INSTAGRAM_LINK'],
+			['', 'X_LINK'],
+			['SCHEMA_YOUTUBE_URL', 'YOUTUBE_LINK'],
+			['', 'LINKEDIN_LINK'],
+			['', 'PINTEREST_LINK'],
+			['', 'TIKTOK_LINK'],
+		];
 		$links = [];
+		$seen = [];
 
-		foreach (['SCHEMA_FACEBOOK_URL', 'SCHEMA_INSTAGRAM_URL', 'SCHEMA_YOUTUBE_URL'] as $key) {
-			$url = trim((string) Settings::get($key));
+		foreach ($pairs as $pair) {
+			$url = $pair[0] !== '' ? trim((string) Settings::get($pair[0])) : '';
 
-			if ($url !== '') {
-				$links[] = $url;
+			if ($url === '') {
+				$url = trim((string) Settings::get($pair[1]));
 			}
+
+			if ($url === '' || isset($seen[$url])) {
+				continue;
+			}
+
+			$seen[$url] = true;
+			$links[] = $url;
 		}
 
 		return $links;
+	}
+
+	private static function firstSetting(string ...$keys): string
+	{
+		foreach ($keys as $key) {
+			$value = trim((string) Settings::get($key));
+
+			if ($value !== '') {
+				return $value;
+			}
+		}
+
+		return '';
+	}
+
+	private static function numericCoord(string $value): ?float
+	{
+		$value = trim(str_replace(',', '.', $value));
+
+		if ($value === '' || !is_numeric($value)) {
+			return null;
+		}
+
+		return (float) $value;
+	}
+
+	private static function hourSpec(string $value, string $default): string
+	{
+		$value = trim($value);
+
+		if (preg_match('/^([01]?\d|2[0-3]):[0-5]\d$/', $value)) {
+			return $value;
+		}
+
+		return $default;
 	}
 
 	private static function formatPhone(string $phone): string
@@ -453,8 +506,8 @@ class SchemaOrg
 			return '';
 		}
 
-		$json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+		$json = Security::jsonForHtmlScript($data);
 
-		return is_string($json) ? $json : '';
+		return ($json === 'null' || $json === '') ? '' : $json;
 	}
 }

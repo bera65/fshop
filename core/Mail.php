@@ -180,6 +180,22 @@ class Mail
 		return self::send($to, $siteName . ' - Şifre Sıfırlama', $body);
 	}
 
+	public static function sendAdminPasswordReset(string $to, string $fullName, string $resetUrl): bool
+	{
+		$siteName = Settings::get('SITE_NAME') ?: 'FShop';
+		$name = htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8');
+		$url = htmlspecialchars($resetUrl, ENT_QUOTES, 'UTF-8');
+
+		$body = '<h2 style="margin:0 0 16px;">Yönetim Paneli Şifre Sıfırlama</h2>'
+			. '<p>Merhaba <strong>' . $name . '</strong>,</p>'
+			. '<p>Yönetim paneli şifrenizi sıfırlamak için aşağıdaki bağlantıya tıklayın. Bu bağlantı 1 saat geçerlidir.</p>'
+			. '<p style="margin:24px 0;"><a href="' . $url . '" style="display:inline-block;padding:12px 24px;background:#1a1a1a;color:#fff;text-decoration:none;border-radius:6px;">Şifremi Sıfırla</a></p>'
+			. '<p style="font-size:13px;color:#666;">Bu isteği siz yapmadıysanız bu e-postayı yok sayabilirsiniz.</p>'
+			. '<p style="font-size:12px;color:#999;word-break:break-all;">' . $url . '</p>';
+
+		return self::send($to, $siteName . ' - Yönetim Paneli Şifre Sıfırlama', $body);
+	}
+
 	private static function encodeHeader(string $text): string
 	{
 		return '=?UTF-8?B?' . base64_encode($text) . '?=';

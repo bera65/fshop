@@ -71,16 +71,16 @@ class App
 
 		$logFile = $logDir . '/php-error.log';
 
-		if (self::isDebug()) {
-			ini_set('display_errors', '1');
-			ini_set('display_startup_errors', '1');
-			error_reporting(E_ALL);
-		} else {
+		if (self::isProduction() || !self::isDebug()) {
 			ini_set('display_errors', '0');
 			ini_set('display_startup_errors', '0');
 			error_reporting(E_ALL & ~E_DEPRECATED & ~E_STRICT);
 			ini_set('log_errors', '1');
 			ini_set('error_log', $logFile);
+		} else {
+			ini_set('display_errors', '1');
+			ini_set('display_startup_errors', '1');
+			error_reporting(E_ALL);
 		}
 	}
 
@@ -140,17 +140,25 @@ class App
 			. "form-action 'self' https:; "
 			. "frame-ancestors 'self'; "
 			. "img-src 'self' data: https: blob:; "
-			. "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net; "
-			. "style-src {$originSources} 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
-			. "script-src {$originSources} 'unsafe-inline' https://cdn.jsdelivr.net https://cdn.onesignal.com https://api.onesignal.com https://www.googletagmanager.com https://googleads.g.doubleclick.net https://www.googleadservices.com https://www.google.com https://www.gstatic.com https://www.recaptcha.net https://connect.facebook.net; "
-			. "worker-src {$originSources} blob:; "
+			. "font-src 'self' data: https:; "
+			. "style-src {$originSources} 'unsafe-inline' https:; "
+			. "script-src {$originSources} 'unsafe-inline' 'unsafe-eval' https:; "
+			. "worker-src {$originSources} blob: https:; "
 			. "manifest-src {$originSources}; "
-			. "connect-src {$originSources} https://api.onesignal.com https://cdn.onesignal.com https://www.google-analytics.com https://region1.google-analytics.com https://www.googletagmanager.com https://analytics.google.com https://www.google.com https://www.gstatic.com https://www.recaptcha.net https://www.facebook.com https://connect.facebook.net https://googleads.g.doubleclick.net https://www.googleadservices.com https://ad.doubleclick.net; "
+			. "connect-src {$originSources} https: wss: blob:; "
 			. "frame-src 'self' https:;"
 		);
 
 		if (self::isProduction()) {
 			header('Permissions-Policy: geolocation=(), microphone=(), camera=()');
+
+			$https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+				|| (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string) $_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
+				|| (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443);
+
+			if ($https) {
+				header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+			}
 		}
 	}
 

@@ -205,12 +205,14 @@ class NkolaypayModule extends ModuleBase
 			$returnToken = bin2hex(random_bytes(16));
 		}
 
+		$summary = Coupon::getCheckoutSummary((float) ($cart['total'] ?? 0));
 		$payload = json_encode([
 			'checkout' => $checkoutData,
 			'cart' => $cart,
 			'coupon_code' => (string) ($_SESSION[Coupon::SESSION_KEY] ?? ''),
 			'id_user' => Customer::getId(),
 			'return_token' => $returnToken,
+			'expected_total' => round((float) ($summary['total'] ?? 0), 2),
 		], JSON_UNESCAPED_UNICODE);
 
 		DB::execute(
@@ -362,14 +364,131 @@ class NkolaypayModule extends ModuleBase
 		];
 	}
 
-	public static function completeOrderAfterPayment(string $reference, float $paidAmount): void
+	/**
+	 * Browser return is not trusted. Official Paynkolay rules:
+	 * hashDataV2 MUST match, RESPONSE_CODE MUST be 2, AUTH_CODE MUST be real,
+	 * AUTHORIZATION_AMOUNT MUST cover the stored checkout total.
+	 *
+	 * @param array<string, mixed> $request
+	 * @return array{success: bool, message?: string, id_order?: int, reference?: string, return_token?: string}
+	 */
+	public static function handleBrowserReturn(array $request): array
+	{
+		$ctx = self::resolveReturnContext($request);
+		$reference = (string) ($ctx['reference'] ?? '');
+		$returnToken = (string) ($ctx['return_token'] ?? '');
+		$clientRefCode = (string) ($ctx['client_ref'] ?? '');
+
+		if ($reference === '') {
+			return ['success' => false, 'message' => 'Sipariş referansı alınamadı', 'return_token' => $returnToken];
+		}
+
+		self::lockReference($reference);
+
+		try {
+			$hashOk = self::verifyResponseHash($request);
+
+			if (!$hashOk) {
+				error_log('NKolayPay: invalid or missing hashDataV2 for ' . $reference);
+
+				return [
+					'success' => false,
+					'message' => 'N Kolay Pay: güvenlik doğrulaması başarısız',
+					'reference' => $reference,
+					'return_token' => $returnToken,
+				];
+			}
+
+			$responseCode = (string) ($ctx['response_code'] ?? '');
+			$authCode = trim((string) ($ctx['auth_code'] ?? ''));
+
+			if ($responseCode !== '2' || in_array($authCode, ['', '0', '00'], true)) {
+				$message = trim((string) ($ctx['message'] ?? ''));
+
+				if ($message === '') {
+					$message = 'Ödeme bankadan onay alamadı';
+				}
+
+				return [
+					'success' => false,
+					'message' => 'N Kolay Pay: ' . $message,
+					'reference' => $reference,
+					'return_token' => $returnToken,
+				];
+			}
+
+			$paidAmount = self::parseAmount((string) ($ctx['auth_amount'] ?? '0'));
+			$inquiry = self::queryPaymentList($clientRefCode !== '' ? $clientRefCode : $reference);
+
+			if ($inquiry['ok'] && $inquiry['found']) {
+				if (!$inquiry['paid']) {
+					error_log('NKolayPay: PaymentList STATUS is not SUCCESS for ' . $reference);
+
+					return [
+						'success' => false,
+						'message' => 'N Kolay Pay: banka sorgusu ödemeyi onaylamadı',
+						'reference' => $reference,
+						'return_token' => $returnToken,
+					];
+				}
+
+				if (($inquiry['amount'] ?? 0) > 0) {
+					$paidAmount = (float) $inquiry['amount'];
+				}
+			}
+
+			$expected = self::expectedAmountForReference($reference);
+
+			if ($expected > 0 && ($paidAmount + 0.05) < $expected) {
+				error_log('NKolayPay amount mismatch for ' . $reference
+					. ' expected=' . $expected . ' paid=' . $paidAmount);
+
+				return [
+					'success' => false,
+					'message' => 'N Kolay Pay: ödeme tutarı sipariş tutarı ile uyuşmuyor',
+					'reference' => $reference,
+					'return_token' => $returnToken,
+				];
+			}
+
+			$placed = self::completeOrderAfterPayment($reference, $paidAmount);
+
+			if (empty($placed['success'])) {
+				return [
+					'success' => false,
+					'message' => (string) ($placed['message'] ?? 'Sipariş oluşturulamadı'),
+					'reference' => $reference,
+					'return_token' => $returnToken,
+				];
+			}
+
+			return [
+				'success' => true,
+				'reference' => $reference,
+				'return_token' => $returnToken,
+				'id_order' => (int) ($placed['id_order'] ?? 0),
+			];
+		} finally {
+			self::unlockReference($reference);
+		}
+	}
+
+	/** @return array{success: bool, message?: string, id_order?: int} */
+	public static function completeOrderAfterPayment(string $reference, float $paidAmount): array
 	{
 		$order = DB::getRowSafe('orders', 'reference = ?', [$reference]);
 
 		if ($order) {
-			self::markOrderPaid($order, $paidAmount);
+			$marked = self::markOrderPaid($order, $paidAmount);
 
-			return;
+			if (!$marked['success']) {
+				return $marked;
+			}
+
+			return [
+				'success' => true,
+				'id_order' => (int) $order['id_order'],
+			];
 		}
 
 		$pending = self::loadPendingCheckout($reference);
@@ -377,7 +496,7 @@ class NkolaypayModule extends ModuleBase
 		if (!$pending) {
 			error_log('NKolayPay: pending checkout not found for ' . $reference);
 
-			return;
+			return ['success' => false, 'message' => 'Bekleyen ödeme oturumu bulunamadı'];
 		}
 
 		$checkout = is_array($pending['checkout'] ?? null) ? $pending['checkout'] : [];
@@ -386,7 +505,7 @@ class NkolaypayModule extends ModuleBase
 		if ($cart === [] || !empty($cart['empty'])) {
 			error_log('NKolayPay: empty cart snapshot for ' . $reference);
 
-			return;
+			return ['success' => false, 'message' => 'Sepet anlık görüntüsü boş'];
 		}
 
 		$checkout['_payment_done'] = 1;
@@ -397,10 +516,10 @@ class NkolaypayModule extends ModuleBase
 
 		$result = Order::place($checkout);
 
-		if (!$result['success']) {
+		if (empty($result['success'])) {
 			error_log('NKolayPay: order create failed for ' . $reference . ' — ' . ($result['message'] ?? ''));
 
-			return;
+			return ['success' => false, 'message' => (string) ($result['message'] ?? 'Sipariş oluşturulamadı')];
 		}
 
 		$idOrder = (int) ($result['id_order'] ?? 0);
@@ -409,26 +528,62 @@ class NkolaypayModule extends ModuleBase
 			$created = DB::getRowSafe('orders', 'id_order = ?', [$idOrder]);
 
 			if ($created) {
-				self::markOrderPaid($created, $paidAmount);
+				$marked = self::markOrderPaid($created, $paidAmount);
+
+				if (!$marked['success']) {
+					return $marked;
+				}
 			}
 		}
 
 		self::deletePendingCheckout($reference);
+
+		return ['success' => true, 'id_order' => $idOrder];
 	}
 
-	private static function markOrderPaid(array $order, float $paidAmount): void
+	/** @return array{success: bool, message?: string} */
+	private static function markOrderPaid(array $order, float $paidAmount): array
 	{
-		$expected = (float) $order['total'];
+		$expected = round((float) $order['total'], 2);
 
-		if (abs($paidAmount - $expected) > 0.05) {
-			error_log('NKolayPay amount mismatch for order ' . $order['reference']);
+		if ($expected > 0 && ($paidAmount + 0.05) < $expected) {
+			error_log('NKolayPay amount mismatch for order ' . $order['reference']
+				. ' expected=' . $expected . ' paid=' . $paidAmount);
+
+			return ['success' => false, 'message' => 'Ödeme tutarı sipariş tutarı ile uyuşmuyor'];
 		}
 
-		if ((int) $order['status'] !== Order::STATUS_PENDING) {
-			return;
+		$status = (int) $order['status'];
+
+		if ($status === Order::STATUS_PROCESSING || $status === Order::STATUS_SHIPPED || $status === Order::STATUS_DELIVERED) {
+			return ['success' => true];
+		}
+
+		if ($status !== Order::STATUS_PENDING) {
+			return ['success' => false, 'message' => 'Sipariş durumu ödeme için uygun değil'];
 		}
 
 		Order::updateStatus((int) $order['id_order'], Order::STATUS_PROCESSING);
+
+		return ['success' => true];
+	}
+
+	public static function rememberGatewayAttempt(string $reference, string $clientRefCode, float $amount): void
+	{
+		$pending = self::loadPendingCheckout($reference);
+
+		if (!$pending) {
+			return;
+		}
+
+		$pending['client_ref'] = $clientRefCode;
+		$pending['expected_total'] = round($amount, 2);
+		$payload = json_encode($pending, JSON_UNESCAPED_UNICODE);
+
+		DB::execute(
+			'UPDATE nkolaypay_pending_checkouts SET payload = ? WHERE reference = ?',
+			[$payload, $reference]
+		);
 	}
 
 	private static function formatAmount(float $amount): string
@@ -479,13 +634,13 @@ class NkolaypayModule extends ModuleBase
 	/** @param array<string, mixed> $request */
 	public static function resolveReturnContext(array $request): array
 	{
-		$returnToken = trim((string) ($request['rt'] ?? ''));
-		$clientRefCode = trim((string) (
-			$request['clientRefCode']
-			?? $request['ClientRefCode']
-			?? $request['CLIENTREFCODE']
-			?? ''
-		));
+		$returnToken = trim((string) self::requestField($request, ['rt']));
+		$clientRefCode = trim((string) self::requestField($request, [
+			'CLIENT_REFERENCE_CODE',
+			'clientRefCode',
+			'ClientRefCode',
+			'CLIENTREFCODE',
+		]));
 		$reference = self::extractReference($clientRefCode);
 
 		if ($returnToken !== '') {
@@ -493,44 +648,257 @@ class NkolaypayModule extends ModuleBase
 
 			if ($row) {
 				$reference = (string) $row['reference'];
+				$pending = json_decode((string) ($row['payload'] ?? ''), true);
+
+				if ($clientRefCode === '' && is_array($pending)) {
+					$clientRefCode = trim((string) ($pending['client_ref'] ?? ''));
+				}
 			}
 		} elseif ($reference !== '') {
 			$row = DB::getRowSafe('nkolaypay_pending_checkouts', 'reference = ?', [$reference]);
 			$returnToken = $row ? trim((string) ($row['return_token'] ?? '')) : '';
 		}
 
-		$message = trim((string) (
-			$request['responseMessage']
-			?? $request['ResponseMessage']
-			?? $request['RETURN_MESSAGE']
-			?? $request['errorMessage']
-			?? $request['ErrorMessage']
-			?? $request['mdErrorMsg']
-			?? ''
-		));
-
-		$returnCode = trim((string) (
-			$request['returnCode']
-			?? $request['ReturnCode']
-			?? $request['RETURN_CODE']
-			?? ''
-		));
-		$responseCode = trim((string) (
-			$request['responseCode']
-			?? $request['ResponseCode']
-			?? $request['RESPONSE_CODE']
-			?? $request['procReturnCode']
-			?? ''
-		));
+		$message = trim((string) self::requestField($request, [
+			'RESPONSE_DATA',
+			'responseMessage',
+			'ResponseMessage',
+			'RETURN_MESSAGE',
+			'errorMessage',
+			'ErrorMessage',
+			'mdErrorMsg',
+		]));
 
 		return [
 			'reference' => $reference,
 			'return_token' => $returnToken,
+			'client_ref' => $clientRefCode,
 			'message' => $message,
-			'return_code' => $returnCode,
-			'response_code' => $responseCode,
-			'amount' => (string) ($request['amount'] ?? $request['Amount'] ?? '0'),
+			'return_code' => trim((string) self::requestField($request, ['RETURN_CODE', 'returnCode', 'ReturnCode'])),
+			'response_code' => trim((string) self::requestField($request, ['RESPONSE_CODE', 'responseCode', 'ResponseCode'])),
+			'auth_code' => trim((string) self::requestField($request, ['AUTH_CODE', 'authCode', 'AuthCode'])),
+			'auth_amount' => (string) self::requestField($request, [
+				'AUTHORIZATION_AMOUNT',
+				'authorizationAmount',
+				'TRANSACTION_AMOUNT',
+				'amount',
+				'Amount',
+			], '0'),
 		];
+	}
+
+	/** @param array<string, mixed> $request */
+	public static function verifyResponseHash(array $request): bool
+	{
+		$provided = trim((string) self::requestField($request, ['hashDataV2', 'hashDatav2', 'HASHDATAV2']));
+
+		if ($provided === '') {
+			return false;
+		}
+
+		$secretKey = trim((string) Settings::get('NKOLAYPAY_SECRET_KEY'));
+
+		if ($secretKey === '') {
+			return false;
+		}
+
+		$merchantNo = trim((string) self::requestField($request, ['MERCHANT_NO', 'merchantNo', 'sx']));
+
+		if ($merchantNo === '') {
+			$merchantNo = trim((string) Settings::get('NKOLAYPAY_SX'));
+		}
+
+		$referenceCode = trim((string) self::requestField($request, ['REFERENCE_CODE', 'referenceCode']));
+		$authCode = trim((string) self::requestField($request, ['AUTH_CODE', 'authCode', 'AuthCode']));
+		$responseCode = trim((string) self::requestField($request, ['RESPONSE_CODE', 'responseCode']));
+		$use3d = trim((string) self::requestField($request, ['USE_3D', 'use3D', 'use3d']));
+		$rnd = trim((string) self::requestField($request, ['RND', 'rnd']));
+		$installment = trim((string) self::requestField($request, ['INSTALLMENT', 'installmentNo', 'installment'], '1'));
+		$authAmount = trim((string) self::requestField($request, ['AUTHORIZATION_AMOUNT', 'authorizationAmount']));
+		$currency = trim((string) self::requestField($request, ['CURRENCY_CODE', 'currencyCode', 'currencyNumber']));
+
+		if ($use3d === '') {
+			$use3d = Settings::get('NKOLAYPAY_FORCE_3D') !== '0' ? 'true' : 'false';
+		}
+
+		if ($currency === '' || $currency === '949') {
+			$currency = 'TRY';
+		}
+
+		$candidates = [
+			$merchantNo . '|' . $referenceCode . '|' . $authCode . '|' . $responseCode . '|'
+			. $use3d . '|' . $rnd . '|' . $installment . '|' . $authAmount . '|' . $currency . '|' . $secretKey,
+		];
+
+		if ($currency !== 'TRY') {
+			$candidates[] = $merchantNo . '|' . $referenceCode . '|' . $authCode . '|' . $responseCode . '|'
+				. $use3d . '|' . $rnd . '|' . $installment . '|' . $authAmount . '|TRY|' . $secretKey;
+		}
+
+		foreach ($candidates as $raw) {
+			$hash = base64_encode(hash('sha512', mb_convert_encoding($raw, 'UTF-8'), true));
+
+			if (hash_equals($hash, $provided)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * @return array{ok: bool, found: bool, paid: bool, amount: float}
+	 */
+	private static function queryPaymentList(string $clientRefCode): array
+	{
+		$clientRefCode = trim($clientRefCode);
+		$sx = trim((string) Settings::get('NKOLAYPAY_SX'));
+		$secretKey = trim((string) Settings::get('NKOLAYPAY_SECRET_KEY'));
+
+		if ($clientRefCode === '' || $sx === '' || $secretKey === '' || !function_exists('curl_init')) {
+			return ['ok' => false, 'found' => false, 'paid' => false, 'amount' => 0.0];
+		}
+
+		$startDate = date('d.m.Y', strtotime('-2 days'));
+		$endDate = date('d.m.Y', strtotime('+1 day'));
+		$hashRaw = $sx . '|' . $startDate . '|' . $endDate . '|' . $clientRefCode . '|' . $secretKey;
+		$hashDatav2 = base64_encode(hash('sha512', mb_convert_encoding($hashRaw, 'UTF-8'), true));
+		$url = self::getServiceBaseUrl() . '/Vpos/Payment/PaymentList';
+
+		$ch = curl_init($url);
+		curl_setopt_array($ch, [
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_POST => true,
+			CURLOPT_POSTFIELDS => [
+				'sx' => $sx,
+				'startDate' => $startDate,
+				'endDate' => $endDate,
+				'clientRefCode' => $clientRefCode,
+				'hashDatav2' => $hashDatav2,
+			],
+			CURLOPT_CONNECTTIMEOUT => 8,
+			CURLOPT_TIMEOUT => 15,
+			CURLOPT_SSL_VERIFYPEER => true,
+			CURLOPT_SSL_VERIFYHOST => 2,
+		]);
+		$body = curl_exec($ch);
+		$code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		curl_close($ch);
+
+		if (!is_string($body) || $body === '' || $code < 200 || $code >= 300) {
+			return ['ok' => false, 'found' => false, 'paid' => false, 'amount' => 0.0];
+		}
+
+		$data = json_decode($body, true);
+
+		if (!is_array($data)) {
+			return ['ok' => false, 'found' => false, 'paid' => false, 'amount' => 0.0];
+		}
+
+		$list = $data['LIST'] ?? $data['List'] ?? [];
+
+		if (!is_array($list) || $list === []) {
+			return ['ok' => true, 'found' => false, 'paid' => false, 'amount' => 0.0];
+		}
+
+		$paid = false;
+		$amount = 0.0;
+		$found = false;
+
+		foreach ($list as $row) {
+			if (!is_array($row)) {
+				continue;
+			}
+
+			$rowRef = (string) ($row['CLIENT_REFERENCE_CODE'] ?? $row['clientReferenceCode'] ?? '');
+			$status = strtoupper((string) ($row['STATUS'] ?? $row['status'] ?? ''));
+			$type = strtolower((string) ($row['TRANSACTION_TYPE'] ?? $row['transactionType'] ?? 'sales'));
+
+			if ($rowRef !== '' && strcasecmp($rowRef, $clientRefCode) !== 0
+				&& stripos($clientRefCode, $rowRef) === false
+				&& stripos($rowRef, $clientRefCode) === false) {
+				continue;
+			}
+
+			$found = true;
+
+			if ($status === 'SUCCESS' && !in_array($type, ['cancel', 'refund'], true)) {
+				$paid = true;
+				$amount = self::parseAmount((string) ($row['AUTHORIZATION_AMOUNT'] ?? $row['authorizationAmount'] ?? '0'));
+				break;
+			}
+		}
+
+		return ['ok' => true, 'found' => $found, 'paid' => $paid, 'amount' => $amount];
+	}
+
+	private static function expectedAmountForReference(string $reference): float
+	{
+		$order = DB::getRowSafe('orders', 'reference = ?', [$reference]);
+
+		if ($order) {
+			return round((float) ($order['total'] ?? 0), 2);
+		}
+
+		$pending = self::loadPendingCheckout($reference);
+
+		if ($pending && (float) ($pending['expected_total'] ?? 0) > 0) {
+			return round((float) $pending['expected_total'], 2);
+		}
+
+		if ($pending && is_array($pending['cart'] ?? null) && empty($pending['cart']['empty'])) {
+			$summary = Coupon::getCheckoutSummary((float) ($pending['cart']['total'] ?? 0), $pending['cart']);
+
+			return round((float) ($summary['total'] ?? 0), 2);
+		}
+
+		return 0.0;
+	}
+
+	private static function getServiceBaseUrl(): string
+	{
+		return Settings::get('NKOLAYPAY_TEST_MODE') !== '0'
+			? 'https://paynkolaytest.nkolayislem.com.tr'
+			: 'https://paynkolay.nkolayislem.com.tr';
+	}
+
+	private static function lockReference(string $reference): void
+	{
+		DB::getValue('SELECT GET_LOCK(?, 10)', ['nkolaypay_' . $reference]);
+	}
+
+	private static function unlockReference(string $reference): void
+	{
+		DB::getValue('SELECT RELEASE_LOCK(?)', ['nkolaypay_' . $reference]);
+	}
+
+	/**
+	 * @param array<string, mixed> $request
+	 * @param array<int, string> $keys
+	 */
+	private static function requestField(array $request, array $keys, string $default = ''): string
+	{
+		foreach ($keys as $key) {
+			if (array_key_exists($key, $request) && $request[$key] !== null && $request[$key] !== '') {
+				return (string) $request[$key];
+			}
+		}
+
+		$lower = [];
+
+		foreach ($request as $k => $v) {
+			$lower[strtolower((string) $k)] = $v;
+		}
+
+		foreach ($keys as $key) {
+			$lk = strtolower($key);
+
+			if (array_key_exists($lk, $lower) && $lower[$lk] !== null && $lower[$lk] !== '') {
+				return (string) $lower[$lk];
+			}
+		}
+
+		return $default;
 	}
 
 	/** @return array{reference: string, return_token: string, payload: string, last_error?: string}|null */

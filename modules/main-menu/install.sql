@@ -6,6 +6,9 @@ CREATE TABLE IF NOT EXISTS `main_menu_items` (
   `target` varchar(16) NOT NULL DEFAULT '_self',
   `position` int(11) NOT NULL DEFAULT 0,
   `active` tinyint(1) NOT NULL DEFAULT 1,
+  `show_header` tinyint(1) NOT NULL DEFAULT 1,
+  `show_mobile` tinyint(1) NOT NULL DEFAULT 1,
+  `show_footer` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id_menu_item`),
   KEY `position` (`position`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

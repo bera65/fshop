@@ -1018,7 +1018,7 @@
 	position: fixed;
 	right: 24px;
 	top: 24px;
-	z-index: 1080;
+	z-index: 20000;
 	display: none;
 	align-items: flex-start;
 	gap: 12px;

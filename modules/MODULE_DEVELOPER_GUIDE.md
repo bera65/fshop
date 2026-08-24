@@ -1061,6 +1061,8 @@ Mevcut modül örnekleri: whatsapp (basit), newsletter (API), reviews (ürün se
 | `reviews` | Ürün sekmesi + API + admin listeleme |
 | `slider` | Admin CRUD + görsel yükleme + özel hook |
 | `bankwire` | Ödeme + order_confirmation |
+| `paytr` | Sipariş öncesi iframe ödeme |
+| `iyzico` | iyzico Checkout Form + webhook |
 | `cashondelivery` | Minimal ödeme modülü |
 | `sanalpos` | paysBeforeOrder + front route |
 | `socials` | product_detail hook |

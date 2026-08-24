@@ -221,7 +221,7 @@ class Contact
 		return self::ok(self::t('Your message has been received. We will get back to you soon.'));
 	}
 
-	public static function replyFromAdmin(int $idMessage, string $replyMessage): array
+	public static function replyFromAdmin(int $idMessage, string $replyMessage, int $idAdmin = 0): array
 	{
 		$replyMessage = trim($replyMessage);
 
@@ -239,9 +239,13 @@ class Contact
 			return self::fail(self::t('Message not found'));
 		}
 
+		if ($idAdmin <= 0) {
+			$idAdmin = Admin::getId();
+		}
+
 		$idReply = DB::insert('contact_replies', [
 			'id_message' => $idMessage,
-			'id_admin' => Admin::getId(),
+			'id_admin' => $idAdmin,
 			'message' => $replyMessage,
 		]);
 
@@ -572,10 +576,9 @@ class Contact
 				require_once dirname(__FILE__) . '/AdminNotification.php';
 			}
 
-			global $domain;
-			$adminLink = class_exists('Admin', false)
-				? ($idOrder > 0 ? Admin::url('message') . '?order=' . $idOrder : Admin::url('messages'))
-				: rtrim($domain, '/') . '/admin/messages';
+			$adminLink = $idOrder > 0
+				? Admin::url('message') . '?order=' . $idOrder
+				: Admin::url('messages');
 
 			$title = $idOrder > 0 ? 'Order question' : 'New contact message';
 			$summary = $name . ' — ' . ($subject !== '' ? $subject : 'General');

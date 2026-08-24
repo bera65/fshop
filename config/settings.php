@@ -193,7 +193,7 @@
 		'footerDescription' => Settings::getFooterDescription(),
 		'moduleAssets' 		=> $moduleAssets,
 		'cartI18n' 			=> $cartI18n,
-		'cartI18nJson' 		=> json_encode($cartI18n, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT),
+		'cartI18nJson' 		=> Security::jsonForHtmlScript($cartI18n),
 		'newsletterApiUrl' 	=> rtrim($domain, '/') . '/api/module.php?m=newsletter&action=subscribe',
 		'themeOptions'		=> $themeOptions,
 		'activeTheme'		=> $theme,

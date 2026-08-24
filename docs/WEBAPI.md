@@ -1,6 +1,6 @@
 # FShop Web API — Kullanım Kılavuzu
 
-JSON tabanlı REST API ile uzaktan **sipariş çekme**, **ürün ekleme/güncelleme/silme**, **kategori ve marka listeleme** yapabilirsiniz.
+JSON tabanlı REST API ile uzaktan **sipariş çekme**, **ürün ekleme/güncelleme/silme**, **kategori ve marka listeleme**, **mesaj okuma/cevaplama** ve **admin bildirimleri** yapabilirsiniz.
 
 ---
 
@@ -15,6 +15,8 @@ JSON tabanlı REST API ile uzaktan **sipariş çekme**, **ürün ekleme/güncell
    - Siparişleri güncelle
    - Ürünleri oku / ekle / düzenle / sil
    - Kategorileri oku, Markaları oku
+   - Mesajları oku / cevapla
+   - Bildirimleri oku / okundu işaretle
 6. Oluşan **API Key** değerini kopyalayın
 
 > Her partner için ayrı anahtar açabilirsiniz. Örn. BizimHesap’a sadece «Siparişleri oku» verin; Paroner’a ürün + sipariş yetkisi verin.
@@ -538,7 +540,108 @@ curl -X POST -H "X-API-Key: API_KEY" -H "Content-Type: application/json" \
 
 ---
 
-## 6. Kategoriler ve markalar
+## 6. Mesajlar (iletişim)
+
+Yetki: `messages.read` (liste/detay), `messages.write` (cevap / okundu).
+
+### GET — Mesaj thread listesi
+
+```
+GET /api/v1/messages?page=0&size=30&unread=1
+```
+
+| Parametre | Açıklama |
+|-----------|----------|
+| `page` | 0 tabanlı sayfa |
+| `size` / `limit` | Sayfa boyutu (max 100) |
+| `unread` | `1` = sadece okunmamış thread’ler |
+
+```bash
+curl -s -H "X-API-Key: API_KEY" "http://localhost/fshop/api/v1/messages?unread=1"
+```
+
+### GET — Mesaj detayı
+
+`id` = `id_message`. Sipariş thread’iyse tüm sipariş mesajları + cevaplar döner.
+
+```
+GET /api/v1/messages/{id}
+```
+
+### POST — Mesaja cevap
+
+```
+POST /api/v1/messages/{id}/reply
+Content-Type: application/json
+
+{ "message": "Merhaba, siparişiniz kargoya verildi." }
+```
+
+```bash
+curl -s -X POST -H "X-API-Key: API_KEY" -H "Content-Type: application/json" \
+  -d "{\"message\":\"Teşekkürler, inceliyoruz.\"}" \
+  "http://localhost/fshop/api/v1/messages/12/reply"
+```
+
+### POST — Okundu işaretle
+
+```
+POST /api/v1/messages/{id}/read
+```
+
+---
+
+## 7. Bildirimler (admin)
+
+Yetki: `notifications.read`, `notifications.write`.
+
+Stok sıfıra düştüğünde sistem otomatik `type: stock` bildirimi oluşturur (sipariş / stok düşümü). Bu bildirimleri API ile çekebilirsiniz.
+
+### GET — Bildirim listesi
+
+```
+GET /api/v1/notifications?limit=50&unread=1
+```
+
+| Parametre | Açıklama |
+|-----------|----------|
+| `limit` / `size` | Max 100 |
+| `unread` | `1` = sadece okunmamış |
+
+```bash
+curl -s -H "X-API-Key: API_KEY" "http://localhost/fshop/api/v1/notifications?unread=1"
+```
+
+Örnek kayıt:
+
+```json
+{
+  "id": 42,
+  "type": "stock",
+  "title": "Ürün stoku bitti",
+  "message": "Vitamin C (VC-100) stokta kalmadı.",
+  "link": "https://site/admin/product?id=15",
+  "id_product": 15,
+  "is_read": false,
+  "date_add": "2026-08-12 14:30:00"
+}
+```
+
+### POST — Tek bildirimi okundu yap
+
+```
+POST /api/v1/notifications/{id}/read
+```
+
+### POST — Tümünü okundu yap
+
+```
+POST /api/v1/notifications/read-all
+```
+
+---
+
+## 8. Kategoriler ve markalar
 
 ### GET — Kategoriler
 
@@ -584,7 +687,7 @@ curl -s -H "X-API-Key: API_KEY" "http://localhost/fshop/api/v1/brands"
 
 ---
 
-## 7. PowerShell örnekleri
+## 9. PowerShell örnekleri
 
 PowerShell'de `Invoke-RestMethod` kullanabilirsiniz:
 
@@ -612,7 +715,7 @@ Invoke-RestMethod -Method POST -Uri "$base/products" -Headers $headers `
 
 ---
 
-## 8. Postman ile test
+## 10. Postman ile test
 
 1. **Collection** oluşturun
 2. Collection Variables:
@@ -629,7 +732,7 @@ Invoke-RestMethod -Method POST -Uri "$base/products" -Headers $headers `
 
 ---
 
-## 9. Önerilen test senaryosu
+## 11. Önerilen test senaryosu
 
 Sırayla deneyin:
 
@@ -643,13 +746,15 @@ Sırayla deneyin:
 | 6 | `PATCH /products/{id}` | Fiyat/stok değişimi |
 | 7 | `GET /orders?page=0` | Sipariş listesi |
 | 8 | `PATCH /orders/{id}` | `status: 2` (hazırlanıyor) |
-| 9 | `DELETE /products/{id}` | Test ürününü sil |
+| 9 | `GET /messages?unread=1` | Okunmamış mesajlar |
+| 10 | `GET /notifications?unread=1` | Stok / mesaj bildirimleri |
+| 11 | `DELETE /products/{id}` | Test ürününü sil |
 
 Yanlış anahtar ile istek atın → `403 Geçersiz API anahtarı` görmelisiniz.
 
 ---
 
-## 10. Sık karşılaşılan sorunlar
+## 12. Sık karşılaşılan sorunlar
 
 | Sorun | Çözüm |
 |-------|--------|
@@ -662,7 +767,7 @@ Yanlış anahtar ile istek atın → `403 Geçersiz API anahtarı` görmelisiniz
 
 ---
 
-## 11. Endpoint özeti
+## 13. Endpoint özeti
 
 | Kaynak | GET liste | GET tek | POST | PATCH | DELETE |
 |--------|-----------|---------|------|-------|--------|
@@ -672,6 +777,8 @@ Yanlış anahtar ile istek atın → `403 Geçersiz API anahtarı` görmelisiniz
 | `/products/{id}/quick` | — | — | — | ✓ (fiyat/stok/durum) | — |
 | `/categories` | ✓ | — | — | — | — |
 | `/brands` | ✓ | — | — | — | — |
+| `/messages` | ✓ | ✓ `/{id}` | ✓ `/{id}/reply`, `/{id}/read` | — | — |
+| `/notifications` | ✓ | — | ✓ `/{id}/read`, `/read-all` | — | — |
 
 Alternatif URL (rewrite olmadan):
 

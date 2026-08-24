@@ -16,6 +16,8 @@ CREATE TABLE `categories` (
   `meta_title` varchar(255) NOT NULL DEFAULT '',
   `meta_description` varchar(512) NOT NULL DEFAULT '',
   `active` tinyint(1) NOT NULL DEFAULT 1,
+  `show_on_home` tinyint(1) NOT NULL DEFAULT 0,
+  `home_position` int(11) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id_category`),
   KEY `category_link` (`category_link`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -156,6 +158,7 @@ CREATE TABLE `orders` (
   `shipping` decimal(20,2) NOT NULL DEFAULT 0.00,
   `gift_wrap` tinyint(1) NOT NULL DEFAULT 0,
   `gift_wrap_fee` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `stock_restored` tinyint(1) NOT NULL DEFAULT 0,
   `total` decimal(20,2) NOT NULL DEFAULT 0.00,
   `date_add` datetime NOT NULL DEFAULT current_timestamp(),
   `date_delivered` datetime DEFAULT NULL,
@@ -266,6 +269,8 @@ CREATE TABLE `admins` (
   `full_name` varchar(128) NOT NULL,
   `email` varchar(128) NOT NULL,
   `password` varchar(255) NOT NULL,
+  `reset_token` varchar(64) NOT NULL DEFAULT '',
+  `reset_expires` datetime DEFAULT NULL,
   `active` tinyint(1) NOT NULL DEFAULT 1,
   `date_add` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id_admin`),
@@ -387,5 +392,6 @@ INSERT INTO `settings` (`title`, `value`) VALUES
 ('CARGO_DAY', '3'),
 ('MAIL_DRIVER', 'php'),
 ('GIFT_WRAP_ENABLED', '0'),
-('GIFT_WRAP_FEE', '0');
+('GIFT_WRAP_FEE', '0'),
+('FS_VERSION', '2.5.6');
 

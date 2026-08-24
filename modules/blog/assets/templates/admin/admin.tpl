@@ -70,7 +70,7 @@
 							<td>{if $cat.active}<span class="badge text-bg-success">Aktif</span>{else}<span class="badge text-bg-secondary">Pasif</span>{/if}</td>
 							<td class="text-end text-nowrap">
 								<a href="{$adminUrl}module-blog?tab=categories&edit_cat={$cat.id_blog_category}" class="btn btn-sm btn-outline-dark">Düzenle</a>
-								<form method="post" class="d-inline" onsubmit="return confirm('Kategori silinsin mi? Yazılar kategorisiz kalır.');">
+								<form method="post" class="d-inline" data-confirm-message="Kategori silinsin mi? Yazılar kategorisiz kalır.">
 									<input type="hidden" name="deleteBlogCategory" value="1">
 									<input type="hidden" name="token" value="{$adminToken}">
 									<input type="hidden" name="id_blog_category" value="{$cat.id_blog_category}">
@@ -179,7 +179,7 @@
 							<td>{if $row.active}<span class="badge text-bg-success">Yayında</span>{else}<span class="badge text-bg-secondary">Taslak</span>{/if}</td>
 							<td class="text-end text-nowrap">
 								<a href="{$adminUrl}module-blog?tab=posts&edit={$row.id_blog_post}" class="btn btn-sm btn-outline-dark">Düzenle</a>
-								<form method="post" class="d-inline" onsubmit="return confirm('Silinsin mi?');">
+								<form method="post" class="d-inline" data-confirm-message="Silinsin mi?">
 									<input type="hidden" name="deleteBlogPost" value="1">
 									<input type="hidden" name="token" value="{$adminToken}">
 									<input type="hidden" name="id_blog_post" value="{$row.id_blog_post}">

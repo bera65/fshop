@@ -3,17 +3,17 @@
 <head>
 	<meta charset="utf-8">
 	<meta http-equiv="x-ua-compatible" content="ie=edge">
-	<title>{if $pageTitle && $pageTitle != $siteName}{$pageTitle|escape} | {$siteName|escape}{else}{$siteName|escape}{/if}</title>
+	<title>{$documentTitle|default:$siteName|escape}</title>
 	{if $pageDesc}
 	<meta name="description" content="{$pageDesc|escape}">
 	<meta property="og:description" content="{$pageDesc|escape}">
 	{/if}
-	<meta property="og:title" content="{if $pageTitle && $pageTitle != $siteName}{$pageTitle|escape} | {$siteName|escape}{else}{$siteName|escape}{/if}">
+	<meta property="og:title" content="{$documentTitle|default:$siteName|escape}">
 	<meta property="og:type" content="website">
 	<meta property="og:site_name" content="{$siteName|escape}">
 	<meta name="application-name" content="{$siteName|escape}">
 	<meta property="og:url" content="{$domain|escape}">
-	<meta name="twitter:title" content="{if $pageTitle && $pageTitle != $siteName}{$pageTitle|escape} | {$siteName|escape}{else}{$siteName|escape}{/if}">
+	<meta name="twitter:title" content="{$documentTitle|default:$siteName|escape}">
 	{if $pageDesc}
 	<meta name="twitter:description" content="{$pageDesc|escape}">
 	{/if}
@@ -34,7 +34,7 @@
 	<script>
 		if ('serviceWorker' in navigator) {
 			window.addEventListener('load', () => {
-				navigator.serviceWorker.register('{$domain}sw.php');
+				navigator.serviceWorker.register({($domain|cat:'sw.php')|js nofilter});
 			});
 		}
 	</script>
@@ -48,19 +48,20 @@
 	<link rel="stylesheet" href="{$moduleCss}" />
 	{/foreach}
 	<script>
-		var domain = "{$domain}";
-		var csrfToken = "{$token}";
-		var cartApiUrl = "{$domain}api/cart.php";
-		var couponApiUrl = "{$domain}api/coupon.php";
-		var authApiUrl = "{$domain}api/auth.php";
-		var favoriteApiUrl = "{$domain}api/favorite.php";
-		var accountApiUrl = "{$domain}api/account.php";
+		var domain = {$domain|js nofilter};
+		var csrfToken = {$token|js nofilter};
+		window.csrfToken = csrfToken;
+		var cartApiUrl = domain + 'api/cart.php';
+		var couponApiUrl = domain + 'api/coupon.php';
+		var authApiUrl = domain + 'api/auth.php';
+		var favoriteApiUrl = domain + 'api/favorite.php';
+		var accountApiUrl = domain + 'api/account.php';
 		var isLoggedIn = {if $isLoggedIn}true{else}false{/if};
-		var baseDir = '{$domain}';
-		window.baseDir = '{$domain}';
-		window.imgDir = '{$domain}img/';
-		window.cssDir = '{$css_dir}';
-		window.searchSuggestUrl = '{$domain}api/search-suggest.php';
+		var baseDir = domain;
+		window.baseDir = domain;
+		window.imgDir = domain + 'img/';
+		window.cssDir = {$css_dir|js nofilter};
+		window.searchSuggestUrl = domain + 'api/search-suggest.php';
 	</script>
 	{include file='./plugin/schema-jsonld.tpl'}
 	{include file='./plugin/theme-options.tpl'}

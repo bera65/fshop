@@ -55,7 +55,7 @@
 									<input type="hidden" name="token" value="{$adminToken}">
 									<button type="submit" class="btn btn-sm btn-outline-primary">{'Set as store currency'|adminT}</button>
 								</form>
-								<form method="post" class="d-inline" onsubmit="return confirm('{'Remove this currency from the list?'|adminT}');">
+								<form method="post" class="d-inline" data-confirm-title="{'Delete'|adminT}" data-confirm-message="{'Remove this currency from the list?'|adminT}">
 									<input type="hidden" name="currencyAction" value="1">
 									<input type="hidden" name="action" value="remove">
 									<input type="hidden" name="code" value="{$currency.code|escape}">

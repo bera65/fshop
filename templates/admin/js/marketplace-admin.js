@@ -30,6 +30,23 @@
 		timers[key] = setTimeout(fn, ms || 400);
 	}
 
+	function setBusy(el, on) {
+		if (!el) {
+			return;
+		}
+
+		if (window.AdminBusy) {
+			if (on) {
+				AdminBusy.start(el);
+			} else {
+				AdminBusy.stop(el);
+			}
+			return;
+		}
+
+		el.disabled = !!on;
+	}
+
 	function findPicker(el) {
 		return el.closest('.ty-picker');
 	}
@@ -288,7 +305,21 @@
 		if (panel) collectAttributes(panel);
 	});
 
+	function adminCsrfToken() {
+		if (window.__adminOrderStatus && window.__adminOrderStatus.token) {
+			return String(window.__adminOrderStatus.token);
+		}
+		if (window.__adminCsrfToken) {
+			return String(window.__adminCsrfToken);
+		}
+		return '';
+	}
+
 	function post(url, body) {
+		body = body || {};
+		if (!body.token) {
+			body.token = adminCsrfToken();
+		}
 		return fetch(url, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -322,7 +353,7 @@
 				if (attrs && attrs.value) body.attributes = attrs.value;
 				if (sale && sale.value !== '') body.sale_price = sale.value;
 				if (list && list.value !== '') body.list_price = list.value;
-				btn.disabled = true;
+				setBusy(btn, true);
 				panelMsg(panel, 'Gönderiliyor…', true);
 				post(btn.getAttribute('data-url'), body)
 					.then(function (res) {
@@ -330,7 +361,7 @@
 						if (res.success) setTimeout(function () { location.reload(); }, 800);
 					})
 					.catch(function () { panelMsg(panel, 'İstek başarısız', false); })
-					.finally(function () { btn.disabled = false; });
+					.finally(function () { setBusy(btn, false); });
 			});
 		});
 
@@ -344,7 +375,7 @@
 				var list = panel && panel.querySelector('.ty-list-price-input');
 				if (sale && sale.value !== '') body.sale_price = sale.value;
 				if (list && list.value !== '') body.list_price = list.value;
-				btn.disabled = true;
+				setBusy(btn, true);
 				panelMsg(panel, 'Fiyat güncelleniyor…', true);
 				post(btn.getAttribute('data-url'), body)
 					.then(function (res) {
@@ -366,7 +397,7 @@
 						}
 					})
 					.catch(function () { panelMsg(panel, 'İstek başarısız', false); })
-					.finally(function () { btn.disabled = false; });
+					.finally(function () { setBusy(btn, false); });
 			});
 		});
 
@@ -375,7 +406,7 @@
 			btn.dataset.tyBound = '1';
 			btn.addEventListener('click', function () {
 				var panel = btn.closest('.trendyol-product-panel');
-				btn.disabled = true;
+				setBusy(btn, true);
 				panelMsg(panel, 'Yenileniyor…', true);
 				post(btn.getAttribute('data-url'), { id_product: btn.getAttribute('data-id') })
 					.then(function (res) {
@@ -383,7 +414,7 @@
 						if (res.success) setTimeout(function () { location.reload(); }, 700);
 					})
 					.catch(function () { panelMsg(panel, 'İstek başarısız', false); })
-					.finally(function () { btn.disabled = false; });
+					.finally(function () { setBusy(btn, false); });
 			});
 		});
 
@@ -393,12 +424,16 @@
 			btn.addEventListener('click', function () {
 				var panel = btn.closest('.trendyol-product-panel');
 				var message = 'Trendyol bağlantısı silinecek. Ürün Trendyol mağazasında kalır; yalnızca FShop eşlemesi kaldırılır. Devam edilsin mi?';
+				var ask = window.AdminConfirm && AdminConfirm.ask
+					? AdminConfirm.ask({ message: message })
+					: Promise.resolve(false);
 
-				if (!window.confirm(message)) {
+				ask.then(function (ok) {
+				if (!ok) {
 					return;
 				}
 
-				btn.disabled = true;
+				setBusy(btn, true);
 				panelMsg(panel, 'Bağlantı siliniyor…', true);
 				post(btn.getAttribute('data-url'), { id_product: btn.getAttribute('data-id') })
 					.then(function (res) {
@@ -426,7 +461,10 @@
 							panelMsg(panel, 'İstek başarısız', false);
 						}
 					})
-					.finally(function () { btn.disabled = false; });
+					.finally(function () {
+						setBusy(btn, false);
+					});
+				});
 			});
 		});
 
@@ -443,7 +481,7 @@
 					return;
 				}
 
-				btn.disabled = true;
+				setBusy(btn, true);
 				panelMsg(panel, 'Trendyol ürünü doğrulanıyor…', true);
 				post(btn.getAttribute('data-url'), { id_product: btn.getAttribute('data-id'), barcode: barcode })
 					.then(function (res) {
@@ -451,7 +489,7 @@
 						if (res.success) setTimeout(function () { location.reload(); }, 700);
 					})
 					.catch(function () { panelMsg(panel, 'İstek başarısız', false); })
-					.finally(function () { btn.disabled = false; });
+					.finally(function () { setBusy(btn, false); });
 			});
 		});
 
@@ -598,7 +636,7 @@
 				var list = panel && panel.querySelector(listSel);
 				if (sale && sale.value !== '') body.sale_price = sale.value;
 				if (list && list.value !== '') body.list_price = list.value;
-				btn.disabled = true;
+				setBusy(btn, true);
 				var msg = panel && panel.querySelector(msgSel);
 				if (msg) { msg.textContent = 'Fiyat güncelleniyor…'; msg.className = msgSel.replace('.', '') + ' small d-block mt-3 text-muted'; }
 				post(btn.getAttribute('data-url'), body)
@@ -612,7 +650,7 @@
 					.catch(function () {
 						if (msg) { msg.textContent = 'İstek başarısız'; msg.className = msgSel.replace('.', '') + ' small d-block mt-3 text-danger'; }
 					})
-					.finally(function () { btn.disabled = false; });
+					.finally(function () { setBusy(btn, false); });
 			});
 		});
 
@@ -622,11 +660,15 @@
 			btn.addEventListener('click', function () {
 				var platform = btn.getAttribute('data-platform') || 'hepsiburada';
 				var label = platform === 'n11' ? 'N11' : 'Hepsiburada';
-				if (!window.confirm(label + ' bağlantısı silinecek. Devam edilsin mi?')) return;
+				var ask = window.AdminConfirm && AdminConfirm.ask
+					? AdminConfirm.ask({ message: label + ' bağlantısı silinecek. Devam edilsin mi?' })
+					: Promise.resolve(false);
+				ask.then(function (ok) {
+					if (!ok) return;
 				var panel = btn.closest(platform === 'n11' ? '.n11-product-panel' : '.hb-product-panel');
 				var msgSel = platform === 'n11' ? '.n11-action-msg' : '.hb-action-msg';
 				var msg = panel && panel.querySelector(msgSel);
-				btn.disabled = true;
+				setBusy(btn, true);
 				post(btn.getAttribute('data-url'), {
 					id_product: btn.getAttribute('data-id'),
 					platform: platform
@@ -641,7 +683,10 @@
 					.catch(function () {
 						if (msg) { msg.textContent = 'İstek başarısız'; msg.className = msgSel.replace('.', '') + ' small d-block mt-3 text-danger'; }
 					})
-					.finally(function () { btn.disabled = false; });
+					.finally(function () {
+						setBusy(btn, false);
+					});
+				});
 			});
 		});
 
@@ -663,7 +708,7 @@
 					merchant_sku: code,
 					stock_code: code
 				};
-				btn.disabled = true;
+				setBusy(btn, true);
 				if (msg) { msg.textContent = 'Eşleştiriliyor…'; msg.className = msgSel.replace('.', '') + ' small d-block mt-3 text-muted'; }
 				post(btn.getAttribute('data-url'), body)
 					.then(function (res) {
@@ -676,7 +721,7 @@
 					.catch(function () {
 						if (msg) { msg.textContent = 'İstek başarısız'; msg.className = msgSel.replace('.', '') + ' small d-block mt-3 text-danger'; }
 					})
-					.finally(function () { btn.disabled = false; });
+					.finally(function () { setBusy(btn, false); });
 			});
 		});
 	}

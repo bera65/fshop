@@ -124,7 +124,7 @@ class CustomerNotifyModule extends ModuleBase
 			'cnPushEnabled' => true,
 			'cnPushLoggedIn' => true,
 			'cnPushOneSignal' => $oneSignalReady,
-			'cnPushConfigJson' => json_encode($config, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+			'cnPushConfigJson' => Security::jsonForHtmlScript($config),
 			'cnPushJsUrl' => $this->getAssetUrl('js/front-push.js') . '?v=6',
 			'cnPushText' => function_exists('translate')
 				? translate('Would you like to receive your order status updates as notifications?')

@@ -27,6 +27,10 @@
 
 			$result = Seo::savePages($input);
 
+			if ($result['success'] && !Seo::saveTitleSuffix((string) Tools::getValue('seo_title_suffix'))) {
+				$result = ['success' => false, 'message' => adminT('SEO settings could not be saved')];
+			}
+
 			if ($result['success'] && !Seo::saveSchemaOrg([
 				'SCHEMA_ORG_STREET' => (string) Tools::getValue('schema_org_street'),
 				'SCHEMA_ORG_CITY' => (string) Tools::getValue('schema_org_city'),
@@ -55,6 +59,8 @@
 	$smarty->assign([
 		'seoPages' => $pageDefs,
 		'seoValues' => $pageValues,
+		'seoTitleSuffix' => Seo::getTitleSuffix(),
+		'siteNameSetting' => Settings::get('SITE_NAME'),
 		'schemaOrg' => $schemaOrg,
 		'flash' => $flash,
 		'flashType' => $flashType,

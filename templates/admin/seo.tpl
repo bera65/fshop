@@ -25,9 +25,27 @@
 		<input type="hidden" name="saveSeo" value="1">
 		<input type="hidden" name="token" value="{$adminToken}">
 
+		<div class="border rounded p-3 mb-3">
+			<h3 class="h6 mb-2">{'Browser title suffix'|adminT}</h3>
+			<p class="text-muted small mb-3">
+				{'Used after the page name on products, categories and other pages (e.g. Product | FriSay). Homepage uses its own meta title without this suffix.'|adminT}
+			</p>
+			<label class="form-label" for="seo_title_suffix">{'Title suffix'|adminT}</label>
+			<input type="text" name="seo_title_suffix" id="seo_title_suffix" class="form-control"
+				value="{$seoTitleSuffix|escape}" maxlength="128"
+				placeholder="{$siteNameSetting|escape}">
+			<p class="form-text small mb-0">
+				{'Leave empty to use the site name.'|adminT}
+				{'Example'|adminT}: <code>{'Product name'|adminT} | {$seoTitleSuffix|default:$siteNameSetting|escape}</code>
+			</p>
+		</div>
+
 		{foreach $seoPages as $pageId => $page}
 		<div class="border rounded p-3 mb-3">
 			<h3 class="h6 mb-3">{$page.label|escape}</h3>
+			{if $pageId == 'home'}
+			<p class="text-muted small mb-3">{'Homepage browser title is shown as entered (no suffix).'|adminT}</p>
+			{/if}
 			<div class="row g-3">
 				<div class="col-md-6">
 					<label class="form-label">{'Meta title'|adminT}</label>

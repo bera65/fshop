@@ -6,19 +6,23 @@
 
 			$pageTitle = $pageTitle ?? '';
 			$pageDesc = $pageDesc ?? '';
+			$documentTitle = class_exists('Seo', false)
+				? Seo::formatDocumentTitle((string) $pageTitle, (string) $pageName)
+				: (string) $pageTitle;
 
 			$smarty->assign([            
 				'pageName'  => $pageName,            
 				'css'       => $css,            
 				'js'        => $js,            
-				'pageTitle' => $pageTitle,        
+				'pageTitle' => $pageTitle,
+				'documentTitle' => $documentTitle,
 				'pageDesc' 	=> $pageDesc,        
 			]);
 
 			$pageSchemas = $smarty->getTemplateVars('schemaJsonLd');
 			$pageSchemas = is_array($pageSchemas) ? $pageSchemas : [];
 			$smarty->assign('schemaJsonLd', array_merge(
-				SchemaOrg::getGlobalScripts((string) $pageTitle, (string) $pageDesc),
+				SchemaOrg::getGlobalScripts((string) $documentTitle, (string) $pageDesc),
 				$pageSchemas
 			));
 

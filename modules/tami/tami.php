@@ -406,9 +406,14 @@ class TamiModule extends ModuleBase
 			];
 		}
 
-		if (!empty($post['hashedData']) && !$client->verifyCallbackHash($post)) {
+		if (empty($post['hashedData']) || !$client->verifyCallbackHash($post)) {
 			error_log('Tami callback hash mismatch for ' . $orderId);
-			// Bazı sandbox yanıtlarında hash sapması olabilir; complete-3ds asıl doğrulama.
+			self::markPendingStatus($orderId, 'failed');
+
+			return [
+				'ok' => false,
+				'message' => 'Tami: güvenlik doğrulaması başarısız',
+			];
 		}
 
 		$complete = $client->complete3ds($orderId);
@@ -419,6 +424,20 @@ class TamiModule extends ModuleBase
 			return [
 				'ok' => false,
 				'message' => 'Tami complete: ' . ($complete['error'] ?? 'satış tamamlanamadı'),
+			];
+		}
+
+		$expected = round((float) ($pending['_amount'] ?? 0), 2);
+		$paidRaw = $complete['data']['txnAmount'] ?? $complete['data']['amount'] ?? $post['txnAmount'] ?? $expected;
+		$paid = round((float) $paidRaw, 2);
+
+		if ($expected > 0 && ($paid + 0.05) < $expected) {
+			error_log('Tami amount mismatch ' . $orderId . ' expected=' . $expected . ' paid=' . $paid);
+			self::markPendingStatus($orderId, 'failed');
+
+			return [
+				'ok' => false,
+				'message' => 'Tami: tutar uyuşmazlığı',
 			];
 		}
 

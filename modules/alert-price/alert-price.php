@@ -50,8 +50,10 @@ class AlertPriceModule extends ModuleBase
                 Settings::set('ALERT_PRICE_CRON_TOKEN', trim((string) Tools::getValue('cron_token')));
                 Settings::set('ALERT_PRICE_CRON_ENABLED', (int) Tools::isSubmit('cron_enabled'));
                 $flash = 'Ayarlar kaydedildi';
+                $flashType = 'success';
             } else {
                 $flash = 'Geçersiz istek';
+                $flashType = 'danger';
             }
         }
 
@@ -65,6 +67,7 @@ class AlertPriceModule extends ModuleBase
             'cronToken' => $cronToken,
             'cronEnabled' => (int) Settings::get('ALERT_PRICE_CRON_ENABLED'),
             'flash' => $flash,
+            'flashType' => $flashType ?? 'success',
             'cronUrl' => rtrim($domain, '/') . '/api/module.php?m=alert-price&action=cron&token=' . rawurlencode($cronToken),
         ]);
     }

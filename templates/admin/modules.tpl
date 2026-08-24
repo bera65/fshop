@@ -128,7 +128,7 @@
 							<input type="hidden" name="moduleAction" value="1">
 							<input type="hidden" name="token" value="{$adminToken}">
 							<input type="hidden" name="name" value="{$mod.name|escape}">
-							<button type="submit" name="action" value="disable" class="dropdown-item px-0">{'Disable'|adminT}</button>
+							<button type="submit" name="action" value="disable" class="dropdown-item px-0 js-admin-busy">{'Disable'|adminT}</button>
 						</form>
 					</li>
 					{else}
@@ -137,13 +137,13 @@
 							<input type="hidden" name="moduleAction" value="1">
 							<input type="hidden" name="token" value="{$adminToken}">
 							<input type="hidden" name="name" value="{$mod.name|escape}">
-							<button type="submit" name="action" value="enable" class="dropdown-item px-0">{'Enable'|adminT}</button>
+							<button type="submit" name="action" value="enable" class="dropdown-item px-0 js-admin-busy">{'Enable'|adminT}</button>
 						</form>
 					</li>
 					{/if}
 					<li><hr class="dropdown-divider"></li>
 					<li>
-						<form method="post" class="px-3 py-1" onsubmit="return confirm('{'Uninstall this module?'|adminT}');">
+						<form method="post" class="px-3 py-1" data-confirm-title="{'Uninstall'|adminT}" data-confirm-message="{'Uninstall this module?'|adminT}">
 							<input type="hidden" name="moduleAction" value="1">
 							<input type="hidden" name="token" value="{$adminToken}">
 							<input type="hidden" name="name" value="{$mod.name|escape}">
@@ -157,7 +157,7 @@
 				<input type="hidden" name="moduleAction" value="1">
 				<input type="hidden" name="token" value="{$adminToken}">
 				<input type="hidden" name="name" value="{$mod.name|escape}">
-				<button type="submit" name="action" value="install" class="btn btn-outline-primary module-btn-configure">{'Install'|adminT}</button>
+				<button type="submit" name="action" value="install" class="btn btn-outline-primary module-btn-configure js-admin-busy">{'Install'|adminT}</button>
 			</form>
 			{/if}
 		</div>
